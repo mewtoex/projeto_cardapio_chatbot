@@ -1,0 +1,60 @@
+# ======================
+# PYTHON - BACKEND
+# ======================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.egg
+*.egg-info/
+dist/
+build/
+*.log
+
+# Virtual environment
+backend/**/venv/
+backend/**/.env
+backend/**/.env.*
+backend/backend_app/venv/
+**/venv/
+
+# Editor temporários
+*.swp
+*.swo
+
+# ======================
+# NODE / JAVASCRIPT - FRONTEND E CHATBOT
+# ======================
+# node_modules para qualquer subpasta (chatbot e frontend_pwa)
+**/node_modules/
+
+# Arquivos de lock (opcional ignorar, se você não quiser versionar)
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Configs locais
+**/.env
+**/.env.*
+**/.wwebjs_auth
+
+# ======================
+# FRONTEND - VITE / REACT / PWA
+# ======================
+frontend_pwa/**/dist/
+frontend_pwa/**/build/
+frontend_pwa/**/.next/
+frontend_pwa/**/.turbo/
+frontend_pwa/**/.parcel-cache/
+frontend_pwa/**/.cache/
+
+# ======================
+# GERAL
+# ======================
+.DS_Store
+Thumbs.db
+*.bak
+.vscode/
+.idea/
+*.iml
