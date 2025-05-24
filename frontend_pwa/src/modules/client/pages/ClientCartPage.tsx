@@ -38,11 +38,11 @@ import ApiService from "../../../modules/shared/services/ApiService";
 // Interface para itens do carrinho
 interface ICartItem {
   id: number;
-  nome: string;
+  name: string;
   quantidade: number;
-  preco: number;
+  price: number;
   imagem_url?: string;
-  categoria_nome: string;
+  category_name: string;
 }
 
 const ClientCartPage: React.FC = () => {
@@ -92,11 +92,11 @@ const ClientCartPage: React.FC = () => {
           
           return {
             id: itemDetails.id,
-            nome: itemDetails.nome,
+            name: itemDetails.name,
             quantidade: cartItem.quantity,
-            preco: itemDetails.preco,
+            price: itemDetails.price,
             imagem_url: itemDetails.imagem_url,
-            categoria_nome: itemDetails.categoria_nome
+            category_name: itemDetails.category_name
           };
         }).filter(item => item !== null) as ICartItem[];
         
@@ -115,7 +115,7 @@ const ClientCartPage: React.FC = () => {
   useEffect(() => {
     // Recalcular subtotal sempre que os itens do carrinho mudarem
     const newSubtotal = cartItems.reduce(
-      (sum, item) => sum + item.preco * item.quantidade,
+      (sum, item) => sum + item.price * item.quantidade,
       0
     );
     setSubtotal(newSubtotal);
@@ -161,7 +161,7 @@ const ClientCartPage: React.FC = () => {
     }
     
     if (itemToRemove) {
-      notification.showInfo(`${itemToRemove.nome} removido do carrinho`);
+      notification.showInfo(`${itemToRemove.name} removido do carrinho`);
     }
   };
 
@@ -283,7 +283,7 @@ const ClientCartPage: React.FC = () => {
                         <ListItemAvatar>
                           {item.imagem_url ? (
                             <Avatar 
-                              alt={item.nome} 
+                              alt={item.name} 
                               src={item.imagem_url} 
                               variant="rounded"
                               sx={{ width: 70, height: 70 }}
@@ -293,16 +293,16 @@ const ClientCartPage: React.FC = () => {
                               variant="rounded"
                               sx={{ width: 70, height: 70, bgcolor: 'grey.300' }}
                             >
-                              {item.nome.charAt(0)}
+                              {item.name.charAt(0)}
                             </Avatar>
                           )}
                         </ListItemAvatar>
                         <ListItemText
                           primary={
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <Typography variant="subtitle1">{item.nome}</Typography>
+                              <Typography variant="subtitle1">{item.name}</Typography>
                               <Chip 
-                                label={item.categoria_nome} 
+                                label={item.category_name} 
                                 size="small" 
                                 variant="outlined"
                                 sx={{ ml: 1 }}
@@ -315,7 +315,7 @@ const ClientCartPage: React.FC = () => {
                               variant="body2"
                               color="text.primary"
                             >
-                              R$ {item.preco.toFixed(2)} cada
+                              R$ {item.price.toFixed(2)} cada
                             </Typography>
                           }
                           sx={{ ml: 2 }}
@@ -323,7 +323,7 @@ const ClientCartPage: React.FC = () => {
                         <ListItemSecondaryAction>
                           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                             <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                              R$ {(item.preco * item.quantidade).toFixed(2)}
+                              R$ {(item.price * item.quantidade).toFixed(2)}
                             </Typography>
                             
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>

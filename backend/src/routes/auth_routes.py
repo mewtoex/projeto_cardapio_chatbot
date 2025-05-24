@@ -58,7 +58,7 @@ def register_user():
         db.session.commit()
 
         # Create tokens
-        access_token = create_access_token(identity=new_user.id)
+        access_token = create_access_token(identity=str(new_user.id))
         # refresh_token = create_refresh_token(identity=new_user.id) # Optional
 
         user_data = new_user.to_dict(include_addresses=True)
@@ -85,7 +85,7 @@ def login_user():
     user = User.query.filter_by(email=data["email"]).first()
 
     if user and user.check_password(data["password"]):
-        access_token = create_access_token(identity=user.id)
+        access_token = create_access_token(identity=str(user.id))
         # refresh_token = create_refresh_token(identity=user.id) # Optional
         
         user_data = user.to_dict() # Basic user data, can be expanded
@@ -111,8 +111,8 @@ def login_admin():
     user = User.query.filter_by(email=data["email"]).first()
 
     if user and user.check_password(data["password"]):
-        access_token = create_access_token(identity=user.id)
-        
+        access_token = create_access_token(identity=str(user.id))
+
         user_data = user.to_dict() 
         user_data["role"] = user.role 
         print(user_data["role"])

@@ -29,19 +29,19 @@ import { useNavigate } from 'react-router-dom';
 
 interface MenuItem {
   id: number;
-  nome: string;
-  categoria_id: string;
-  categoria_nome: string;
-  preco: number;
-  descricao: string;
-  disponivel: boolean;
-  imagem_url?: string;
+  name: string;
+  category_id: string;
+  category_name: string;
+  price: number;
+  description: string;
+  available: boolean;
+  image_url?: string;
 }
 
 interface Category {
   id: string;
-  nome: string;
-  descricao?: string;
+  name: string;
+  description?: string;
 }
 
 const ClientMenuPage: React.FC = () => {
@@ -65,7 +65,7 @@ const ClientMenuPage: React.FC = () => {
         setCategories(categoriesData);
         
         // Buscar itens do cardápio
-        const itemsData = await ApiService.getMenuItems({ disponivel: true });
+        const itemsData = await ApiService.getMenuItems({ available: true });
         setMenuItems(itemsData);
         
         setError(null);
@@ -96,7 +96,7 @@ const ClientMenuPage: React.FC = () => {
   }, [cartItems]);
 
   const filteredItems = selectedCategoryId
-    ? menuItems.filter(item => item.categoria_id === selectedCategoryId)
+    ? menuItems.filter(item => item.category_id === selectedCategoryId)
     : menuItems;
 
   const handleCategoryChange = (_event: React.SyntheticEvent, newCategoryId: string | null) => {
@@ -104,8 +104,8 @@ const ClientMenuPage: React.FC = () => {
   };
 
   const handleAddToCart = (item: MenuItem) => {
-    if (!item.disponivel) {
-      notification.showError(`${item.nome} não está disponível no momento`);
+    if (!item.available) {
+      notification.showError(`${item.name} não está disponível no momento`);
       return;
     }
     
@@ -113,7 +113,7 @@ const ClientMenuPage: React.FC = () => {
       const currentQuantity = prev[item.id] || 0;
       const newQuantity = currentQuantity + 1;
       
-      notification.showSuccess(`${item.nome} adicionado ao carrinho`);
+      notification.showSuccess(`${item.name} adicionado ao carrinho`);
       
       return {
         ...prev,
@@ -214,7 +214,7 @@ const ClientMenuPage: React.FC = () => {
         >
           <Tab label="Todos" value={null} />
           {categories.map(category => (
-            <Tab key={category.id} label={category.nome} value={category.id} />
+            <Tab key={category.id} label={category.name} value={category.id} />
           ))}
         </Tabs>
       </Box>
@@ -230,12 +230,12 @@ const ClientMenuPage: React.FC = () => {
           {filteredItems.map(item => (
             <Grid item xs={12} sm={6} md={4} key={item.id}>
               <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                {item.imagem_url ? (
+                {item.image_url ? (
                   <CardMedia
                     component="img"
                     height="200"
-                    image={item.imagem_url}
-                    alt={item.nome}
+                    image={item.image_url}
+                    alt={item.name}
                   />
                 ) : (
                   <Box 
@@ -255,22 +255,22 @@ const ClientMenuPage: React.FC = () => {
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                     <Typography variant="h6" component="div">
-                      {item.nome}
+                      {item.name}
                     </Typography>
                     <Chip 
-                      label={`R$ ${item.preco.toFixed(2)}`}
+                      label={`R$ ${item.price.toFixed(2)}`}
                       color="primary"
                       size="small"
                     />
                   </Box>
                   <Chip 
-                    label={item.categoria_nome} 
+                    label={item.category_name} 
                     size="small" 
                     variant="outlined"
                     sx={{ mb: 1 }}
                   />
                   <Typography variant="body2" color="text.secondary">
-                    {item.descricao}
+                    {item.description}
                   </Typography>
                 </CardContent>
                 <CardActions>
@@ -279,9 +279,9 @@ const ClientMenuPage: React.FC = () => {
                     startIcon={<AddIcon />}
                     fullWidth
                     onClick={() => handleAddToCart(item)}
-                    disabled={!item.disponivel}
+                    disabled={!item.available}
                   >
-                    {item.disponivel ? 'Adicionar ao Carrinho' : 'Indisponível'}
+                    {item.available ? 'Adicionar ao Carrinho' : 'Indisponível'}
                   </Button>
                 </CardActions>
               </Card>

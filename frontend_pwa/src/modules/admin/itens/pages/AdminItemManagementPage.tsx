@@ -44,35 +44,35 @@ import { ImageUpload } from "../../../../components/UI/ImageUpload";
 
 interface MenuItem {
   id: number;
-  nome: string;
-  categoria_id: string;
-  categoria_nome: string;
-  preco: number;
-  descricao: string;
-  disponivel: boolean;
-  imagem_url?: string;
+  name: string;
+  category_id: string;
+  categoria_name: string;
+  price: number;
+  description: string;
+  available: boolean;
+  image_url?: string;
 }
 
 interface Category {
   id: string;
-  nome: string;
-  descricao?: string;
+  name: string;
+  description?: string;
 }
 
 // Interface para o formulário de item
 interface ItemFormData {
-  nome: string;
-  categoria_id: string;
-  preco: string;
-  descricao: string;
-  disponivel: boolean;
-  imagem_url: string;
+  name: string;
+  category_id: string;
+  price: string;
+  description: string;
+  available: boolean;
+  image_url: string;
 }
 
 // Interface para o formulário de categoria
 interface CategoryFormData {
-  nome: string;
-  descricao: string;
+  name: string;
+  description: string;
 }
 
 const AdminItemManagementPage: React.FC = () => {
@@ -98,17 +98,17 @@ const AdminItemManagementPage: React.FC = () => {
 
   // Form states
   const [itemFormData, setItemFormData] = useState<ItemFormData>({
-    nome: "",
-    categoria_id: "",
-    preco: "",
-    descricao: "",
-    disponivel: true,
-    imagem_url: ""
+    name: "",
+    category_id: "",
+    price: "",
+    description: "",
+    available: true,
+    image_url: ""
   });
   
   const [categoryFormData, setCategoryFormData] = useState<CategoryFormData>({
-    nome: "",
-    descricao: ""
+    name: "",
+    description: ""
   });
 
   // Função para buscar itens e categorias
@@ -144,7 +144,7 @@ const AdminItemManagementPage: React.FC = () => {
       
       setMenuItems(prevItems => 
         prevItems.map(item => 
-          item.id === itemId ? { ...item, disponivel: !currentAvailability } : item
+          item.id === itemId ? { ...item, available: !currentAvailability } : item
         )
       );
       
@@ -158,22 +158,22 @@ const AdminItemManagementPage: React.FC = () => {
     if (item) {
       setCurrentItem(item);
       setItemFormData({
-        nome: item.nome,
-        categoria_id: item.categoria_id,
-        preco: item.preco.toString(),
-        descricao: item.descricao,
-        disponivel: item.disponivel,
-        imagem_url: item.imagem_url || ""
+        name: item.name,
+        category_id: item.category_id,
+        price: item.price.toString(),
+        description: item.description,
+        available: item.available,
+        image_url: item.image_url || ""
       });
     } else {
       setCurrentItem(null);
       setItemFormData({
-        nome: "",
-        categoria_id: categories.length > 0 ? categories[0].id : "",
-        preco: "",
-        descricao: "",
-        disponivel: true,
-        imagem_url: ""
+        name: "",
+        category_id: categories.length > 0 ? categories[0].id : "",
+        price: "",
+        description: "",
+        available: true,
+        image_url: ""
       });
     }
     setOpenItemDialog(true);
@@ -197,7 +197,7 @@ const AdminItemManagementPage: React.FC = () => {
   const handleItemSwitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setItemFormData(prev => ({
       ...prev,
-      disponivel: e.target.checked
+      available: e.target.checked
     }));
   };
 
@@ -209,7 +209,7 @@ const AdminItemManagementPage: React.FC = () => {
     setImageFile(null);
     setItemFormData(prev => ({
       ...prev,
-      imagem_url: ""
+      image_url: ""
     }));
   };
 
@@ -218,22 +218,22 @@ const AdminItemManagementPage: React.FC = () => {
       setIsUploading(true);
       
       // Validação básica
-      if (!itemFormData.nome || !itemFormData.categoria_id || !itemFormData.preco) {
+      if (!itemFormData.name || !itemFormData.category_id || !itemFormData.price) {
         notification.showError("Preencha todos os campos obrigatórios");
         setIsUploading(false);
         return;
       }
 
-      // Criar FormData para envio com imagem
+      // Criar FormData para envio com image
       const formData = new FormData();
-      formData.append("nome", itemFormData.nome);
-      formData.append("categoria_id", itemFormData.categoria_id);
-      formData.append("preco", itemFormData.preco);
-      formData.append("descricao", itemFormData.descricao);
-      formData.append("disponivel", itemFormData.disponivel.toString());
+      formData.append("name", itemFormData.name);
+      formData.append("category_id", itemFormData.category_id);
+      formData.append("price", itemFormData.price);
+      formData.append("description", itemFormData.description);
+      formData.append("available", itemFormData.available.toString());
       
       if (imageFile) {
-        formData.append("imagem", imageFile);
+        formData.append("image", imageFile);
       }
 
       let response;
@@ -276,14 +276,14 @@ const AdminItemManagementPage: React.FC = () => {
     if (category) {
       setCurrentCategory(category);
       setCategoryFormData({
-        nome: category.nome,
-        descricao: category.descricao || ""
+        name: category.name,
+        description: category.description || ""
       });
     } else {
       setCurrentCategory(null);
       setCategoryFormData({
-        nome: "",
-        descricao: ""
+        name: "",
+        description: ""
       });
     }
     setOpenCategoryDialog(true);
@@ -308,8 +308,8 @@ const AdminItemManagementPage: React.FC = () => {
       setIsSavingCategory(true);
       
       // Validação básica
-      if (!categoryFormData.nome) {
-        notification.showError("O nome da categoria é obrigatório");
+      if (!categoryFormData.name) {
+        notification.showError("O name da categoria é obrigatório");
         setIsSavingCategory(false);
         return;
       }
@@ -317,15 +317,15 @@ const AdminItemManagementPage: React.FC = () => {
       if (currentCategory) {
         // Atualizar categoria existente
         await ApiService.updateCategory(currentCategory.id, {
-          nome: categoryFormData.nome,
-          descricao: categoryFormData.descricao
+          name: categoryFormData.name,
+          description: categoryFormData.description
         });
         notification.showSuccess("Categoria atualizada com sucesso");
       } else {
         // Adicionar nova categoria
         await ApiService.createCategory({
-          nome: categoryFormData.nome,
-          descricao: categoryFormData.descricao
+          name: categoryFormData.name,
+          description: categoryFormData.description
         });
         notification.showSuccess("Categoria adicionada com sucesso");
       }
@@ -344,7 +344,7 @@ const AdminItemManagementPage: React.FC = () => {
 
   const handleDeleteCategory = async (categoryId: string) => {
     // Verificar se há itens usando esta categoria
-    const itemsUsingCategory = menuItems.filter(item => item.categoria_id === categoryId);
+    const itemsUsingCategory = menuItems.filter(item => item.category_id === categoryId);
     
     if (itemsUsingCategory.length > 0) {
       notification.showError(`Não é possível excluir esta categoria. Existem ${itemsUsingCategory.length} itens associados a ela.`);
@@ -440,15 +440,15 @@ const AdminItemManagementPage: React.FC = () => {
                     menuItems.map((item) => (
                       <TableRow key={item.id}>
                         <TableCell>{item.id}</TableCell>
-                        <TableCell>{item.nome}</TableCell>
+                        <TableCell>{item.name}</TableCell>
                         <TableCell>
-                          <Chip label={item.categoria_nome} size="small" />
+                          <Chip label={item.category_name} size="small" />
                         </TableCell>
-                        <TableCell>R$ {item.preco.toFixed(2)}</TableCell>
+                        <TableCell>R$ {item.price.toFixed(2)}</TableCell>
                         <TableCell>
                           <Switch
-                            checked={item.disponivel}
-                            onChange={() => handleToggleAvailability(item.id, item.disponivel)}
+                            checked={item.available}
+                            onChange={() => handleToggleAvailability(item.id, item.available)}
                             color="primary"
                           />
                         </TableCell>
@@ -512,13 +512,13 @@ const AdminItemManagementPage: React.FC = () => {
                     </TableRow>
                   ) : (
                     categories.map((category) => {
-                      const itemCount = menuItems.filter(item => item.categoria_id === category.id).length;
+                      const itemCount = menuItems.filter(item => item.category_id === category.id).length;
                       
                       return (
                         <TableRow key={category.id}>
                           <TableCell>{category.id}</TableCell>
-                          <TableCell>{category.nome}</TableCell>
-                          <TableCell>{category.descricao || "-"}</TableCell>
+                          <TableCell>{category.name}</TableCell>
+                          <TableCell>{category.description || "-"}</TableCell>
                           <TableCell>
                             <Chip 
                               label={`${itemCount} ${itemCount === 1 ? 'item' : 'itens'}`} 
@@ -575,8 +575,8 @@ const AdminItemManagementPage: React.FC = () => {
               <TextField
                 fullWidth
                 label="Nome do Item"
-                name="nome"
-                value={itemFormData.nome}
+                name="name"
+                value={itemFormData.name}
                 onChange={handleItemInputChange}
                 margin="normal"
                 required
@@ -584,8 +584,8 @@ const AdminItemManagementPage: React.FC = () => {
               <FormControl fullWidth margin="normal" required>
                 <InputLabel>Categoria</InputLabel>
                 <Select
-                  name="categoria_id"
-                  value={itemFormData.categoria_id}
+                  name="category_id"
+                  value={itemFormData.category_id}
                   onChange={handleItemInputChange}
                   label="Categoria"
                 >
@@ -596,7 +596,7 @@ const AdminItemManagementPage: React.FC = () => {
                   ) : (
                     categories.map((category) => (
                       <MenuItem key={category.id} value={category.id}>
-                        {category.nome}
+                        {category.name}
                       </MenuItem>
                     ))
                   )}
@@ -605,8 +605,8 @@ const AdminItemManagementPage: React.FC = () => {
               <TextField
                 fullWidth
                 label="Preço (R$)"
-                name="preco"
-                value={itemFormData.preco}
+                name="price"
+                value={itemFormData.price}
                 onChange={handleItemInputChange}
                 margin="normal"
                 type="number"
@@ -616,8 +616,8 @@ const AdminItemManagementPage: React.FC = () => {
               <TextField
                 fullWidth
                 label="Descrição"
-                name="descricao"
-                value={itemFormData.descricao}
+                name="description"
+                value={itemFormData.description}
                 onChange={handleItemInputChange}
                 margin="normal"
                 multiline
@@ -626,7 +626,7 @@ const AdminItemManagementPage: React.FC = () => {
               <FormControlLabel
                 control={
                   <Switch 
-                    checked={itemFormData.disponivel} 
+                    checked={itemFormData.available} 
                     onChange={handleItemSwitchChange} 
                     color="primary" 
                   />
@@ -637,16 +637,16 @@ const AdminItemManagementPage: React.FC = () => {
             </Grid>
             <Grid item xs={12} md={6}>
               <Typography variant="subtitle1" gutterBottom>
-                Imagem do Item
+                image do Item
               </Typography>
               <ImageUpload
                 onImageUpload={handleImageUpload}
                 onImageRemove={handleImageRemove}
-                previewUrl={itemFormData.imagem_url}
+                previewUrl={itemFormData.image_url}
                 isUploading={isUploading}
               />
               <Typography variant="body2" color="text.secondary">
-                Adicione uma imagem atraente do seu produto para melhorar as vendas.
+                Adicione uma image atraente do seu produto para melhorar as vendas.
                 Recomendamos imagens com fundo claro e boa iluminação.
               </Typography>
             </Grid>
@@ -683,9 +683,9 @@ const AdminItemManagementPage: React.FC = () => {
         <DialogContent dividers>
           <TextField
             fullWidth
-            label="Nome da Categoria"
-            name="nome"
-            value={categoryFormData.nome}
+            label="nome da Categoria"
+            name="name"
+            value={categoryFormData.name}
             onChange={handleCategoryInputChange}
             margin="normal"
             required
@@ -693,8 +693,8 @@ const AdminItemManagementPage: React.FC = () => {
           <TextField
             fullWidth
             label="Descrição (opcional)"
-            name="descricao"
-            value={categoryFormData.descricao}
+            name="description"
+            value={categoryFormData.description}
             onChange={handleCategoryInputChange}
             margin="normal"
             multiline

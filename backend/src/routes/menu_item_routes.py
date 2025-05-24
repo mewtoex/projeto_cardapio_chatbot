@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required
 from werkzeug.utils import secure_filename
+from static.uploads.img import img_upload 
 import os
 
 from src.models.menu_item import MenuItem, db
@@ -15,7 +16,6 @@ def allowed_file(filename):
     return "." in filename and \
            filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# --- Public/Client Routes ---
 @menu_item_bp.route("", methods=["GET"])
 def get_menu_items():
     category_id_filter = request.args.get("category_id")
@@ -26,8 +26,8 @@ def get_menu_items():
         query = query.filter(MenuItem.category_id == category_id_filter)
     if name_filter:
         query = query.filter(MenuItem.name.ilike(f"%{name_filter}%"))
-    #if availability_filter is not None:
-    #   query = query.filter(MenuItem.available == availability_filter)
+    if availability_filter is not None:
+       query = query.filter(MenuItem.available == availability_filter)
     
     items = query.order_by(MenuItem.name).all()
     return jsonify([item.to_dict() for item in items]), 200
@@ -40,14 +40,14 @@ def get_menu_item_detail(item_id):
         return jsonify({"message": "Menu item not found"}), 404
     return jsonify(item.to_dict()), 200
 
-# --- Admin Routes ---
 @menu_item_bp.route("/admin", methods=["POST"])
 @jwt_required()
 @admin_required
-def create_menu_item_admin():
-    data = request.form # Use request.form for multipart/form-data
-    
+def create_menu_item_admin  ():
+    data = request.form 
     required_fields = ["name", "description", "price", "category_id"]
+
+    img_url_serv =  img_upload(request)
     if not all(field in data for field in required_fields):
         return jsonify({"message": f"Missing required fields: {required_fields}"}), 400
 
@@ -62,26 +62,15 @@ def create_menu_item_admin():
             raise ValueError("Price must be positive")
     except ValueError:
         return jsonify({"message": "Invalid price format"}), 400
-
     new_item = MenuItem(
         name=data["name"],
         description=data["description"],
         price=price,
         category_id=data["category_id"],
-        available=data.get("available", "true").lower() == "true"
+        available=data.get("available", "true").lower() == "true",
+        image_url=img_url_serv
     )
 
-    if "image" in request.files:
-        file = request.files["image"]
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            # Ensure unique filename to prevent overwrites, e.g., by prefixing with item ID or timestamp
-            # For now, simple save. This needs improvement for production (e.g. UUID for filename)
-            save_path = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
-            file.save(save_path)
-            new_item.image_url = f"/static/uploads/{filename}" # URL to access the image
-        elif file.filename != "": # File was provided but not allowed
-             return jsonify({"message": "File type not allowed"}), 400
 
     try:
         db.session.add(new_item)
@@ -170,12 +159,12 @@ def toggle_menu_item_availability_admin(item_id):
     item = MenuItem.query.get(item_id)
     if not item:
         return jsonify({"message": "Menu item not found"}), 404
-
+    
     data = request.get_json()
-    if "available" not in data or not isinstance(data["available"], bool):
+    if "disponivel" not in data or not isinstance(data["disponivel"], bool):
         return jsonify({"message": "Invalid or missing \"available\" field (must be boolean)"}), 400
-
-    item.available = data["available"]
+    
+    item.available = data["disponivel"]
     try:
         db.session.commit()
         return jsonify(item.to_dict()), 200
@@ -183,7 +172,4 @@ def toggle_menu_item_availability_admin(item_id):
         db.session.rollback()
         return jsonify({"message": "Could not update item availability", "error": str(e)}), 500
 
-# Note: Reordering items (PATCH /admin/reorder) would require a more complex logic, 
-# potentially adding an `order_index` field to MenuItem and updating it for multiple items in a transaction.
-# This is a placeholder if that functionality is needed.
 

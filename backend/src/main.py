@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from flask import Flask, send_from_directory, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
-from dotenv import load_dotenv # <<< ADICIONADO
+from dotenv import load_dotenv 
 
 from src.models.user import User, db
 from src.models.address import Address
@@ -25,8 +25,7 @@ from src.routes.menu_item_routes import menu_item_bp
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), "static"))
 
 # --- Carregar variáveis de ambiente do backend.env ---
-# Certifique-se de que 'backend.env' está no mesmo diretório que este arquivo main.py
-load_dotenv(dotenv_path="backend.env") # <<< ADICIONADO
+load_dotenv(dotenv_path="backend.env") 
 
 # --- App Configuration ---
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "uma_chave_secreta_incrivelmente_forte_e_dificil_de_adivinhar")
@@ -38,17 +37,20 @@ CORS(app, resources={r"/api/*": {
     "allow_headers": ["Content-Type", "Authorization"]
 }})
 # Database Configuration
-DB_USERNAME = os.getenv("DB_USERNAME") # Removido valor padrão, virá do backend.env
-DB_PASSWORD = os.getenv("DB_PASSWORD") # Removido valor padrão, virá do backend.env
-DB_HOST = os.getenv("DB_HOST")       # Removido valor padrão, virá do backend.env
-DB_PORT = os.getenv("DB_PORT")       # Removido valor padrão, virá do backend.env
-DB_NAME = os.getenv("DB_NAME")       # Removido valor padrão, virá do backend.env
+DB_USERNAME = os.getenv("DB_USERNAME") 
+DB_PASSWORD = os.getenv("DB_PASSWORD") 
+DB_HOST = os.getenv("DB_HOST")       
+DB_PORT = os.getenv("DB_PORT")       
+DB_NAME = os.getenv("DB_NAME")       
 
-# Verificação opcional se as variáveis foram carregadas
+#FTP CONFIG
+app.config["FTP_HOST"] = os.getenv("FTP_HOST")
+app.config["FTP_USER"] = os.getenv("FTP_USER")
+app.config["FTP_PASS"] = os.getenv("FTP_PASS")
+app.config["FTP_DIR"]  = os.getenv("FTP_DIR", "/")
+
 if not all([DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME]):
     print("ALERTA: Uma ou mais variáveis de configuração do banco de dados não foram carregadas do backend.env!")
-    # Considere lançar um erro ou sair se forem críticas para a inicialização
-print(DB_USERNAME)
 app.config["SQLALCHEMY_DATABASE_URI"] = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
@@ -66,7 +68,6 @@ app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "um_jwt_segredo_super
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)
 jwt = JWTManager(app)
-
 # --- Database Creation ---
 with app.app_context():
     print("Creating database tables if they don't exist...")

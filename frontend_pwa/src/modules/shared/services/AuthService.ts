@@ -6,7 +6,6 @@ import axios from 'axios';
 const API_BASE_URL = 'http://localhost:5000/api';
 
 const AuthService = {
-  // Login de cliente com chamada real à API
   clientLogin: async (email, password ) => {
     try {
       console.log("Realizando login de cliente com:", email);
@@ -15,10 +14,9 @@ const AuthService = {
         password
       });
       
-      // Se a requisição for bem-sucedida, armazena os dados no localStorage
-      const { token, user } = response.data;
+      const { access_token, user } = response.data;
       localStorage.setItem('authUser', JSON.stringify(user));
-      localStorage.setItem('authToken', token);
+      localStorage.setItem('Token', access_token);
       
       return response.data;
     } catch (error) {
@@ -27,10 +25,8 @@ const AuthService = {
     }
   },
 
-  // Registro de cliente com chamada real à API
   clientRegister: async (userData) => {
     try {
-      console.log("Registrando novo cliente:", userData.email);
       const response = await axios.post(`${API_BASE_URL}/auth/register`, userData);
       return response.data;
     } catch (error) {
@@ -39,7 +35,6 @@ const AuthService = {
     }
   },
 
-  // Login de administrador com chamada real à API
   adminLogin: async (email, password) => {
     try {
       console.log("Realizando login de administrador com:", email);
@@ -47,12 +42,10 @@ const AuthService = {
         email,
         password
       });
-      
-      // Se a requisição for bem-sucedida, armazena os dados no localStorage
-      const { token, user } = response.data;
+      console.log(response.data)
+      const { access_token, user } = response.data;
       localStorage.setItem('authUser', JSON.stringify(user));
-      localStorage.setItem('authToken', token);
-      
+      localStorage.setItem('Token', JSON.stringify(access_token));
       return response.data;
     } catch (error) {
       console.error("Erro no login de administrador:", error);
@@ -64,7 +57,7 @@ const AuthService = {
   logout: async () => {
     try {
       // Obtém o token atual para enviar no cabeçalho da requisição
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('Token');
       
       // Realiza a chamada à API para invalidar o token no backend
       if (token) {
@@ -77,7 +70,7 @@ const AuthService = {
       
       // Independente da resposta da API, remove os dados do localStorage
       localStorage.removeItem('authUser');
-      localStorage.removeItem('authToken');
+      localStorage.removeItem('Token');
       
       return { message: "Logout realizado com sucesso" };
     } catch (error) {
@@ -85,7 +78,7 @@ const AuthService = {
       
       // Mesmo com erro na API, remove os dados do localStorage para garantir logout local
       localStorage.removeItem('authUser');
-      localStorage.removeItem('authToken');
+      localStorage.removeItem('Token');
       
       return { message: "Logout realizado localmente" };
     }
@@ -93,7 +86,7 @@ const AuthService = {
 
   // Método para obter o token armazenado
   getToken: () => {
-    return localStorage.getItem('authToken');
+    return localStorage.getItem('Token');
   },
 
   // Método para obter o usuário armazenado
@@ -104,12 +97,12 @@ const AuthService = {
 
   // Verificar se o usuário está autenticado
   isAuthenticated: () => {
-    return !!localStorage.getItem('authToken');
+    return !!localStorage.getItem('Token');
   },
   
   // Configurar cabeçalhos de autenticação para outras chamadas à API
   getAuthHeaders: () => {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('Token');
     return token ? { 'Authorization': `Bearer ${token}` } : {};
   }
 };

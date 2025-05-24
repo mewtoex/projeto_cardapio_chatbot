@@ -4,7 +4,10 @@ import AuthService from "./AuthService"; // Supondo que AuthService.ts está no 
 const API_BASE_URL = "http://localhost:5000/api/"; // Atualizado para /api/v1
 
 const getAuthHeaders = () => {
-  const token = AuthService.getToken();
+  let token = AuthService.getToken();
+  if (token?.startsWith('"') && token?.endsWith('"')) {
+      token = token.slice(1, -1); 
+  }
   const headers: HeadersInit = {
     "Content-Type": "application/json",
   };
@@ -15,8 +18,11 @@ const getAuthHeaders = () => {
 };
 
 const getAuthHeadersFormData = () => {
-  const token = AuthService.getToken();
-  const headers: HeadersInit = {}; // Content-Type é definido automaticamente pelo browser para FormData
+  let token = AuthService.getToken();
+  if (token?.startsWith('"') && token?.endsWith('"')) {
+      token = token.slice(1, -1); 
+  }
+  const headers: HeadersInit = {}; 
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
@@ -58,8 +64,8 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  createMenuItem: async (formData: FormData) => { // Admin
-    const response = await fetch(`${API_BASE_URL}/admin/menu_items`, {
+  createMenuItem: async (formData: FormData) => { 
+    const response = await fetch(`${API_BASE_URL}menu_items/admin`, {
       method: "POST",
       headers: getAuthHeadersFormData(),
       body: formData,
@@ -68,7 +74,7 @@ const ApiService = {
   },
 
   updateMenuItem: async (id_item: string, formData: FormData) => { // Admin
-    const response = await fetch(`${API_BASE_URL}/admin/menu_items/${id_item}`, {
+    const response = await fetch(`${API_BASE_URL}menu_items/admin/${id_item}`, {
       method: "PUT",
       headers: getAuthHeadersFormData(),
       body: formData,
@@ -77,7 +83,7 @@ const ApiService = {
   },
 
   deleteMenuItem: async (id_item: string) => { // Admin
-    const response = await fetch(`${API_BASE_URL}/admin/menu_items/${id_item}`, {
+    const response = await fetch(`${API_BASE_URL}/menu_items/admin/${id_item}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
@@ -85,7 +91,7 @@ const ApiService = {
   },
 
   updateMenuItemAvailability: async (id_item: string, disponivel: boolean) => { // Admin
-    const response = await fetch(`${API_BASE_URL}/admin/menu_items/${id_item}/disponibilidade`, {
+    const response = await fetch(`${API_BASE_URL}/menu_items/admin/${id_item}/availability`, {
       method: "PATCH",
       headers: getAuthHeaders(),
       body: JSON.stringify({ disponivel }),
@@ -102,19 +108,18 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  // Categories - /categorias
   getCategories: async () => {
     const response = await fetch(`${API_BASE_URL}categories`, { headers: getAuthHeaders() });
     return handleResponse(response);
   },
 
-  getCategoryById_Admin: async (id_categoria: string) => { // Admin
-    const response = await fetch(`${API_BASE_URL}/admin/categories/${id_categoria}`, { headers: getAuthHeaders() });
+  getCategoryById_Admin: async (id_categoria: string) => { 
+    const response = await fetch(`${API_BASE_URL}categories/${id_categoria}`, { headers: getAuthHeaders() });
     return handleResponse(response);
   },
 
-  createCategory: async (data: { nome: string; descricao?: string }) => { // Admin
-    const response = await fetch(`${API_BASE_URL}/admin/categories`, {
+  createCategory: async (data: { nome: string; descricao?: string }) => { 
+    const response = await fetch(`${API_BASE_URL}categories`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -122,8 +127,8 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  updateCategory: async (id_categoria: string, data: { nome: string; descricao?: string }) => { // Admin
-    const response = await fetch(`${API_BASE_URL}/admin/categories/${id_categoria}`, {
+  updateCategory: async (id_categoria: string, data: { nome: string; descricao?: string }) => { 
+    const response = await fetch(`${API_BASE_URL}categories/${id_categoria}`, {
       method: "PUT",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -131,16 +136,15 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  deleteCategory: async (id_categoria: string) => { // Admin
-    const response = await fetch(`${API_BASE_URL}/admin/categories/${id_categoria}`, {
+  deleteCategory: async (id_categoria: string) => { 
+    const response = await fetch(`${API_BASE_URL}categories/${id_categoria}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
-  // Orders - /pedidos
-  createOrder: async (orderData: any) => { // Client
+  createOrder: async (orderData: any) => { 
     const response = await fetch(`${API_BASE_URL}/orders`, {
       method: "POST",
       headers: getAuthHeaders(),
@@ -150,7 +154,7 @@ const ApiService = {
   },
 
   getClientOrders: async (filters?: { status?: string; data_inicio?: string; data_fim?: string }) => { // Client
-    let url = `${API_BASE_URL}/pedidos/me`;
+    let url = `${API_BASE_URL}/orders/me`;
     if (filters) {
       const params = new URLSearchParams();
       if (filters.status) params.append("status", filters.status);
@@ -163,21 +167,21 @@ const ApiService = {
   },
 
   getClientOrderById: async (id_pedido: string) => { // Client
-    const response = await fetch(`${API_BASE_URL}/pedidos/me/${id_pedido}`, {
+    const response = await fetch(`${API_BASE_URL}/orders/me/${id_pedido}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
   
-  getAdminOrderById: async (id_pedido: string) => { // Admin
-    const response = await fetch(`${API_BASE_URL}/admin/pedidos/${id_pedido}`, {
+  getAdminOrderById: async (id_pedido: string) => { 
+    const response = await fetch(`${API_BASE_URL}orders/admin${id_pedido}`, {
         headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
   getAdminOrders: async (filters?: { status?: string; data_inicio?: string; data_fim?: string; cliente_id?: string }) => { // Admin
-    let url = `${API_BASE_URL}/admin/pedidos`;
+    let url = `${API_BASE_URL}orders/admin`;
     if (filters) {
       const params = new URLSearchParams();
       if (filters.status) params.append("status", filters.status);
@@ -191,7 +195,7 @@ const ApiService = {
   },
 
   updateOrderStatus: async (id_pedido: string, status: string) => { // Admin
-    const response = await fetch(`${API_BASE_URL}/admin/pedidos/${id_pedido}/status`, {
+    const response = await fetch(`${API_BASE_URL}orders/admin/${id_pedido}/status`, {
       method: "PATCH",
       headers: getAuthHeaders(),
       body: JSON.stringify({ status }),
@@ -199,31 +203,30 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  requestOrderCancellation_Client: async (id_pedido: string) => { // Client
-    const response = await fetch(`${API_BASE_URL}/pedidos/me/${id_pedido}/solicitar-cancelamento`, {
+  requestOrderCancellation_Client: async (id_pedido: string) => { 
+    const response = await fetch(`${API_BASE_URL}/orders/me/${id_pedido}/solicitar-cancelamento`, {
       method: "PATCH",
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
-  approveOrderCancellation_Admin: async (id_pedido: string) => { // Admin
-    const response = await fetch(`${API_BASE_URL}/admin/pedidos/${id_pedido}/confirmar-cancelamento`, {
+  approveOrderCancellation_Admin: async (id_pedido: string) => { 
+    const response = await fetch(`${API_BASE_URL}orders/admin/${id_pedido}/confirmar-cancelamento`, {
       method: "PATCH",
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
-  rejectOrderCancellation_Admin: async (id_pedido: string) => { // Admin
-    const response = await fetch(`${API_BASE_URL}/admin/pedidos/${id_pedido}/recusar-cancelamento`, {
+  rejectOrderCancellation_Admin: async (id_pedido: string) => { 
+    const response = await fetch(`${API_BASE_URL}orders/admin/${id_pedido}/recusar-cancelamento`, {
       method: "PATCH",
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
-  // Promotions - /promocoes
   getPromotions: async (filters?: { ativa?: boolean }) => {
     let url = `${API_BASE_URL}/promocoes`;
     if (filters) {
@@ -266,15 +269,14 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  // User Profile (Client) - /clientes/me
-  getUserProfile: async () => { // Client
+  getUserProfile: async () => { 
     const response = await fetch(`${API_BASE_URL}/clientes/me`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
-  updateUserProfile: async (profileData: any) => { // Client
+  updateUserProfile: async (profileData: any) => { 
     const response = await fetch(`${API_BASE_URL}/clientes/me`, {
       method: "PUT",
       headers: getAuthHeaders(),
@@ -283,8 +285,8 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  addUserAddress: async (addressData: any) => { // Client
-    const response = await fetch(`${API_BASE_URL}/clientes/me/enderecos`, {
+  addUserAddress: async (addressData: any) => { 
+    const response = await fetch(`${API_BASE_URL}/clientes/me/addresses`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(addressData),
@@ -292,8 +294,8 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  updateUserAddress: async (id_endereco: string, addressData: any) => { // Client
-    const response = await fetch(`${API_BASE_URL}/clientes/me/enderecos/${id_endereco}`, {
+  updateUserAddress: async (id_endereco: string, addressData: any) => { 
+    const response = await fetch(`${API_BASE_URL}/clientes/me/addresses/${id_endereco}`, {
       method: "PUT",
       headers: getAuthHeaders(),
       body: JSON.stringify(addressData),
@@ -301,8 +303,8 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  deleteUserAddress: async (id_endereco: string) => { // Client
-    const response = await fetch(`${API_BASE_URL}/clientes/me/enderecos/${id_endereco}`, {
+  deleteUserAddress: async (id_endereco: string) => { 
+    const response = await fetch(`${API_BASE_URL}/clientes/me/addresses/${id_endereco}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
     });

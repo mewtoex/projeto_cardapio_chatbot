@@ -34,7 +34,6 @@ const ClientCheckoutPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // TODO: Fetch user addresses from API or state
   const [userAddresses, setUserAddresses] = useState<Address[]>([
     { id: "addr1", street: "Rua Principal", number: "123", district: "Centro", city: "Cidade Exemplo", state: "EX", cep: "12345-678", isPrimary: true },
     { id: "addr2", street: "Av. Secundária", number: "456", district: "Bairro Novo", city: "Cidade Exemplo", state: "EX", cep: "98765-432" },

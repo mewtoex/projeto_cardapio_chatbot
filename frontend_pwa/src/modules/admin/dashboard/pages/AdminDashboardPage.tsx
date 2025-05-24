@@ -1,7 +1,7 @@
 // src/modules/admin/dashboard/pages/AdminDashboardPage.tsx
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../../auth/contexts/AuthContext";
-import ApiService from "../../../shared/services/ApiService"; // Assuming you will fetch dashboard data
+import ApiService from "../../../shared/services/ApiService"; 
 import { Link } from "react-router-dom";
 
 // Dummy data types for dashboard, replace with actual types
@@ -24,18 +24,8 @@ const AdminDashboardPage: React.FC = () => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        // TODO: Replace with actual API call to fetch dashboard data
-        // const data = await ApiService.getAdminDashboardStats();
-        // Simulating data fetch
         await new Promise(resolve => setTimeout(resolve, 700));
-        const simulatedData: DashboardStats = {
-          newOrders: 5,
-          inPreparationOrders: 12,
-          outForDeliveryOrders: 8,
-          completedToday: 25,
-          averageSale: 75.50,
-        };
-        setStats(simulatedData);
+        setStats(null);
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Falha ao buscar dados do dashboard.");
