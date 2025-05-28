@@ -1,15 +1,18 @@
-// src/modules/admin/pedidos/pages/AdminOrderManagementPage.tsx
 import React, { useEffect, useState } from "react";
 import ApiService from "../../../shared/services/ApiService";
-import { Link, useSearchParams } from "react-router-dom"; // useSearchParams for filtering
+import { Link, useSearchParams } from "react-router-dom";
+import { Button } from '@mui/material';
+import ClientOrderItemPage from '../../../client/pages/ClientOrderItemPage';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import { styled } from '@mui/material/styles';
 
 interface Order {
   id: string;
-  clientName: string;
-  date: string;
+  user_name: string;
+  order_date: string;
   status: string;
-  total: number;
-  // Add other order details as needed
+  total_amount: number;
 }
 
 const AdminOrderManagementPage: React.FC = () => {
@@ -17,10 +20,18 @@ const AdminOrderManagementPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [open, setOpen] = useState(false);
+  const [orderId, setOrderId] = useState('0');
 
-  // Example: Read status filter from URL query params
   const statusFilter = searchParams.get("status");
-
+  const BootstrapDialog = styled(Dialog)(({ theme }) => ({
+    '& .MuiDialogContent-root': {
+      padding: theme.spacing(2),
+    },
+    '& .MuiDialogActions-root': {
+      padding: theme.spacing(1),
+    },
+  }));
   useEffect(() => {
     const fetchOrders = async () => {
       try {
@@ -39,8 +50,16 @@ const AdminOrderManagementPage: React.FC = () => {
     };
 
     fetchOrders();
-  }, [statusFilter]); // Refetch if statusFilter changes
+  }, [statusFilter]); //
+  const handleOpenItemsOrder = (date: string) => {
+    console.log(date)
+    setOrderId(date)
+    setOpen(true);
+  }
 
+  const handleClose = () => {
+    setOpen(false);
+  };
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
     // Optimistic update example (optional)
     // setOrders(prevOrders => 
@@ -83,7 +102,7 @@ const AdminOrderManagementPage: React.FC = () => {
       {orders.length === 0 ? (
         <p>Nenhum pedido encontrado{statusFilter ? ` com status "${statusFilter}"` : ""}.</p>
       ) : (
-        <table style={{width: "100%", marginTop: "20px"}}>
+        <table style={{ width: "100%", marginTop: "20px" }}>
           <thead>
             <tr>
               <th>ID</th>
@@ -98,34 +117,49 @@ const AdminOrderManagementPage: React.FC = () => {
             {orders.map((order) => (
               <tr key={order.id}>
                 <td>{order.id}</td>
-                <td>{order.clientName}</td>
-                <td>{new Date(order.date).toLocaleString()}</td>
+                <td>{order.user_name}</td>
+                <td>{new Date(order.order_date).toLocaleString()}</td>
                 <td>{order.status}</td>
-                <td>R$ {order.total.toFixed(2)}</td>
+                <td>R$ {order.total_amount.toFixed(2)}</td>
                 <td>
-                  {/* TODO: Link to order details page for admin */}
-                  {/* <Link to={`/admin/orders/${order.id}`}>Ver Detalhes</Link> */}
-                  <select 
-                    value={order.status} 
+                  <select
+                    value={order.status}
                     onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
-                    style={{marginRight: "10px"}}
+                    style={{ marginRight: "10px" }}
                   >
                     <option value="Novo">Novo</option>
-                    <option value="Recebido">Recebido</option> {/* Added as per initial request */}
+                    <option value="Recebido">Recebido</option>
                     <option value="Em Preparo">Em Preparo</option>
                     <option value="Saiu para Entrega">Saiu para Entrega</option>
                     <option value="Concluído">Concluído</option>
                     <option value="Cancelado">Cancelado</option>
-                    {/* Add other relevant statuses */}
                   </select>
-                  {/* Add other actions like print, view details, etc. */}
+                  <Button
+                    variant="contained"
+                    onClick={() => handleOpenItemsOrder(order.id)}
+                  >
+                    Ver Detalhes
+                  </Button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
-      <br />
+      <br /> <>
+        <BootstrapDialog
+          onClose={handleClose}
+          aria-labelledby="customized-dialog-title"
+          open={open}
+        >
+          <DialogContent dividers>
+            <ClientOrderItemPage
+              order_id={orderId}
+            />
+          </DialogContent>
+        </BootstrapDialog>
+
+      </>
       <Link to="/admin/dashboard">Voltar ao Dashboard</Link>
     </div>
   );

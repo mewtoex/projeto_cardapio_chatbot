@@ -19,69 +19,94 @@ interface Address {
   cep: string;
   isPrimary?: boolean;
 }
+interface CartItemDetails {
+  item_cardapio_id: string; // ID do item no cardápio (vem da API)
+  nome: string; // Vem da API
+  quantidade: number; // Vem do localStorage
+  preco_unitario_momento: number; // Vem da API
+  observacoes_item?: string; // Pode ser adicionado futuramente
+}
 
 const ClientCheckoutPage: React.FC = () => {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const notification = useNotification();
-  const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
+  const [userAddresses, setUserAddresses] = useState<Address[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
   const [cashAmount, setCashAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [cartItems, setCartItems] = useState<[] | null>([]);
+  const [cartItems, setCartItems] = useState<CartItemDetails[]>([]);
   const [loading, setLoading] = useState(false);
-
-  const [userAddresses, setUserAddresses] = useState<Address[]>([]);
-  let dummySubtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  let deliveryFee = 5.0;
-  let dummyTotal = dummySubtotal + deliveryFee;
-  
-  useEffect(() => {
-    const primaryAddress = userAddresses.find(addr => addr.isPrimary);
-    if (primaryAddress) {
-      setSelectedAddress(primaryAddress.id);
-    }
-  }, [userAddresses]);
+  const [loadingCart, setLoadingCart] = useState(true);
+  const [loadingAddresses, setLoadingAddresses] = useState(true);
+  const subtotal = cartItems.reduce((sum, item) => sum + item.preco_unitario_momento * item.quantidade, 0);
+  const deliveryFee = 5.0;
+  const total = subtotal + deliveryFee;
 
   useEffect(() => {
-    const fetchData = async () => {
+    const loadCheckoutData = async () => {
+      setLoadingAddresses(true);
+      setLoadingCart(true);
+      setError(null);
       try {
-        setLoading(true);
-
-        const primaryAddress = userAddresses.find(addr => addr.isPrimary);
-        if (primaryAddress) {
-          setSelectedAddress(primaryAddress.id);
+        // Buscar endereços
+        const profileData = await ApiService.getUserAddress();
+        if (profileData) {
+          setUserAddresses(profileData);
+          const primaryAddress = profileData.find((addr: Address) => addr.principal);
+          if (primaryAddress) {
+            setSelectedAddressId(primaryAddress.id);
+          }
+        } else {
+          setUserAddresses([]);
         }
-        const addressesData = await ApiService.getUserAddress();
-        setUserAddresses(addressesData);
-        setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Falha ao buscar endereços.');
-        notification.showError('Erro ao carregar o cardápio');
+        setError("Falha ao buscar endereços. " + (err instanceof Error ? err.message : String(err)));
+        notification.showError("Falha ao buscar endereços.");
       } finally {
-        setLoading(false);
+        setLoadingAddresses(false);
+      }
+
+      try {
+        // Buscar itens do carrinho (localStorage + API)
+        const savedCart = localStorage.getItem("cartItems");
+        const cartData = savedCart ? JSON.parse(savedCart) : {};
+        const itemIds = Object.keys(cartData);
+        if (itemIds.length === 0) {
+          setCartItems([]);
+          setLoadingCart(false);
+          return;
+        }
+        const allMenuItems = await ApiService.getMenuItems(); // Assumindo que isso retorna todos os itens
+
+        const detailedCartItems: CartItemDetails[] = itemIds.map(id => {
+          const menuItem = allMenuItems.find((item: any) => String(item.id) === id);
+          if (!menuItem) return null; 
+          return {
+            item_cardapio_id: String(menuItem.id),
+            nome: menuItem.name,
+            quantidade: cartData[id],
+            preco_unitario_momento: menuItem.price, 
+          };
+        }).filter(item => item !== null) as CartItemDetails[];
+
+        setCartItems(detailedCartItems);
+
+      } catch (err) {
+        setError("Falha ao carregar itens do carrinho. " + (err instanceof Error ? err.message : String(err)));
+        notification.showError("Falha ao carregar itens do carrinho.");
+        setCartItems([]); // Limpa o carrinho em caso de erro
+      } finally {
+        setLoadingCart(false);
       }
     };
-    fetchData();
-    const savedCart = localStorage.getItem('cartItems');
-    if (savedCart) {
-      try {
-        setCartItems(JSON.parse(savedCart));
-      } catch (e) {
-        console.error('Erro ao recuperar carrinho:', e);
-      }
-    }
-    dummySubtotal = JSON.parse(savedCart).reduce((sum, item) => sum + item.price * item.quantity, 0);
-    deliveryFee = 5.0;
-    dummyTotal = dummySubtotal + deliveryFee;
-  }, [notification]);
 
-
-
-
+    loadCheckoutData();
+  }, [notification]); // Adicionado notification como dependência
 
   const handleConfirmOrder = async () => {
-    if (!selectedAddress) {
+    if (!selectedAddressId) {
       setError("Por favor, selecione um endereço de entrega.");
       return;
     }
@@ -89,32 +114,46 @@ const ClientCheckoutPage: React.FC = () => {
       setError("Por favor, selecione uma forma de pagamento.");
       return;
     }
-    if (paymentMethod === "cash" && !cashAmount && dummyTotal > 0) {
+    if (cartItems.length === 0) {
+      setError("Seu carrinho está vazio.");
+      return;
+    }
+
+    let valorPagoDinheiro: number | undefined = undefined;
+    if (paymentMethod === "DINHEIRO") {
       const parsedCashAmount = parseFloat(cashAmount);
-      if (isNaN(parsedCashAmount) || parsedCashAmount < dummyTotal) {
+      if (isNaN(parsedCashAmount) || parsedCashAmount < total) {
         setError("Para pagamento em dinheiro, informe um valor igual ou superior ao total do pedido para o troco.");
         return;
       }
+      valorPagoDinheiro = parsedCashAmount;
     }
 
     setError(null);
     setLoading(true);
-
+    console.log(cartItems)
     const orderData = {
-      userId: user?.email,
-      items: dummyCartItems,
-      totalAmount: dummyTotal,
-      addressId: selectedAddress,
-      paymentMethod: paymentMethod,
-      cashProvided: paymentMethod === "cash" ? parseFloat(cashAmount) : undefined,
+      address_id: selectedAddressId,
+      payment_method: paymentMethod,
+      items: cartItems.map(item => ({
+        menu_item_id: item.item_cardapio_id,
+        quantity: item.quantidade,
+        price_at_order_time: item.preco_unitario_momento || 0,
+      })),
+      //observacoes_cliente: "",
+      valor_pago_dinheiro: valorPagoDinheiro,
     };
 
     try {
       const response = await ApiService.createOrder(orderData);
-      alert(`Pedido #${response.orderId} confirmado com sucesso!`);
-      navigate("/client/orders");
+      notification.showSuccess(`Pedido #${response.numero_pedido || response.id} confirmado!`);
+      localStorage.removeItem("cartItems");
+      setCartItems([]);
+      navigate(`/client/orders/${response.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao confirmar o pedido.");
+      notification.showError("Falha ao confirmar o pedido.");
+      setLoading(false);
     }
     setLoading(false);
   };
@@ -127,16 +166,27 @@ const ClientCheckoutPage: React.FC = () => {
 
       <div>
         <h2>Endereço de Entrega</h2>
-        {userAddresses.length > 0 ? (
+        {loadingAddresses ? (
+          <p>Carregando endereços...</p>
+        ) : userAddresses.length > 0 ? (
           userAddresses.map(addr => (
-            <div key={addr.id} style={{ border: selectedAddress === addr.id ? "2px solid blue" : "1px solid #ccc", padding: "10px", margin: "5px", cursor: "pointer" }} onClick={() => setSelectedAddress(addr.id)}>
-              <p>{addr.street}, {addr.number} - {addr.district}</p>
+            <div
+              key={addr.id}
+              style={{
+                border: selectedAddressId === addr.id ? "2px solid blue" : "1px solid #ccc",
+                padding: "10px",
+                margin: "5px",
+                cursor: "pointer"
+              }}
+              onClick={() => setSelectedAddressId(addr.id)}
+            >
+              <p>{addr.street}, {addr.number}{addr.complement ? ` - ${addr.complement}` : ""} - {addr.district}</p>
               <p>{addr.city} - {addr.state}, CEP: {addr.cep}</p>
               {addr.isPrimary && <strong>(Principal)</strong>}
             </div>
           ))
         ) : (
-          <p>Nenhum endereço cadastrado. <Link to="/client/profile/addresses">Adicionar Endereço</Link></p>
+          <p>Nenhum endereço cadastrado. <Link to="/client/profile">Adicionar Endereço no Perfil</Link></p>
         )}
       </div>
 
@@ -144,22 +194,35 @@ const ClientCheckoutPage: React.FC = () => {
         <h2>Forma de Pagamento</h2>
         <div>
           <label>
-            <input type="radio" name="paymentMethod" value="card" onChange={(e) => setPaymentMethod(e.target.value)} checked={paymentMethod === "card"} /> Cartão de Crédito/Débito (Simulado)
+            <input type="radio" name="paymentMethod" value="CARTAO_CREDITO" onChange={(e) => setPaymentMethod(e.target.value)} checked={paymentMethod === "CARTAO_CREDITO"} /> Cartão de Crédito
           </label>
         </div>
         <div>
           <label>
-            <input type="radio" name="paymentMethod" value="pix" onChange={(e) => setPaymentMethod(e.target.value)} checked={paymentMethod === "pix"} /> PIX (Simulado)
+            <input type="radio" name="paymentMethod" value="CARTAO_DEBITO" onChange={(e) => setPaymentMethod(e.target.value)} checked={paymentMethod === "CARTAO_DEBITO"} /> Cartão de Débito
           </label>
         </div>
         <div>
           <label>
-            <input type="radio" name="paymentMethod" value="cash" onChange={(e) => setPaymentMethod(e.target.value)} checked={paymentMethod === "cash"} /> Dinheiro
+            <input type="radio" name="paymentMethod" value="PIX" onChange={(e) => setPaymentMethod(e.target.value)} checked={paymentMethod === "PIX"} /> PIX
           </label>
-          {paymentMethod === "cash" && (
+        </div>
+        <div>
+          <label>
+            <input type="radio" name="paymentMethod" value="DINHEIRO" onChange={(e) => setPaymentMethod(e.target.value)} checked={paymentMethod === "DINHEIRO"} /> Dinheiro
+          </label>
+          {paymentMethod === "DINHEIRO" && (
             <div style={{ marginLeft: "20px" }}>
               <label htmlFor="cashAmount">Troco para: R$</label>
-              <input type="number" id="cashAmount" value={cashAmount} onChange={(e) => setCashAmount(e.target.value)} placeholder="Ex: 50.00" min={dummyTotal.toString()} />
+              <input
+                type="number"
+                id="cashAmount"
+                value={cashAmount}
+                onChange={(e) => setCashAmount(e.target.value)}
+                placeholder={`Ex: ${total.toFixed(2)} ou mais`}
+                min={total.toString()}
+                step="0.01"
+              />
             </div>
           )}
         </div>
@@ -167,15 +230,21 @@ const ClientCheckoutPage: React.FC = () => {
 
       <div>
         <h2>Resumo do Pedido</h2>
-        {dummyCartItems.map(item => (
-          <p key={item.id}>{item.name} (x{item.quantity}) - R$ {(item.price * item.quantity).toFixed(2)}</p>
-        ))}
-        <p>Subtotal: R$ {dummySubtotal.toFixed(2)}</p>
+        {loadingCart ? (
+          <p>Carregando itens do carrinho...</p>
+        ) : cartItems.length > 0 ? (
+          cartItems.map(item => (
+            <p key={item.item_cardapio_id}>{item.nome} (x{item.quantidade}) - R$ {(item.preco_unitario_momento * item.quantidade).toFixed(2)}</p>
+          ))
+        ) : (
+          <p>Seu carrinho está vazio.</p>
+        )}
+        <p>Subtotal: R$ {subtotal.toFixed(2)}</p>
         <p>Taxa de Entrega: R$ {deliveryFee.toFixed(2)}</p>
-        <p><strong>Total a Pagar: R$ {dummyTotal.toFixed(2)}</strong></p>
+        <p><strong>Total a Pagar: R$ {total.toFixed(2)}</strong></p>
       </div>
 
-      <button onClick={handleConfirmOrder} disabled={loading || !selectedAddress || !paymentMethod}>
+      <button onClick={handleConfirmOrder} disabled={loading || loadingAddresses || loadingCart || !selectedAddressId || !paymentMethod || cartItems.length === 0}>
         {loading ? "Confirmando..." : "Confirmar Pedido"}
       </button>
       <br />

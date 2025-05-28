@@ -7,7 +7,6 @@ interface CartItemProps {
     name: string;
     quantity: number;
     price: number;
-    // Add other item details as needed
   };
   onUpdateQuantity: (itemId: number, newQuantity: number) => void;
   onRemoveItem: (itemId: number) => void;

@@ -29,7 +29,7 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
   const notification = useNotification();
   
   // Simulação de contagem de itens no carrinho - será substituída por estado real
-  const cartItemsCount = 3;
+  const cartItemsCount = 0;
   
   const isAdmin = user?.role === 'admin';
   const title = isAdmin ? 'Painel Administrativo' : 'Cardápio Online';

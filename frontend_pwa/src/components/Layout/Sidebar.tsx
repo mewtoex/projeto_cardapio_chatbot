@@ -1,18 +1,18 @@
 // src/components/Layout/Sidebar.tsx
 import React from 'react';
-import { 
-  Drawer, 
-  List, 
-  ListItem, 
-  ListItemIcon, 
-  ListItemText, 
-  Divider, 
+import {
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
   Badge,
   Box,
   Typography,
   Avatar
 } from '@mui/material';
-import { 
+import {
   Dashboard as DashboardIcon,
   Restaurant as RestaurantIcon,
   ShoppingCart as ShoppingCartIcon,
@@ -32,13 +32,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, cartItemsCount 
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
-
+  const cart = () => {
+    return <>
+      <Badge badgeContent={4} color="error">
+          <ShoppingCartIcon />
+      </Badge>
+    </>
+  }
   const isAdmin = user?.role === 'admin';
-  
+
   const clientMenuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/client/dashboard' },
     { text: 'Cardápio', icon: <RestaurantIcon />, path: '/client/menu' },
-    { text: 'Carrinho', icon: <ShoppingCartIcon />, path: '/client/cart', badge: cartItemsCount },
+    { text: 'Carrinho', icon: cart(), path: '/client/cart', badge: cartItemsCount },
     { text: 'Meus Pedidos', icon: <HistoryIcon />, path: '/client/orders' },
   ];
 
@@ -77,17 +83,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, cartItemsCount 
             </Typography>
           </Box>
         </Box>
-        
+
         <Divider sx={{ mb: 2 }} />
-        
+
         <List>
           {menuItems.map((item) => (
-            <ListItem 
-              button 
+            <ListItem
+              button
               key={item.text}
               onClick={() => handleNavigate(item.path)}
               selected={location.pathname === item.path}
-              sx={{ 
+              sx={{
                 borderRadius: 1,
                 mb: 0.5,
                 '&.Mui-selected': {
@@ -111,9 +117,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, cartItemsCount 
             </ListItem>
           ))}
         </List>
-        
+
         <Divider sx={{ my: 2 }} />
-        
+
         <List>
           <ListItem button onClick={handleLogout}>
             <ListItemIcon>

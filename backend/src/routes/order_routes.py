@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from sqlalchemy import desc # For ordering
+from sqlalchemy import desc, func, cast, Date 
+from datetime import datetime, date, timedelta 
 
 from src.models.user import User, db
 from src.models.order import Order
@@ -156,17 +157,13 @@ def update_order_status_admin(order_id):
     order = Order.query.get(order_id)
     if not order:
         return jsonify({"message": "Order not found"}), 404
-
     data = request.get_json()
     new_status = data.get("status")
+    print(new_status)
+
     if not new_status:
         return jsonify({"message": "New status is required"}), 400
     
-    # TODO: Validate new_status against a list of allowed statuses
-    allowed_statuses = ["Recebido", "Em preparo", "Saiu para entrega", "Concluído", "Cancelado"]
-    if new_status not in allowed_statuses:
-        return jsonify({"message": f"Invalid status: {new_status}. Allowed: {allowed_statuses}"}), 400
-
     order.status = new_status
     try:
         db.session.commit()
@@ -214,3 +211,51 @@ def reject_order_cancellation_admin(order_id):
         db.session.rollback()
         return jsonify({"message": "Could not reject cancellation", "error": str(e)}), 500
 
+@order_bp.route("order_items/<int:order_id>", methods=["GET"])
+@jwt_required()
+def get_order_Items(order_id):
+    order = OrderItem.query.filter_by(order_id=order_id)
+    if not order:
+        return jsonify({"message": "Order not found"}), 404
+    query = OrderItem.query
+    orders = OrderItem.query.filter_by(order_id=order_id).all()
+    print(order)
+    return (jsonify([order.to_dict() for order in orders]))
+
+
+@order_bp.route("resume", methods=["GET"])
+@jwt_required()
+@admin_required
+def get_resume_orders_admin():
+    status_filter = request.args.get("status")
+    query = Order.query
+    date_filter_str = request.args.get("order_date")
+    if date_filter_str:
+        try:
+            filter_date = datetime.strptime(date_filter_str, "%Y-%m-%d").date()
+        except ValueError:
+            return jsonify({"error": "Formato de data inválido. Use YYYY-MM-DD."}), 400
+    else:
+        filter_date = date.today()
+    if status_filter:
+        query = query.filter(Order.status == status_filter)
+    
+    query = query.filter(cast(Order.order_date, Date) == filter_date)
+    orders = query.order_by(desc(Order.order_date)).all()
+    status_counts = db.session.query(Order.status, func.count(Order.id)).\
+        filter(cast(Order.order_date, Date) == filter_date).\
+        group_by(Order.status).\
+        all()
+    
+    status_counts_dict = {status: count for status, count in status_counts}
+    daily_total_amount = sum(order.total_amount for order in orders)
+
+    response_data = {
+        "status_counts": status_counts_dict,
+        "filter_date": filter_date.isoformat(), 
+        "daily_total_amount": round(daily_total_amount, 2), 
+       
+    }
+    print(response_data)
+
+    return jsonify(response_data), 200 
