@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import AuthService from '../../shared/services/AuthService';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { TextField, Button, Box, Typography, Checkbox, FormControlLabel, Grid } from '@mui/material';
+import { TextField, Button, Box, Typography, Checkbox, FormControlLabel, Grid, Link } from '@mui/material';
 import { useNotification } from '../../../contexts/NotificationContext';
 
 interface ClientRegisterFormProps {

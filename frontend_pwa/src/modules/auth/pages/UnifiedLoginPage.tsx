@@ -13,15 +13,15 @@ const UnifiedLoginPage: React.FC = () => {
   };
 
   return (
-    <Box 
-      sx={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        minHeight: '100vh', 
-        bgcolor: 'background.default', 
-        p: 3 
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        bgcolor: 'background.default',
+        p: 3
       }}
     >
       <Paper elevation={3} sx={{ p: 4, maxWidth: 400, width: '100%', borderRadius: 2 }}>
@@ -36,15 +36,11 @@ const UnifiedLoginPage: React.FC = () => {
 
         {tabValue === 0 && <ClientLoginForm />}
         {tabValue === 1 && <AdminLoginForm />}
-        
+
         <Box sx={{ mt: 3, textAlign: 'center' }}>
           <Typography variant="body2">
             Ainda não tem uma conta de cliente? <Link to="/register">Cadastre-se aqui</Link>
           </Typography>
-          {/* Se houver recuperação de senha, adicione o link aqui */}
-          {/* <Typography variant="body2" sx={{ mt: 1 }}>
-            <Link to="/forgot-password">Esqueceu a senha?</Link>
-          </Typography> */}
         </Box>
       </Paper>
     </Box>

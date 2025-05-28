@@ -32,7 +32,6 @@ import {
 import { useAuth } from "../../auth/contexts/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
 import { useNotification } from "../../../contexts/NotificationContext";
-// import ApiService from "../../../modules/shared/services/ApiService"; // Não necessário para esta página, o carrinho é local
 
 interface AddonOption {
   id: string;
@@ -112,6 +111,7 @@ const ClientCartPage: React.FC = () => {
 
     setCartItems(prevItems => {
       const updatedItems = prevItems.map((item) => {
+        // Recria a chave do item para garantir que a comparação seja precisa
         const addonsHash = item.selectedAddons?.map(a => a.id).sort().join(',') || '';
         const observationsHash = item.observations ? item.observations.slice(0, 50) : '';
         const currentItemKey = `${item.id}-${addonsHash}-${observationsHash}`;
@@ -122,6 +122,7 @@ const ClientCartPage: React.FC = () => {
         return item;
       });
 
+      // Atualiza o localStorage com base na estrutura de objeto original
       const savedCart = localStorage.getItem('cartItems');
       if (savedCart) {
         try {
@@ -272,8 +273,8 @@ const ClientCartPage: React.FC = () => {
                     const itemKey = `${item.id}-${addonsHash}-${observationsHash}`;
                     return (
                       <React.Fragment key={itemKey}>
-                        <ListItem alignItems="flex-start">
-                          <ListItemAvatar>
+                        <ListItem alignItems="flex-start" sx={{ py: 1.5 }}> {/* Ajuste do padding vertical */}
+                          <ListItemAvatar sx={{ mr: 2 }}> {/* Adicionado margin-right */}
                             {item.image_url ? (
                               <Avatar
                                 alt={item.name}
@@ -286,14 +287,16 @@ const ClientCartPage: React.FC = () => {
                                 variant="rounded"
                                 sx={{ width: 70, height: 70, bgcolor: 'grey.300' }}
                               >
-                                {item.name.charAt(0)}
+                                <Typography variant="caption" color="text.secondary">
+                                  {item.name.charAt(0)}
+                                </Typography>
                               </Avatar>
                             )}
                           </ListItemAvatar>
                           <ListItemText
                             primary={
                               <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <Typography variant="subtitle1">{item.name}</Typography>
+                                <Typography variant="subtitle1" fontWeight="bold">{item.name}</Typography> {/* Texto mais negrito */}
                                 <Chip
                                   label={item.category_name}
                                   size="small"
@@ -303,11 +306,12 @@ const ClientCartPage: React.FC = () => {
                               </Box>
                             }
                             secondary={
-                              <Box>
+                              <Box sx={{ mt: 0.5 }}> {/* Ajuste de margem superior */}
                                 <Typography
                                   component="span"
                                   variant="body2"
                                   color="text.primary"
+                                  display="block" // Garante que ocupe a linha inteira
                                 >
                                   R$ {item.price.toFixed(2)} cada (base)
                                 </Typography>
@@ -328,15 +332,15 @@ const ClientCartPage: React.FC = () => {
                                 )}
                               </Box>
                             }
-                            sx={{ ml: 2 }}
+                            sx={{ ml: 0 }} /* Removido ml:2 que existia antes para aproximar o texto da imagem */
                           />
                           <ListItemSecondaryAction>
                             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                              <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}> {/* Valor total do item em negrito */}
                                 R$ {(item.totalItemPrice * item.quantity).toFixed(2)}
                               </Typography>
 
-                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', marginTop: 10 }}>
                                 <IconButton
                                   edge="end"
                                   aria-label="diminuir"
@@ -386,7 +390,7 @@ const ClientCartPage: React.FC = () => {
                             </Box>
                           </ListItemSecondaryAction>
                         </ListItem>
-                        <Divider variant="inset" component="li" />
+                        <Divider variant="inset" component="li" sx={{ my: 1,marginTop: 5,marginBottom: 5 }} /> 
                       </React.Fragment>
                     );
                   })}

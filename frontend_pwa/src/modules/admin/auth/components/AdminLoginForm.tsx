@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import AuthService from "../../../shared/services/AuthService";
 import { useAuth } from "../../../auth/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { TextField, Button, Box, Typography, Paper } from '@mui/material'; // Importar Paper para o estilo
 
 const AdminLoginForm: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -18,9 +19,8 @@ const AdminLoginForm: React.FC = () => {
     setLoading(true);
     try {
       const response = await AuthService.adminLogin(email, password);
-      login(response.user, response.token);
-      // TODO: Redirect to admin dashboard
-      navigate("/admin/dashboard"); // Example redirect
+      login(response.user, response.access_token); // Corrigido para access_token, como em AuthService
+      navigate("/admin/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ocorreu um erro no login.");
     }
@@ -28,36 +28,57 @@ const AdminLoginForm: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      <div>
-        <label htmlFor="admin-email">Email:</label>
-        <input
-          type="email"
-          id="admin-email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          disabled={loading}
-        />
-      </div>
-      <div>
-        <label htmlFor="admin-password">Senha:</label>
-        <input
-          type="password"
-          id="admin-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          disabled={loading}
-        />
-      </div>
-      <button type="submit" disabled={loading}>
-        {loading ? "Entrando..." : "Entrar"}
-      </button>
-    </form>
+    <Box 
+      component="form" 
+      onSubmit={handleSubmit} 
+      sx={{ 
+        mt: 1, 
+        p: 3, // Adiciona padding dentro do formulário
+        borderRadius: 2, // Borda arredondada
+      }}
+    >
+      {error && (
+        <Typography color="error" variant="body2" sx={{ mb: 2 }}>
+          {error}
+        </Typography>
+      )}
+      <TextField
+        margin="normal"
+        required
+        fullWidth
+        id="admin-email"
+        label="Email do Administrador"
+        name="email"
+        autoComplete="email"
+        autoFocus
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        disabled={loading}
+      />
+      <TextField
+        margin="normal"
+        required
+        fullWidth
+        name="password"
+        label="Senha do Administrador"
+        type="password"
+        id="admin-password"
+        autoComplete="current-password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        disabled={loading}
+      />
+      <Button
+        type="submit"
+        fullWidth
+        variant="contained"
+        sx={{ mt: 3, mb: 2 }}
+        disabled={loading}
+      >
+        {loading ? "Entrando..." : "Entrar como Administrador"}
+      </Button>
+    </Box>
   );
 };
 
 export default AdminLoginForm;
-

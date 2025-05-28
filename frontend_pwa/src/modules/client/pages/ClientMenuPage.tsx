@@ -1,5 +1,5 @@
-// src/modules/client/pages/ClientMenuPage.tsx
-import React, { useEffect, useState } from 'react';
+// frontend_pwa/src/modules/client/pages/ClientMenuPage.tsx
+import React, { useEffect, useState, useRef } from 'react'; // Adicionado useRef
 import {
   Typography,
   Box,
@@ -105,8 +105,21 @@ const ClientMenuPage: React.FC = () => {
   const [selectedAddons, setSelectedAddons] = useState<{ [categoryId: string]: AddonOption[] }>({});
   const [currentItemQuantity, setCurrentItemQuantity] = useState(1);
 
+  // Inicializa cartItems lendo do localStorage na primeira vez
+  const [cartItems, setCartItems] = useState<{[key: string]: CartItemData}>(() => {
+    try {
+      const savedCart = localStorage.getItem('cartItems');
+      return savedCart ? JSON.parse(savedCart) : {};
+    } catch (e) {
+      console.error('Erro ao inicializar carrinho do localStorage:', e);
+      return {};
+    }
+  });
 
-  const [cartItems, setCartItems] = useState<{[key: string]: CartItemData}>({});
+  // Use um ref para controlar se o carregamento inicial do localStorage já foi feito
+  // Isso é importante para evitar que o useEffect de salvar sobrescreva o carrinho antes que ele seja totalmente carregado
+  const isInitialMount = useRef(true);
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -127,7 +140,6 @@ const ClientMenuPage: React.FC = () => {
         const itemsWithFullDetails = await Promise.all(itemsWithAddonsPromises);
         setMenuItems(itemsWithFullDetails);
 
-
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Falha ao buscar cardápio.');
@@ -138,22 +150,19 @@ const ClientMenuPage: React.FC = () => {
     };
 
     fetchData();
-
-    const savedCart = localStorage.getItem('cartItems');
-    if (savedCart) {
-      try {
-        setCartItems(JSON.parse(savedCart));
-      } catch (e) {
-        console.error('Erro ao recuperar carrinho:', e);
-        localStorage.removeItem('cartItems');
-        setCartItems({});
-      }
-    }
   }, [notification]);
 
+  // Este useEffect agora é responsável APENAS por salvar cartItems no localStorage
   useEffect(() => {
+    // Evita que o save ocorra na montagem inicial, quando cartItems ainda está sendo carregado
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    // Salva no localStorage sempre que cartItems é alterado, após a montagem inicial
     localStorage.setItem('cartItems', JSON.stringify(cartItems));
-  }, [cartItems]);
+  }, [cartItems]); // Dependência: cartItems
+
 
   const filteredItems = selectedCategoryId
     ? menuItems.filter(item => item.category_id === selectedCategoryId)
@@ -169,6 +178,7 @@ const ClientMenuPage: React.FC = () => {
     setSelectedAddons({});
     setCurrentItemQuantity(1);
     
+    // Ao abrir para edição, se o item já estiver no carrinho, preencher os campos
     const existingCartItemsArray = Object.values(cartItems);
     const existingCartItem = existingCartItemsArray.find(cartItem => cartItem.id === item.id);
     if (existingCartItem) {
@@ -285,15 +295,18 @@ const ClientMenuPage: React.FC = () => {
       totalItemPrice: totalItemPrice
     };
 
+    // Cria uma chave única para o item no carrinho, considerando adicionais e observações
     const addonsHash = itemToAdd.selectedAddons?.map(a => a.id).sort().join(',') || '';
-    const observationsHash = itemToAdd.observations ? itemToAdd.observations.slice(0, 50) : '';
+    const observationsHash = itemToAdd.observations ? itemToAdd.observations.slice(0, 50) : ''; // Limita o tamanho para o hash
     const itemKey = `${itemToAdd.id}-${addonsHash}-${observationsHash}`;
 
     setCartItems(prev => {
       const newCart = { ...prev };
       if (newCart[itemKey]) {
+        // Se o item (com os mesmos adicionais e observações) já existe, apenas atualiza a quantidade
         newCart[itemKey].quantity += itemToAdd.quantity;
       } else {
+        // Senão, adiciona como um novo item
         newCart[itemKey] = itemToAdd;
       }
       return newCart;
