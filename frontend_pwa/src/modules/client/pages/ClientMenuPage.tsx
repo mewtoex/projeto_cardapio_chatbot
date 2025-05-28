@@ -34,7 +34,7 @@ import {
   ShoppingCart as CartIcon,
   Add as AddIcon,
   Close as CloseIcon,
-  Remove as RemoveIcon // Importação do RemoveIcon corrigida
+  Remove as RemoveIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../auth/contexts/AuthContext';
 import ApiService from '../../shared/services/ApiService';
@@ -168,18 +168,18 @@ const ClientMenuPage: React.FC = () => {
     setItemObservations('');
     setSelectedAddons({});
     setCurrentItemQuantity(1);
-    // Preencher addons selecionados se o item já estiver no carrinho
-    const existingCartItem = Object.values(cartItems).find(
-      (cartItem) => cartItem.id === item.id
-    );
-    if (existingCartItem && existingCartItem.selectedAddons) {
+    
+    const existingCartItemsArray = Object.values(cartItems);
+    const existingCartItem = existingCartItemsArray.find(cartItem => cartItem.id === item.id);
+    if (existingCartItem) {
       const initialAddons: { [categoryId: string]: AddonOption[] } = {};
-      existingCartItem.selectedAddons.forEach(addon => {
-        if (item.addon_categories?.some(cat => cat.id === addon.addon_category_id)) {
-            if (!initialAddons[addon.addon_category_id]) {
-                initialAddons[addon.addon_category_id] = [];
-            }
-            initialAddons[addon.addon_category_id].push(addon);
+      existingCartItem.selectedAddons?.forEach(addon => {
+        const foundAddonCategory = item.addon_categories?.find(cat => cat.id === addon.addon_category_id);
+        if (foundAddonCategory) {
+          if (!initialAddons[addon.addon_category_id]) {
+            initialAddons[addon.addon_category_id] = [];
+          }
+          initialAddons[addon.addon_category_id].push(addon);
         }
       });
       setSelectedAddons(initialAddons);
@@ -259,7 +259,6 @@ const ClientMenuPage: React.FC = () => {
           return;
         }
       }
-      // Validação para max_selections
       const currentSelectionsCount = selectedAddons[cat.id]?.length || 0;
       if (cat.max_selections > 0 && currentSelectionsCount > cat.max_selections) {
           notification.showError(`A categoria "${cat.name}" permite no máximo ${cat.max_selections} seleção(ões). Você selecionou ${currentSelectionsCount}.`);
@@ -513,7 +512,7 @@ const ClientMenuPage: React.FC = () => {
                   {selectedMenuItem.addon_categories.map(cat => (
                     <FormControl component="fieldset" fullWidth key={cat.id} sx={{ mb: 2 }}>
                       <FormLabel component="legend">
-                        {cat.name} ({cat.min_selections} - {cat.max_selections} seleção(ões) {cat.is_required ? '(Obrigatório)' : '(Opcional)'})
+                        {cat.name} ({selectedAddons[cat.id]?.length || 0} - {cat.max_selections} seleção(ões) {cat.is_required ? '(Obrigatório)' : '(Opcional)'})
                       </FormLabel>
                       {cat.max_selections === 1 ? (
                         <RadioGroup
@@ -580,7 +579,7 @@ const ClientMenuPage: React.FC = () => {
           </Button>
           <Button
             variant="contained"
-            onClick={handleAddToCartConfirm} // Nome da função corrigido no onClick
+            onClick={handleAddToCartConfirm}
             startIcon={<AddIcon />}
           >
             Adicionar ao Carrinho

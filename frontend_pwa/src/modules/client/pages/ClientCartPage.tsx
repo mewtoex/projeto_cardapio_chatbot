@@ -69,7 +69,7 @@ const ClientCartPage: React.FC = () => {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   useEffect(() => {
-    const loadCartItems = async () => {
+    const loadCartItems = () => {
       try {
         setLoading(true);
 
