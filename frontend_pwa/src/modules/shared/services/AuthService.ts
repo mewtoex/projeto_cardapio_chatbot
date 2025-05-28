@@ -1,6 +1,5 @@
 // src/modules/shared/services/AuthService.ts
 
-// Serviço de autenticação para chamadas à API
 import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:5000/api';
@@ -25,7 +24,7 @@ const AuthService = {
     }
   },
 
-  clientRegister: async (userData) => {
+   clientRegister: async (userData) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/register`, userData);
       // Se o registro já retorna user e access_token, pode-se usar diretamente
@@ -97,7 +96,28 @@ const AuthService = {
   getAuthHeaders: () => {
     const token = localStorage.getItem('authToken'); // Usar 'authToken'
     return token ? { 'Authorization': `Bearer ${token}` } : {};
+  },
+  
+  forgotPassword: async (email: string) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/auth/forgot_password`, { email });
+      return response.data;
+    } catch (error) {
+      console.error("Erro ao solicitar recuperação de senha:", error);
+      throw error.response?.data?.message || "Erro ao solicitar redefinição de senha.";
+    }
+  },
+
+  resetPassword: async (token: string, new_password: string) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/auth/reset_password`, { token, new_password });
+      return response.data;
+    } catch (error) {
+      console.error("Erro ao redefinir senha:", error);
+      throw error.response?.data?.message || "Erro ao redefinir senha. O token pode ser inválido ou expirado.";
+    }
   }
+  
 };
 
 export default AuthService;

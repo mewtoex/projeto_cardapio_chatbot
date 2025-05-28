@@ -1,5 +1,8 @@
+# backend/src/models/user.py
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.sql import func # Adicionar para timestamps
+from datetime import datetime, timedelta # Adicionar para tempo de expiração
 
 # Mantendo a instância db aqui, mas ela será inicializada no main.py ou em um arquivo de config central
 # Para evitar importações circulares e garantir que todos os modelos usem a mesma instância db,
@@ -22,6 +25,13 @@ class User(db.Model):
     password_hash = db.Column(db.String(256), nullable=False) # Aumentado para hashes mais longos
     role = db.Column(db.String(20), nullable=False, default='client') # client, admin
 
+    # Campos para recuperação de senha
+    reset_token = db.Column(db.String(100), unique=True, nullable=True)
+    reset_token_expires = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
+    updated_at = db.Column(db.DateTime(timezone=True), onupdate=func.now())
+
     # Relacionamentos
     addresses = db.relationship('Address', backref='user', lazy='dynamic')
     orders = db.relationship('Order', backref='user', lazy='dynamic')
@@ -31,6 +41,15 @@ class User(db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def set_reset_token(self):
+        import secrets
+        self.reset_token = secrets.token_urlsafe(32) # Gera um token seguro
+        self.reset_token_expires = datetime.now(db.session.info['timezone']) + timedelta(hours=1) # Expira em 1 hora
+
+    def invalidate_reset_token(self):
+        self.reset_token = None
+        self.reset_token_expires = None
 
     def __repr__(self):
         return f'<User {self.name} ({self.email})>'
@@ -46,12 +65,5 @@ class User(db.Model):
         if include_addresses:
             data['addresses'] = [address.to_dict() for address in self.addresses]
         if include_orders:
-            # Cuidado com a serialização de muitos pedidos, pode ser pesado
-            data['orders'] = [order.to_short_dict() for order in self.orders] # Usar um to_short_dict para pedidos
+            data['orders'] = [order.to_short_dict() for order in self.orders]
         return data
-
-# Se db não estiver definido em category.py ou menu_item.py de forma global, 
-# precisaremos de uma definição central de db = SQLAlchemy() e importá-la aqui.
-# Por exemplo, criar um arquivo extensions.py com `db = SQLAlchemy()`
-# e depois em cada modelo: `from .extensions import db`
-

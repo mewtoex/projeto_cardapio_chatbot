@@ -41,6 +41,9 @@ const UnifiedLoginPage: React.FC = () => {
           <Typography variant="body2">
             Ainda não tem uma conta de cliente? <Link to="/register">Cadastre-se aqui</Link>
           </Typography>
+          <Typography variant="body2" sx={{ mt: 1 }}>
+            <Link to="/forgot-password">Esqueceu a senha?</Link> {/* NOVO LINK */}
+          </Typography>
         </Box>
       </Paper>
     </Box>

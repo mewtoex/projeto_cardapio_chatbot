@@ -8,9 +8,11 @@ import { AppNotificationProvider } from "./contexts/NotificationContext";
 import { AuthProvider } from "./modules/auth/contexts/AuthContext";
 
 // Auth Pages
-// import ClientLoginPage from "./modules/auth/pages/ClientLoginPage"; // Remover esta importação
-// import AdminLoginPage from "./modules/admin/auth/pages/AdminLoginPage"; // Remover esta importação
-import UnifiedLoginPage from "./modules/auth/pages/UnifiedLoginPage"; // Adicionar esta nova página
+import UnifiedLoginPage from "./modules/auth/pages/UnifiedLoginPage";
+import ClientRegisterPage from "./modules/auth/pages/ClientRegisterPage";
+// NOVO: Páginas de recuperação de senha
+import ForgotPasswordPage from "./modules/auth/pages/ForgotPasswordPage";
+import ResetPasswordPage from "./modules/auth/pages/ResetPasswordPage";
 
 // Client Pages
 import ClientDashboardPage from "./modules/client/pages/ClientDashboardPage";
@@ -27,7 +29,6 @@ import AdminItemManagementPage from "./modules/admin/itens/pages/AdminItemManage
 // Layout and Routes
 import { MainLayout } from "./components/Layout/MainLayout";
 import ProtectedRoute from "./router/ProtectedRoute";
-import ClientRegisterPage from "./modules/auth/pages/ClientRegisterPage";
 
 const App: React.FC = () => {
   return (
@@ -42,8 +43,13 @@ const App: React.FC = () => {
               
               {/* Rota unificada de login */}
               <Route path="/login" element={<UnifiedLoginPage />} />
-              <Route path="/admin/login" element={<Navigate to="/login" replace />} /> {/* Redireciona admin para o login unificado */}
+              <Route path="/admin/login" element={<Navigate to="/login" replace />} />
               <Route path="/register" element={<ClientRegisterPage />} />
+
+              {/* NOVAS ROTAS DE RECUPERAÇÃO DE SENHA */}
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/reset-password/:token" element={<ResetPasswordPage />} /> {/* Para capturar o token da URL */}
 
 
               {/* Rota do cardápio acessível sem autenticação */}

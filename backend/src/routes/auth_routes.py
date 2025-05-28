@@ -1,9 +1,11 @@
-from flask import Blueprint, request, jsonify
+# backend/src/routes/auth_routes.py
+from flask import Blueprint, request, jsonify, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
 
 from src.models.user import User, db
 from src.models.address import Address
+from datetime import datetime, timedelta
 
 auth_bp = Blueprint("auth_bp", __name__, url_prefix="/api/auth")
 
@@ -11,7 +13,6 @@ auth_bp = Blueprint("auth_bp", __name__, url_prefix="/api/auth")
 def register_user():
     data = request.get_json()
     address_data = data.get("address", {})
-    print(address_data)
 
     if not data:
         return jsonify({"message": "Request body is missing JSON"}), 400
@@ -38,7 +39,7 @@ def register_user():
             name=data["name"],
             email=data["email"],
             phone=data["phone"],
-            role='client' 
+            role='client'
         )
         new_user.set_password(data["password"]) # Hashes the password
         db.session.add(new_user)
@@ -72,7 +73,6 @@ def register_user():
 
     except Exception as e:
         db.session.rollback()
-        # Log the error e for debugging
         print(f"Error during registration: {str(e)}")
         return jsonify({"message": "Could not register user. Please try again later.", "error": str(e)}), 500
 
@@ -86,21 +86,17 @@ def login_user():
 
     if user and user.check_password(data["password"]):
         access_token = create_access_token(identity=str(user.id))
-        # refresh_token = create_refresh_token(identity=user.id) # Optional
         
-        user_data = user.to_dict() # Basic user data, can be expanded
-        user_data["role"] = user.role # Ensure role is included
+        user_data = user.to_dict()
+        user_data["role"] = user.role
 
         return jsonify({
             "message": "Login successful",
             "access_token": access_token,
-            # "refresh_token": refresh_token,
             "user": user_data
         }), 200
     else:
         return jsonify({"message": "Invalid email or password"}), 401
-
-
 
 @auth_bp.route("/admin", methods=["POST"])
 def login_admin():
@@ -113,9 +109,8 @@ def login_admin():
     if user and user.check_password(data["password"]):
         access_token = create_access_token(identity=str(user.id))
 
-        user_data = user.to_dict() 
-        user_data["role"] = user.role 
-        print(user_data["role"])
+        user_data = user.to_dict()
+        user_data["role"] = user.role
 
         if('admin' != user_data["role"]):
             return jsonify({"message": "User not admin"}), 401
@@ -127,3 +122,69 @@ def login_admin():
         }), 200
     else:
         return jsonify({"message": "Invalid email or password"}), 401
+
+# NOVO ENDPOINT: Solicitar recuperação de senha
+@auth_bp.route("/forgot_password", methods=["POST"])
+def forgot_password():
+    data = request.get_json()
+    email = data.get("email")
+    if not email:
+        return jsonify({"message": "Email é obrigatório"}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if user:
+        user.set_reset_token()
+        db.session.commit()
+
+        # ***** INÍCIO DO PLACEHOLDER PARA ENVIO DE E-MAIL *****
+        # Em um ambiente de produção, você integraria um serviço de e-mail aqui.
+        # Por exemplo, usando Flask-Mail:
+        # from flask_mail import Message, Mail
+        # msg = Message("Redefinir Senha - Seu Restaurante", sender="noreply@seurestaurante.com", recipients=[user.email])
+        # reset_url = url_for('auth_bp.reset_password_page', token=user.reset_token, _external=True)
+        # msg.body = f"Clique no link para redefinir sua senha: {reset_url}\nEste link expira em 1 hora."
+        # mail.send(msg)
+
+        # Para fins de desenvolvimento, apenas imprimimos o token ou o URL.
+        # No frontend, você redirecionaria para uma página que informa o usuário
+        # para verificar o e-mail.
+        reset_url = url_for('auth_bp.reset_password_page', token=user.reset_token, _external=True)
+        print(f"DEBUG: Link de Recuperação de Senha para {user.email}: {reset_url}")
+        # ***** FIM DO PLACEHOLDER PARA ENVIO DE E-MAIL *****
+
+    # Sempre retornar uma mensagem genérica para segurança (evita enumerar e-mails)
+    return jsonify({"message": "Se o e-mail estiver registrado, um link de redefinição de senha será enviado."}), 200
+
+# NOVO ENDPOINT: Redefinir senha (recebe token e nova senha)
+@auth_bp.route("/reset_password", methods=["POST"])
+def reset_password():
+    data = request.get_json()
+    token = data.get("token")
+    new_password = data.get("new_password")
+
+    if not token or not new_password:
+        return jsonify({"message": "Token e nova senha são obrigatórios"}), 400
+
+    user = User.query.filter_by(reset_token=token).first()
+
+    if not user:
+        return jsonify({"message": "Token inválido ou expirado."}), 400
+
+    if user.reset_token_expires < datetime.now(db.session.info['timezone']):
+        user.invalidate_reset_token()
+        db.session.commit()
+        return jsonify({"message": "Token expirado. Solicite uma nova redefinição."}), 400
+
+    user.set_password(new_password)
+    user.invalidate_reset_token() # Invalida o token após uso
+    try:
+        db.session.commit()
+        return jsonify({"message": "Senha redefinida com sucesso!"}), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error resetting password: {str(e)}")
+        return jsonify({"message": "Erro ao redefinir senha. Tente novamente."}), 500
+
+@auth_bp.route("/reset_password_page/<string:token>", methods=["GET"])
+def reset_password_page(token):
+    return "Redirecionando para a página de redefinição de senha... Se isso não acontecer, copie o token e use-o na aplicação: " + token, 200
