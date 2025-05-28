@@ -17,7 +17,9 @@ import {
   Restaurant as RestaurantIcon,
   ShoppingCart as ShoppingCartIcon,
   History as HistoryIcon,
-  ExitToApp as LogoutIcon
+  ExitToApp as LogoutIcon,
+  Message as MessageIcon 
+
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../modules/auth/contexts/AuthContext';
@@ -46,6 +48,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, cartItemsCount 
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/admin/dashboard' },
     { text: 'Gerenciar Itens', icon: <RestaurantIcon />, path: '/admin/items' },
     { text: 'Gerenciar Pedidos', icon: <HistoryIcon />, path: '/admin/orders' },
+    { text: 'Mensagens do Bot', icon: <MessageIcon />, path: '/admin/bot-messages' }, 
+
   ];
 
   const menuItems = isAdmin ? adminMenuItems : clientMenuItems;

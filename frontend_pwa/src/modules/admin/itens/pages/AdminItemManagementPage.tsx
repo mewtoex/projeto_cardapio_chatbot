@@ -187,7 +187,6 @@ const AdminItemManagementPage: React.FC = () => {
 
       // Buscar categorias de adicionais
       const addonCategoriesData = await ApiService.getAddonCategories();
-      // Garanta que os IDs das categorias de adicionais sejam strings
       setAddonCategories(addonCategoriesData.map((cat: any) => ({
         ...cat,
         id: String(cat.id),

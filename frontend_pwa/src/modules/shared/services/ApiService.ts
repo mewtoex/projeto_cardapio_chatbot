@@ -385,6 +385,102 @@ const ApiService = {
     }
     return response.blob(); // Retorna o blob do PDF
   },
+  
+  // NOVO: Rotas para Addon Categories
+  getAddonCategories: async () => {
+    const response = await fetch(`${API_BASE_URL}addons/categories`, { headers: getAuthHeaders() });
+    return handleResponse(response);
+  },
+
+  createAddonCategory: async (data: { name: string; min_selections?: number; max_selections?: number; is_required?: boolean }) => {
+    const response = await fetch(`${API_BASE_URL}addons/categories`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  updateAddonCategory: async (id: string, data: { name?: string; min_selections?: number; max_selections?: number; is_required?: boolean }) => {
+    const response = await fetch(`${API_BASE_URL}addons/categories/${id}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  deleteAddonCategory: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}addons/categories/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  // NOVO: Rotas para Addon Options
+  createAddonOption: async (categoryId: string, data: { name: string; price: number }) => {
+    const response = await fetch(`${API_BASE_URL}addons/categories/${categoryId}/options`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  updateAddonOption: async (id: string, data: { name?: string; price?: number }) => {
+    const response = await fetch(`${API_BASE_URL}addons/options/${id}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  deleteAddonOption: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}addons/options/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  // NOVO: Rotas para Bot Messages
+  getBotMessages: async () => { // Usado pelo chatbot (rota pública)
+    const response = await fetch(`${API_BASE_URL}bot_messages`, { headers: getAuthHeaders() });
+    return handleResponse(response);
+  },
+
+  getAllBotMessagesAdmin: async () => { // Usado pelo admin (rota protegida)
+    const response = await fetch(`${API_BASE_URL}bot_messages/admin`, { headers: getAuthHeaders() });
+    return handleResponse(response);
+  },
+
+  createBotMessage: async (data: { command: string; response_text: string; is_active?: boolean }) => {
+    const response = await fetch(`${API_BASE_URL}bot_messages/admin`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  updateBotMessage: async (id: string, data: { command?: string; response_text?: string; is_active?: boolean }) => {
+    const response = await fetch(`${API_BASE_URL}bot_messages/admin/${id}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  deleteBotMessage: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}bot_messages/admin/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
 };
 
 export default ApiService;

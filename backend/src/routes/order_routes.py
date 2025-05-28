@@ -1,15 +1,18 @@
-from flask import Blueprint, request, jsonify, render_template, make_response # Adicionar render_template, make_response
+from flask import Blueprint, request, jsonify, render_template, make_response
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy import desc, func, cast, Date
 from datetime import datetime, date, timedelta
-from weasyprint import HTML, CSS 
+from io import BytesIO
+from xhtml2pdf import pisa # Importe pisa do xhtml2pdf
+
 from src.models.user import User, db
 from src.models.order import Order
 from src.models.order_item import OrderItem
 from src.models.menu_item import MenuItem
 from src.models.address import Address
 from src.models.addon import AddonOption, OrderItemAddon
-from src.models.store import Store 
+from src.models.store import Store
+from src.models.delivery_area import DeliveryArea # Adicionar import para DeliveryArea, necessário para calcular taxa de entrega no PDF
 
 from functools import wraps
 def admin_required(fn):
@@ -295,7 +298,6 @@ def get_resume_orders_admin():
 
     return jsonify(response_data), 200
 
-# NOVO ENDPOINT: Imprimir Pedido (Admin)
 @order_bp.route("/admin/<int:order_id>/print", methods=["GET"])
 @jwt_required()
 @admin_required
@@ -304,24 +306,21 @@ def print_order_admin(order_id):
     if not order:
         return jsonify({"message": "Pedido não encontrado"}), 404
 
-    # Para o template, precisamos dos detalhes completos do pedido e do endereço
     order_data = order.to_dict()
     
-    # Busca o endereço associado ao pedido
     order_address = Address.query.get(order_data['address_id'])
     if order_address:
         order_data['address'] = order_address.to_dict()
     else:
         order_data['address'] = {'street': 'N/A', 'number': 'N/A', 'district': 'N/A', 'city': 'N/A', 'state': 'N/A', 'cep': 'N/A'}
 
-    # Busca os detalhes da loja (assumindo uma loja principal por enquanto)
-    main_store = Store.query.first() # Pega a primeira loja cadastrada
+    main_store = Store.query.first() 
     if not main_store:
         return jsonify({"message": "Configurações da loja não encontradas para impressão."}), 500
     
     store_address = Address.query.get(main_store.address_id)
     if store_address:
-        main_store.address = store_address # Anexa o objeto de endereço ao objeto da loja
+        main_store.address = store_address 
     
     delivery_fee_for_receipt = 0.0
     if order_address:
@@ -332,17 +331,23 @@ def print_order_admin(order_id):
         if delivery_area:
             delivery_fee_for_receipt = delivery_area.delivery_fee
     
-    # Passando os dados para o template HTML
     rendered_html = render_template(
         "order_receipt.html",
         order=order_data,
         store=main_store,
         delivery_fee=delivery_fee_for_receipt,
-        total_amount_items=(order.total_amount - delivery_fee_for_receipt) # Subtotal dos itens
+        total_amount_items=(order.total_amount - delivery_fee_for_receipt)
     )
 
-    # Gera o PDF
-    pdf = HTML(string=rendered_html).write_pdf()
+    result_file = BytesIO()
+    pisa_status = pisa.CreatePDF(
+        rendered_html,    
+        dest=result_file)   
+
+    if pisa_status.err:
+        return jsonify({"message": "Erro ao gerar PDF com xhtml2pdf", "error": pisa_status.err}), 500
+
+    pdf = result_file.getvalue() 
 
     response = make_response(pdf)
     response.headers["Content-Type"] = "application/pdf"

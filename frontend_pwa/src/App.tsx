@@ -25,6 +25,7 @@ import ClientCheckoutPage from "./modules/client/pages/ClientCheckoutPage";
 import AdminDashboardPage from "./modules/admin/dashboard/pages/AdminDashboardPage";
 import AdminOrderManagementPage from "./modules/admin/pedidos/pages/AdminOrderManagementPage";
 import AdminItemManagementPage from "./modules/admin/itens/pages/AdminItemManagementPage";
+import AdminBotMessagesPage from "./modules/admin/bot_messages/pages/AdminBotMessagesPage"; // NOVO: Página de mensagens do bot
 
 // Layout and Routes
 import { MainLayout } from "./components/Layout/MainLayout";
@@ -98,6 +99,11 @@ const App: React.FC = () => {
                 <Route path="/admin/items" element={
                   <MainLayout>
                     <AdminItemManagementPage />
+                  </MainLayout>
+                } />
+                <Route path="/admin/bot-messages" element={ 
+                  <MainLayout>
+                    <AdminBotMessagesPage />
                   </MainLayout>
                 } />
               </Route>
