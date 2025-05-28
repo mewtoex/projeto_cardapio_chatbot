@@ -1,13 +1,14 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from sqlalchemy import desc, func, cast, Date 
-from datetime import datetime, date, timedelta 
+from sqlalchemy import desc, func, cast, Date
+from datetime import datetime, date, timedelta
 
 from src.models.user import User, db
 from src.models.order import Order
 from src.models.order_item import OrderItem
 from src.models.menu_item import MenuItem
 from src.models.address import Address
+from src.models.addon import AddonOption, OrderItemAddon # Importe os modelos de adicionais
 
 from functools import wraps
 def admin_required(fn):
@@ -43,6 +44,9 @@ def create_client_order():
     for item_data in data["items"]:
         menu_item_id = item_data.get("menu_item_id")
         quantity = item_data.get("quantity")
+        observations = item_data.get("observations") # NOVO: Observações do item
+        selected_addons_data = item_data.get("selected_addons", []) # NOVO: Adicionais selecionados
+
         if not menu_item_id or not isinstance(quantity, int) or quantity <= 0:
             return jsonify({"message": f"Invalid item data: {item_data}"}), 400
         
@@ -51,12 +55,45 @@ def create_client_order():
             return jsonify({"message": f"Menu item {menu_item_id} not found or unavailable"}), 404
         
         price_at_order_time = menu_item.price
+        
+        # Processar adicionais selecionados
+        order_item_addons_to_create = []
+        for addon_data in selected_addons_data:
+            addon_option_id = addon_data.get('id')
+            addon_name = addon_data.get('name')
+            addon_price = addon_data.get('price')
+
+            if not addon_option_id or not addon_name or addon_price is None:
+                return jsonify({"message": f"Invalid addon data: {addon_data}"}), 400
+            
+            # Opcional: validar se o addon_option_id existe e pertence ao menu_item
+            # addon_option = AddonOption.query.get(addon_option_id)
+            # if not addon_option or addon_option.price != addon_price: # ou outra validação mais complexa
+            #     return jsonify({"message": f"Invalid addon option {addon_option_id} or price mismatch."}), 400
+
+            price_at_order_time += addon_price
+            order_item_addons_to_create.append(OrderItemAddon(
+                addon_option_id=addon_option_id,
+                addon_name=addon_name,
+                addon_price=addon_price
+            ))
+
+
         total_amount += price_at_order_time * quantity
-        order_items_to_create.append(OrderItem(
+        
+        new_order_item = OrderItem(
             menu_item_id=menu_item_id,
             quantity=quantity,
-            price_at_order_time=price_at_order_time
-        ))
+            price_at_order_time=price_at_order_time,
+            observations=observations, # Salva observações
+            selected_addons_json=selected_addons_data # Salva JSON de adicionais para flexibilidade
+        )
+        # Adiciona os OrderItemAddon relacionados
+        for oia in order_item_addons_to_create:
+            new_order_item.selected_addons.append(oia)
+
+        order_items_to_create.append(new_order_item)
+
 
     if not order_items_to_create:
          return jsonify({"message": "No valid items to order"}), 400
@@ -66,7 +103,7 @@ def create_client_order():
             user_id=current_user_id,
             address_id=data["address_id"],
             payment_method=data["payment_method"],
-            cash_provided=data.get("cash_provided") if data["payment_method"] == "dinheiro" else None,
+            cash_provided=data.get("cash_provided") if data["payment_method"].lower() == "dinheiro" else None,
             total_amount=total_amount,
             status="Recebido" # Initial status
         )
@@ -111,14 +148,14 @@ def cancel_client_order(order_id):
 
     # Define statuses where client can directly cancel or request cancellation
     cancellable_statuses = ["Recebido"]
-    request_cancellation_statuses = ["Em preparo"] # Example
+    request_cancellation_statuses = ["Em Preparo"] # Example
 
     if order.status in cancellable_statuses:
         order.status = "Cancelado"
     elif order.status in request_cancellation_statuses:
         order.status = "Cancelamento Solicitado"
     else:
-        return jsonify({"message": f"Order in status 	riggers {order.status}\' cannot be cancelled or requested for cancellation by client at this stage."}), 400
+        return jsonify({"message": f"Order in status {order.status} cannot be cancelled or requested for cancellation by client at this stage."}), 400
 
     try:
         db.session.commit()
@@ -214,13 +251,10 @@ def reject_order_cancellation_admin(order_id):
 @order_bp.route("order_items/<int:order_id>", methods=["GET"])
 @jwt_required()
 def get_order_Items(order_id):
-    order = OrderItem.query.filter_by(order_id=order_id)
-    if not order:
-        return jsonify({"message": "Order not found"}), 404
-    query = OrderItem.query
-    orders = OrderItem.query.filter_by(order_id=order_id).all()
-    print(order)
-    return (jsonify([order.to_dict() for order in orders]))
+    order_items = OrderItem.query.filter_by(order_id=order_id).all()
+    if not order_items:
+        return jsonify({"message": "Order items not found for this order"}), 404
+    return jsonify([item.to_dict() for item in order_items])
 
 
 @order_bp.route("resume", methods=["GET"])
@@ -252,10 +286,9 @@ def get_resume_orders_admin():
 
     response_data = {
         "status_counts": status_counts_dict,
-        "filter_date": filter_date.isoformat(), 
-        "daily_total_amount": round(daily_total_amount, 2), 
+        "filter_date": filter_date.isoformat(),
+        "daily_total_amount": round(daily_total_amount, 2),
        
     }
-    print(response_data)
 
-    return jsonify(response_data), 200 
+    return jsonify(response_data), 200

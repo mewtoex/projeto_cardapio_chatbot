@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from flask import Flask, send_from_directory, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
-from dotenv import load_dotenv 
+from dotenv import load_dotenv
 
 from src.models.user import User, db
 from src.models.address import Address
@@ -14,18 +14,22 @@ from src.models.menu_item import MenuItem
 from src.models.order import Order
 from src.models.order_item import OrderItem
 from src.models.promotion import Promotion
+from src.models.addon import AddonCategory, AddonOption, OrderItemAddon # NOVOS MODELOS
+from src.models.bot_message import BotMessage # NOVO MODELO
 
 # Import blueprints
 from src.routes.auth_routes import auth_bp
-from src.routes.user_profile_routes import user_profile_bp 
-from src.routes.order_routes import order_bp 
-from src.routes.category_routes import category_bp 
-from src.routes.menu_item_routes import menu_item_bp 
+from src.routes.user_profile_routes import user_profile_bp
+from src.routes.order_routes import order_bp
+from src.routes.category_routes import category_bp
+from src.routes.menu_item_routes import menu_item_bp
+from src.routes.addon_routes import addon_bp # NOVO BLUEPRINT
+from src.routes.bot_message_routes import bot_message_bp # NOVO BLUEPRINT
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), "static"))
 
 # --- Carregar variáveis de ambiente do backend.env ---
-load_dotenv(dotenv_path="backend.env") 
+load_dotenv(dotenv_path="backend.env")
 
 # --- App Configuration ---
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "uma_chave_secreta_incrivelmente_forte_e_dificil_de_adivinhar")
@@ -37,17 +41,17 @@ CORS(app, resources={r"/api/*": {
     "allow_headers": ["Content-Type", "Authorization"]
 }})
 # Database Configuration
-DB_USERNAME = os.getenv("DB_USERNAME") 
-DB_PASSWORD = os.getenv("DB_PASSWORD") 
-DB_HOST = os.getenv("DB_HOST")       
-DB_PORT = os.getenv("DB_PORT")       
-DB_NAME = os.getenv("DB_NAME")       
+DB_USERNAME = os.getenv("DB_USERNAME")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT")
+DB_NAME = os.getenv("DB_NAME")
 
 #FTP CONFIG
 app.config["FTP_HOST"] = os.getenv("FTP_HOST")
 app.config["FTP_USER"] = os.getenv("FTP_USER")
 app.config["FTP_PASS"] = os.getenv("FTP_PASS")
-app.config["FTP_DIR"]  = os.getenv("FTP_DIR", "/")
+app.config["FTP_DIR"] = os.getenv("FTP_DIR", "/")
 
 if not all([DB_USERNAME, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME]):
     print("ALERTA: Uma ou mais variáveis de configuração do banco de dados não foram carregadas do backend.env!")
@@ -80,8 +84,10 @@ app.register_blueprint(user_profile_bp) # /api/users
 app.register_blueprint(order_bp) # /api/orders
 app.register_blueprint(category_bp) # /api/categories
 app.register_blueprint(menu_item_bp) # /api/menu_items
+app.register_blueprint(addon_bp) # NOVO BLUEPRINT: /api/addons
+app.register_blueprint(bot_message_bp) # NOVO BLUEPRINT: /api/bot_messages
 # TODO: Register promotion_bp, admin_dashboard_bp
- 
+
 # --- Basic Routes ---
 @app.route("/api/health", methods=["GET"])
 def health_check():
@@ -118,4 +124,3 @@ def expired_token_callback(jwt_header, jwt_payload):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)), debug=os.getenv("FLASK_DEBUG", "True").lower() == "true")
-
