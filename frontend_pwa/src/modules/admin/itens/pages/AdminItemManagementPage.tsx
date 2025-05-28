@@ -47,24 +47,24 @@ import { ImageUpload } from "../../../../components/UI/ImageUpload";
 interface MenuItem {
   id: number;
   name: string;
-  category_id: string;
+  category_id: string; // Pode ser string se o backend retornar UUIDs, senão number
   category_name: string;
   price: number;
   description: string;
   available: boolean;
   image_url?: string;
-  has_addons: boolean; // NOVO CAMPO
-  addon_categories?: AddonCategory[]; // NOVO CAMPO
+  has_addons: boolean;
+  addon_categories?: AddonCategory[];
 }
 
 interface Category {
-  id: string;
+  id: string; // Pode ser string se o backend retornar UUIDs, senão number
   name: string;
   description?: string;
 }
 
-interface AddonCategory { // NOVO INTERFACE
-  id: string;
+interface AddonCategory {
+  id: string; // Assume string para IDs do backend (UUID ou INT como string)
   name: string;
   min_selections: number;
   max_selections: number;
@@ -72,8 +72,8 @@ interface AddonCategory { // NOVO INTERFACE
   options: AddonOption[];
 }
 
-interface AddonOption { // NOVO INTERFACE
-  id: string;
+interface AddonOption {
+  id: string; // Assume string para IDs do backend
   addon_category_id: string;
   name: string;
   price: number;
@@ -88,8 +88,8 @@ interface ItemFormData {
   description: string;
   available: boolean;
   image_url: string;
-  has_addons: boolean; // NOVO CAMPO
-  addon_category_ids: string[]; // NOVO CAMPO
+  has_addons: boolean;
+  addon_category_ids: string[]; // Array de strings para IDs
 }
 
 // Interface para o formulário de categoria
@@ -99,7 +99,7 @@ interface CategoryFormData {
 }
 
 // Interface para o formulário de categoria de adicional
-interface AddonCategoryFormData { // NOVO INTERFACE
+interface AddonCategoryFormData {
   name: string;
   min_selections: number;
   max_selections: number;
@@ -107,7 +107,7 @@ interface AddonCategoryFormData { // NOVO INTERFACE
 }
 
 // Interface para o formulário de opção de adicional
-interface AddonOptionFormData { // NOVO INTERFACE
+interface AddonOptionFormData {
   name: string;
   price: string;
 }
@@ -129,7 +129,7 @@ const AdminItemManagementPage: React.FC = () => {
   const [currentCategory, setCurrentCategory] = useState<Category | null>(null);
   const [isSavingCategory, setIsSavingCategory] = useState(false);
 
-  // NOVO: Estados para gerenciamento de adicionais
+  // Estados para gerenciamento de adicionais
   const [addonCategories, setAddonCategories] = useState<AddonCategory[]>([]);
   const [openAddonCategoryDialog, setOpenAddonCategoryDialog] = useState(false);
   const [currentAddonCategory, setCurrentAddonCategory] = useState<AddonCategory | null>(null);
@@ -153,8 +153,8 @@ const AdminItemManagementPage: React.FC = () => {
     description: "",
     available: true,
     image_url: "",
-    has_addons: false, // NOVO CAMPO
-    addon_category_ids: [], // NOVO CAMPO
+    has_addons: false,
+    addon_category_ids: [],
   });
 
   const [categoryFormData, setCategoryFormData] = useState<CategoryFormData>({
@@ -162,7 +162,7 @@ const AdminItemManagementPage: React.FC = () => {
     description: ""
   });
 
-  // NOVO: Form states para adicionais
+  // Form states para adicionais
   const [addonCategoryFormData, setAddonCategoryFormData] = useState<AddonCategoryFormData>({
     name: "",
     min_selections: 0,
@@ -182,15 +182,26 @@ const AdminItemManagementPage: React.FC = () => {
 
       // Buscar categorias
       const categoriesData = await ApiService.getCategories();
-      setCategories(categoriesData);
+      // Garanta que os IDs das categorias sejam strings se o backend pode retornar numbers
+      setCategories(categoriesData.map((cat: any) => ({ ...cat, id: String(cat.id) })));
 
       // Buscar categorias de adicionais
       const addonCategoriesData = await ApiService.getAddonCategories();
-      setAddonCategories(addonCategoriesData);
+      // Garanta que os IDs das categorias de adicionais sejam strings
+      setAddonCategories(addonCategoriesData.map((cat: any) => ({
+        ...cat,
+        id: String(cat.id),
+        options: cat.options.map((opt: any) => ({ ...opt, id: String(opt.id), addon_category_id: String(opt.addon_category_id) }))
+      })));
 
       // Depois buscar itens
       const itemsData = await ApiService.getMenuItems();
-      setMenuItems(itemsData);
+      setMenuItems(itemsData.map((item: any) => ({
+        ...item,
+        id: String(item.id), // Garanta que o ID do item seja string
+        category_id: String(item.category_id), // Garanta que o category_id do item seja string
+        addon_categories: item.addon_categories ? item.addon_categories.map((ac: any) => ({ ...ac, id: String(ac.id) })) : []
+      })));
 
       setError(null);
     } catch (err) {
@@ -208,7 +219,8 @@ const AdminItemManagementPage: React.FC = () => {
   // Funções para gerenciamento de itens
   const handleToggleAvailability = async (itemId: number, currentAvailability: boolean) => {
     try {
-      await ApiService.updateMenuItemAvailability(itemId.toString(), !currentAvailability);
+      // Importante: garantir que itemId seja string para a API
+      await ApiService.updateMenuItemAvailability(String(itemId), !currentAvailability);
 
       setMenuItems(prevItems =>
         prevItems.map(item =>
@@ -232,20 +244,22 @@ const AdminItemManagementPage: React.FC = () => {
         description: item.description,
         available: item.available,
         image_url: item.image_url || "",
-        has_addons: item.has_addons, // NOVO CAMPO
-        addon_category_ids: item.addon_categories?.map(ac => ac.id) || [], // NOVO CAMPO
+        has_addons: item.has_addons,
+        // Ao abrir para edição, converta os IDs para string, se necessário
+        addon_category_ids: item.addon_categories?.map(ac => String(ac.id)) || [],
       });
     } else {
       setCurrentItem(null);
       setItemFormData({
         name: "",
-        category_id: categories.length > 0 ? categories[0].id : "",
+        // Garanta que o ID da categoria padrão seja string
+        category_id: categories.length > 0 ? String(categories[0].id) : "",
         price: "",
         description: "",
         available: true,
         image_url: "",
-        has_addons: false, // NOVO CAMPO
-        addon_category_ids: [], // NOVO CAMPO
+        has_addons: false,
+        addon_category_ids: [],
       });
     }
     setOpenItemDialog(true);
@@ -273,27 +287,40 @@ const AdminItemManagementPage: React.FC = () => {
     }));
   };
 
-  const handleHasAddonsChange = (e: React.ChangeEvent<HTMLInputElement>) => { // NOVO
+  const handleHasAddonsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setItemFormData(prev => ({
       ...prev,
       has_addons: e.target.checked,
-      addon_category_ids: e.target.checked ? prev.addon_category_ids : [] // Limpa se desmarcar
+      addon_category_ids: e.target.checked ? prev.addon_category_ids : []
     }));
   };
 
-  const handleAddonCategorySelectionChange = (e: React.ChangeEvent<HTMLInputElement>) => { // NOVO
+  const handleAddonCategorySelectionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value, checked } = e.target;
+    const categoryIdAsString = String(value); // Garante que o ID do checkbox é uma string
+
     setItemFormData(prev => {
-      const newAddonCategoryIds = checked
-        ? [...prev.addon_category_ids, value]
-        : prev.addon_category_ids.filter(id => id !== value);
+      let newAddonCategoryIds: string[];
+
+      if (checked) {
+        // Adiciona apenas se o ID (como string) não estiver já presente
+        if (!prev.addon_category_ids.includes(categoryIdAsString)) {
+          newAddonCategoryIds = [...prev.addon_category_ids, categoryIdAsString];
+        } else {
+          newAddonCategoryIds = [...prev.addon_category_ids]; // Já existe, não faz nada
+        }
+      } else {
+        // Remove todas as ocorrências do ID (como string)
+        newAddonCategoryIds = prev.addon_category_ids.filter(id => id !== categoryIdAsString);
+      }
+
+      console.log("Checkbox clicado:", { value, checked, currentIds: prev.addon_category_ids, newIds: newAddonCategoryIds });
       return {
         ...prev,
         addon_category_ids: newAddonCategoryIds
       };
     });
   };
-
 
   const handleImageUpload = (file: File) => {
     setImageFile(file);
@@ -327,15 +354,15 @@ const AdminItemManagementPage: React.FC = () => {
       // Criar FormData para envio com image
       const formData = new FormData();
       formData.append("name", itemFormData.name);
-      formData.append("category_id", itemFormData.category_id);
+      formData.append("category_id", itemFormData.category_id); // Já é string
       formData.append("price", itemFormData.price);
       formData.append("description", itemFormData.description);
       formData.append("available", itemFormData.available.toString());
-      formData.append("has_addons", itemFormData.has_addons.toString()); // NOVO CAMPO
+      formData.append("has_addons", itemFormData.has_addons.toString());
 
       if (itemFormData.has_addons) {
         itemFormData.addon_category_ids.forEach(id => {
-          formData.append("addon_category_ids[]", id);
+          formData.append("addon_category_ids[]", id); // IDs já são strings
         });
       }
 
@@ -346,11 +373,11 @@ const AdminItemManagementPage: React.FC = () => {
       let response;
       if (currentItem) {
         // Atualizar item existente
-        response = await ApiService.updateMenuItem(currentItem.id.toString(), formData);
+        await ApiService.updateMenuItem(String(currentItem.id), formData); // Garante que currentItem.id é string
         notification.showSuccess("Item atualizado com sucesso");
       } else {
         // Adicionar novo item
-        response = await ApiService.createMenuItem(formData);
+        await ApiService.createMenuItem(formData);
         notification.showSuccess("Item adicionado com sucesso");
       }
 
@@ -369,7 +396,7 @@ const AdminItemManagementPage: React.FC = () => {
   const handleDeleteItem = async (itemId: number) => {
     if (window.confirm("Tem certeza que deseja excluir este item?")) {
       try {
-        await ApiService.deleteMenuItem(itemId.toString());
+        await ApiService.deleteMenuItem(String(itemId)); // Garante que itemId é string
         setMenuItems(prevItems => prevItems.filter(item => item.id !== itemId));
         notification.showSuccess("Item removido com sucesso");
       } catch (error) {
@@ -423,16 +450,16 @@ const AdminItemManagementPage: React.FC = () => {
 
       if (currentCategory) {
         // Atualizar categoria existente
-        await ApiService.updateCategory(currentCategory.id, {
-          nome: categoryFormData.name,
-          descricao: categoryFormData.description
+        await ApiService.updateCategory(String(currentCategory.id), { // Garante que ID é string
+          name: categoryFormData.name,
+          description: categoryFormData.description
         });
         notification.showSuccess("Categoria atualizada com sucesso");
       } else {
         // Adicionar nova categoria
         await ApiService.createCategory({
-          nome: categoryFormData.name,
-          descricao: categoryFormData.description
+          name: categoryFormData.name,
+          description: categoryFormData.description
         });
         notification.showSuccess("Categoria adicionada com sucesso");
       }
@@ -460,7 +487,7 @@ const AdminItemManagementPage: React.FC = () => {
 
     if (window.confirm("Tem certeza que deseja excluir esta categoria?")) {
       try {
-        await ApiService.deleteCategory(categoryId);
+        await ApiService.deleteCategory(String(categoryId)); // Garante que categoryId é string
         setCategories(prevCategories => prevCategories.filter(cat => cat.id !== categoryId));
         notification.showSuccess("Categoria removida com sucesso");
       } catch (error) {
@@ -522,7 +549,7 @@ const AdminItemManagementPage: React.FC = () => {
       }
 
       if (currentAddonCategory) {
-        await ApiService.updateAddonCategory(currentAddonCategory.id, addonCategoryFormData);
+        await ApiService.updateAddonCategory(String(currentAddonCategory.id), addonCategoryFormData); // Garante que ID é string
         notification.showSuccess("Categoria de adicional atualizada com sucesso!");
       } else {
         await ApiService.createAddonCategory(addonCategoryFormData);
@@ -540,7 +567,7 @@ const AdminItemManagementPage: React.FC = () => {
   const handleDeleteAddonCategory = async (id: string) => {
     if (window.confirm("Tem certeza que deseja excluir esta categoria de adicional? Isso também a removerá de quaisquer itens associados.")) {
       try {
-        await ApiService.deleteAddonCategory(id);
+        await ApiService.deleteAddonCategory(String(id)); // Garante que ID é string
         fetchData();
         notification.showSuccess("Categoria de adicional removida com sucesso!");
       } catch (error) {
@@ -551,7 +578,7 @@ const AdminItemManagementPage: React.FC = () => {
 
   // Funções para gerenciamento de Opções de Adicionais (NOVO)
   const handleOpenAddonOptionDialog = (addonCategoryId: string, option?: AddonOption) => {
-    setSelectedAddonCategoryIdForOption(addonCategoryId);
+    setSelectedAddonCategoryIdForOption(String(addonCategoryId)); // Garante que é string
     if (option) {
       setCurrentAddonOption(option);
       setAddonOptionFormData({
@@ -603,7 +630,7 @@ const AdminItemManagementPage: React.FC = () => {
       }
 
       if (currentAddonOption) {
-        await ApiService.updateAddonOption(currentAddonOption.id, {
+        await ApiService.updateAddonOption(String(currentAddonOption.id), { // Garante que ID é string
           name: addonOptionFormData.name,
           price: price
         });
@@ -627,7 +654,7 @@ const AdminItemManagementPage: React.FC = () => {
   const handleDeleteAddonOption = async (id: string) => {
     if (window.confirm("Tem certeza que deseja excluir esta opção de adicional?")) {
       try {
-        await ApiService.deleteAddonOption(id);
+        await ApiService.deleteAddonOption(String(id)); // Garante que ID é string
         fetchData();
         notification.showSuccess("Opção de adicional removida com sucesso!");
       } catch (error) {
@@ -702,14 +729,14 @@ const AdminItemManagementPage: React.FC = () => {
                     <TableCell>Categoria</TableCell>
                     <TableCell>Preço</TableCell>
                     <TableCell>Disponível</TableCell>
-                    <TableCell>Adicionais</TableCell> {/* NOVA COLUNA */}
+                    <TableCell>Adicionais</TableCell>
                     <TableCell>Ações</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {menuItems.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} align="center"> {/* COLSPAN AJUSTADO */}
+                      <TableCell colSpan={7} align="center">
                         <Typography variant="body1">Nenhum item cadastrado.</Typography>
                       </TableCell>
                     </TableRow>
@@ -729,7 +756,7 @@ const AdminItemManagementPage: React.FC = () => {
                             color="primary"
                           />
                         </TableCell>
-                        <TableCell> {/* NOVO CAMPO */}
+                        <TableCell>
                           <Chip
                             label={item.has_addons ? "Sim" : "Não"}
                             color={item.has_addons ? "info" : "default"}
@@ -1010,7 +1037,7 @@ const AdminItemManagementPage: React.FC = () => {
                 label="Disponível"
                 sx={{ mt: 2 }}
               />
-              <FormControlLabel // NOVO CAMPO
+              <FormControlLabel
                 control={
                   <Switch
                     checked={itemFormData.has_addons}
@@ -1022,7 +1049,7 @@ const AdminItemManagementPage: React.FC = () => {
                 sx={{ mt: 2 }}
               />
 
-              {itemFormData.has_addons && ( // NOVO: Seleção de categorias de adicionais
+              {itemFormData.has_addons && (
                 <Box sx={{ mt: 2, border: '1px solid #ccc', borderRadius: 1, p: 2 }}>
                   <Typography variant="subtitle1" gutterBottom>
                     Categorias de Adicionais para este Item:
@@ -1035,12 +1062,14 @@ const AdminItemManagementPage: React.FC = () => {
                     ) : (
                       addonCategories.map(cat => (
                         <FormControlLabel
-                          key={cat.id}
+                          key={cat.id} // Certifique-se que cat.id é único e estável
                           control={
                             <Checkbox
-                              checked={itemFormData.addon_category_ids.includes(cat.id)}
+                              // Force a comparação de strings para garantir que .includes funcione
+                              checked={itemFormData.addon_category_ids.includes(String(cat.id))}
                               onChange={handleAddonCategorySelectionChange}
-                              value={cat.id}
+                              // Garanta que o valor do checkbox é uma string
+                              value={String(cat.id)}
                             />
                           }
                           label={cat.name}
