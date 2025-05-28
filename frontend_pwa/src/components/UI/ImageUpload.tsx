@@ -1,18 +1,19 @@
-// src/components/UI/ImageUpload.tsx
+// frontend_pwa/src/components/UI/ImageUpload.tsx
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { 
-  Box, 
-  Typography, 
-  Paper, 
-  Button, 
+import {
+  Box,
+  Typography,
+  Paper,
+  Button,
   CircularProgress,
   IconButton
 } from '@mui/material';
-import { 
+import {
   CloudUpload as UploadIcon,
   Delete as DeleteIcon
 } from '@mui/icons-material';
+import { useNotification } from '../../contexts/NotificationContext'; // Importar useNotification
 
 interface ImageUploadProps {
   onImageUpload: (file: File) => void;
@@ -28,36 +29,57 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   isUploading = false
 }) => {
   const [preview, setPreview] = useState<string | undefined>(previewUrl);
-  
+  const notification = useNotification();
+
+  const MAX_FILE_SIZE_MB = 2; // Definir tamanho máximo em MB
+  const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
+
+      // Validação de tipo de arquivo (extensão e MIME type básico do navegador)
+      const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif'];
+      // A biblioteca dropzone já faz uma filtragem inicial via 'accept' prop,
+      // mas é bom ter uma validação explícita aqui também.
+      if (!allowedMimeTypes.includes(file.type)) {
+        notification.showError('Tipo de arquivo não permitido. Apenas JPG, PNG, GIF.');
+        return;
+      }
+
+      // Validação de tamanho
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        notification.showError(`Arquivo muito grande. Máximo ${MAX_FILE_SIZE_MB}MB.`);
+        return;
+      }
+
       onImageUpload(file);
-      
-      // Criar preview local
+
       const objectUrl = URL.createObjectURL(file);
       setPreview(objectUrl);
-      
-      // Limpar o objectURL quando o componente for desmontado
+
+      // Limpar o objectURL quando o componente for desmontado ou um novo arquivo for selecionado
       return () => URL.revokeObjectURL(objectUrl);
     }
-  }, [onImageUpload]);
-  
+  }, [onImageUpload, notification]); // Adicionar notification às dependências
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/*': ['.jpeg', '.jpg', '.png', '.gif']
+      'image/jpeg': ['.jpeg', '.jpg'],
+      'image/png': ['.png'],
+      'image/gif': ['.gif']
     },
     maxFiles: 1
   });
-  
+
   const handleRemove = () => {
     setPreview(undefined);
     if (onImageRemove) {
       onImageRemove();
     }
   };
-  
+
   return (
     <Box sx={{ width: '100%', mb: 2 }}>
       {!preview ? (
@@ -85,7 +107,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
               : 'Arraste e solte uma imagem aqui, ou clique para selecionar'}
           </Typography>
           <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 1 }}>
-            Formatos aceitos: JPG, PNG, GIF
+            Formatos aceitos: JPG, PNG, GIF. Tamanho máximo: {MAX_FILE_SIZE_MB}MB.
+            O sistema verificará a integridade do arquivo.
           </Typography>
         </Paper>
       ) : (
@@ -109,7 +132,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                 display: 'block'
               }}
             />
-            
+
             {isUploading && (
               <Box
                 sx={{
@@ -128,7 +151,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
               </Box>
             )}
           </Paper>
-          
+
           <IconButton
             onClick={handleRemove}
             disabled={isUploading}
