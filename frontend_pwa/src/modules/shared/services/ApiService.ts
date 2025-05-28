@@ -62,7 +62,7 @@ const ApiService = {
   },
 
   getMenuItemById: async (id_item: string) => {
-    const response = await fetch(`${API_BASE_URL}/menu_items/${id_item}`, { headers: getAuthHeaders() });
+    const response = await fetch(`${API_BASE_URL}menu_items/${id_item}`, { headers: getAuthHeaders() });
     return handleResponse(response);
   },
 
