@@ -1,5 +1,5 @@
-// src/components/Layout/MainLayout.tsx
-import React, { useState } from 'react';
+// frontend_pwa/src/components/Layout/MainLayout.tsx
+import React, { useState, useEffect } from 'react'; // Importar useEffect
 import { 
   AppBar, 
   Toolbar, 
@@ -27,16 +27,43 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
   const navigate = useNavigate();
   const { user } = useAuth();
   const notification = useNotification();
+  const [cartItemsCount, setCartItemsCount] = useState(0); // Estado para a contagem do carrinho
   
-  // Simulação de contagem de itens no carrinho - será substituída por estado real
-  const cartItemsCount = 0;
+  // Atualizar a contagem do carrinho do localStorage
+  useEffect(() => {
+    const updateCartCount = () => {
+      const savedCart = localStorage.getItem('cartItems');
+      if (savedCart) {
+        try {
+          const cartData = JSON.parse(savedCart);
+          const total = Object.values(cartData).reduce((sum: number, quantity: any) => sum + quantity, 0);
+          setCartItemsCount(total);
+        } catch (e) {
+          console.error("Erro ao parsear dados do carrinho do localStorage:", e);
+          setCartItemsCount(0);
+        }
+      } else {
+        setCartItemsCount(0);
+      }
+    };
+
+    // Chamar na montagem
+    updateCartCount();
+
+    // Adicionar listener para o evento customizado de atualização do carrinho
+    window.addEventListener('cartUpdated', updateCartCount);
+
+    // Remover listener na desmontagem
+    return () => {
+      window.removeEventListener('cartUpdated', updateCartCount);
+    };
+  }, []);
   
   const isAdmin = user?.role === 'admin';
   const title = isAdmin ? 'Painel Administrativo' : 'Cardápio Online';
   
   const handleCartClick = () => {
     navigate('/client/cart');
-    notification.showInfo('Acessando o carrinho');
   };
   
   return (
@@ -58,7 +85,7 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
           
           {!isAdmin && (
             <IconButton color="inherit" onClick={handleCartClick}>
-              <Badge badgeContent={cartItemsCount} color="error">
+              <Badge badgeContent={cartItemsCount} color="error"> {/* Usar o estado cartItemsCount */}
                 <ShoppingCartIcon />
               </Badge>
             </IconButton>
@@ -69,7 +96,7 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
       <Sidebar 
         open={sidebarOpen} 
         onClose={() => setSidebarOpen(false)} 
-        cartItemsCount={cartItemsCount}
+        cartItemsCount={cartItemsCount} // Passar a contagem para a Sidebar
       />
       
       <Box
@@ -77,7 +104,7 @@ export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }
         sx={{
           flexGrow: 1,
           p: 3,
-          mt: 8, // Espaço para a AppBar
+          mt: 8, 
           width: '100%'
         }}
       >

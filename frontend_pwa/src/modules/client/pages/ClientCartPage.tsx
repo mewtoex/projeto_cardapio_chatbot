@@ -1,15 +1,15 @@
-// src/modules/client/pages/ClientCartPage.tsx
+// frontend_pwa/src/modules/client/pages/ClientCartPage.tsx
 import React, { useState, useEffect } from "react";
-import {
-  Typography,
-  Box,
-  Paper,
-  Divider,
-  Button,
-  Grid,
-  Card,
-  CardContent,
-  IconButton,
+import { 
+  Typography, 
+  Box, 
+  Paper, 
+  Divider, 
+  Button, 
+  Grid, 
+  Card, 
+  CardContent, 
+  IconButton, 
   TextField,
   List,
   ListItem,
@@ -23,8 +23,8 @@ import {
   Fade,
   CircularProgress
 } from "@mui/material";
-import {
-  Add as AddIcon,
+import { 
+  Add as AddIcon, 
   Remove as RemoveIcon,
   Delete as DeleteIcon,
   ShoppingBag as ShoppingBagIcon,
@@ -35,32 +35,21 @@ import { Link, useNavigate } from "react-router-dom";
 import { useNotification } from "../../../contexts/NotificationContext";
 import ApiService from "../../../modules/shared/services/ApiService";
 
-// Interface para adicionais (copiada do ClientMenuPage ou de um arquivo de tipos compartilhado)
-interface AddonOption {
-  id: string;
-  addon_category_id: string;
-  name: string;
-  price: number;
-}
-
-// Interface para itens do carrinho (atualizada)
+// Interface para itens do carrinho
 interface ICartItem {
-  id: number; // ID do MenuItem
+  id: number;
   name: string;
-  quantity: number;
-  price: number; // Preço base do MenuItem
-  image_url?: string;
+  quantidade: number;
+  price: number;
+  imagem_url?: string;
   category_name: string;
-  observations?: string; // NOVO: Observações
-  selectedAddons?: AddonOption[]; // NOVO: Adicionais selecionados
-  totalItemPrice: number; // NOVO: Preço total do item com adicionais
 }
 
 const ClientCartPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const notification = useNotification();
-  const [cartItems, setCartItems] = useState<ICartItem[]>([]); // Array de ICartItem
+  const [cartItems, setCartItems] = useState<ICartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [subtotal, setSubtotal] = useState(0);
   const [deliveryFee, setDeliveryFee] = useState(5.0);
@@ -71,11 +60,16 @@ const ClientCartPage: React.FC = () => {
   const [couponAlertMessage, setCouponAlertMessage] = useState("");
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
+  // Função auxiliar para disparar o evento de atualização do carrinho
+  const dispatchCartUpdateEvent = () => {
+    window.dispatchEvent(new Event('cartUpdated'));
+  };
+
   useEffect(() => {
     const loadCartItems = async () => {
       try {
         setLoading(true);
-
+        
         // Recuperar carrinho do localStorage
         const savedCart = localStorage.getItem('cartItems');
         if (!savedCart) {
@@ -83,11 +77,34 @@ const ClientCartPage: React.FC = () => {
           setLoading(false);
           return;
         }
-
-        const parsedCart = JSON.parse(savedCart);
-        // O `parsedCart` agora é um objeto com chaves únicas e valores do tipo CartItemData
-        const fullCartItems: ICartItem[] = Object.values(parsedCart);
-
+        
+        const cartItemIds = Object.entries(JSON.parse(savedCart))
+          .map(([id, quantity]) => ({ id: parseInt(id), quantity: quantity as number }));
+        
+        if (cartItemIds.length === 0) {
+          setCartItems([]);
+          setLoading(false);
+          return;
+        }
+        
+        // Buscar detalhes dos itens da API
+        const itemsData = await ApiService.getMenuItems();
+        
+        // Mapear itens do carrinho com detalhes completos
+        const fullCartItems = cartItemIds.map(cartItem => {
+          const itemDetails = itemsData.find((item: any) => item.id === cartItem.id);
+          if (!itemDetails) return null;
+          
+          return {
+            id: itemDetails.id,
+            name: itemDetails.name,
+            quantidade: cartItem.quantity,
+            price: itemDetails.price,
+            imagem_url: itemDetails.image_url, // Corrigido para image_url
+            category_name: itemDetails.category_name
+          };
+        }).filter(item => item !== null) as ICartItem[];
+        
         setCartItems(fullCartItems);
       } catch (error) {
         notification.showError("Erro ao carregar itens do carrinho");
@@ -96,79 +113,70 @@ const ClientCartPage: React.FC = () => {
         setLoading(false);
       }
     };
-
+    
     loadCartItems();
   }, [notification]);
 
   useEffect(() => {
     // Recalcular subtotal sempre que os itens do carrinho mudarem
     const newSubtotal = cartItems.reduce(
-      (sum, item) => sum + item.totalItemPrice * item.quantity, // Usar totalItemPrice
+      (sum, item) => sum + item.price * item.quantidade,
       0
     );
     setSubtotal(newSubtotal);
   }, [cartItems]);
 
-  const handleUpdateQuantity = (itemKey: string, newQuantity: number) => { // key: string
+  const handleUpdateQuantity = (itemId: number, newQuantity: number) => {
     if (newQuantity <= 0) {
-      handleRemoveItem(itemKey);
+      // Mostrar confirmação antes de remover
+      handleRemoveItem(itemId);
       return;
     }
 
-    setCartItems(prevItems =>
-      prevItems.map((item) => {
-        // Encontrar o item pelo seu ID único (que agora é a chave)
-        const currentItemKey = `${item.id}-${JSON.stringify(item.selectedAddons || []).slice(0, 50)}-${item.observations?.slice(0, 50)}`;
-        if (currentItemKey === itemKey) {
-          return { ...item, quantity: newQuantity };
-        }
-        return item;
-      })
+    // Atualizar o item no carrinho
+    setCartItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === itemId ? { ...item, quantidade: newQuantity } : item
+      )
     );
-
+    
     // Atualizar no localStorage
     const savedCart = localStorage.getItem('cartItems');
     if (savedCart) {
       const cartData = JSON.parse(savedCart);
-      if (cartData[itemKey]) {
-        cartData[itemKey].quantity = newQuantity;
-        localStorage.setItem('cartItems', JSON.stringify(cartData));
-      }
+      cartData[itemId] = newQuantity;
+      localStorage.setItem('cartItems', JSON.stringify(cartData));
     }
-
+    
     notification.showSuccess("Quantidade atualizada");
+    dispatchCartUpdateEvent(); // Disparar evento
   };
 
-  const handleRemoveItem = (itemKey: string) => { // key: string
-    const itemToRemove = cartItems.find(item => {
-      const currentItemKey = `${item.id}-${JSON.stringify(item.selectedAddons || []).slice(0, 50)}-${item.observations?.slice(0, 50)}`;
-      return currentItemKey === itemKey;
-    });
-
-    setCartItems((prevItems) => prevItems.filter((item) => {
-      const currentItemKey = `${item.id}-${JSON.stringify(item.selectedAddons || []).slice(0, 50)}-${item.observations?.slice(0, 50)}`;
-      return currentItemKey !== itemKey;
-    }));
-
+  const handleRemoveItem = (itemId: number) => {
+    const itemToRemove = cartItems.find(item => item.id === itemId);
+    
+    // Remover do estado
+    setCartItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
+    
     // Remover do localStorage
     const savedCart = localStorage.getItem('cartItems');
     if (savedCart) {
       const cartData = JSON.parse(savedCart);
-      delete cartData[itemKey];
+      delete cartData[itemId];
       localStorage.setItem('cartItems', JSON.stringify(cartData));
     }
-
+    
     if (itemToRemove) {
       notification.showInfo(`${itemToRemove.name} removido do carrinho`);
     }
+    dispatchCartUpdateEvent(); // Disparar evento
   };
-
 
   const handleApplyCoupon = async () => {
     try {
       // Em uma implementação real, você chamaria a API para validar o cupom
       // const response = await ApiService.validateCoupon(couponCode);
-
+      
       // Simulação de validação de cupom
       if (couponCode.toUpperCase() === "DESC10") {
         const discountAmount = subtotal * 0.1; // 10% de desconto
@@ -183,7 +191,7 @@ const ClientCartPage: React.FC = () => {
         notification.showError("Cupom inválido ou expirado");
       }
       setShowCouponAlert(true);
-
+      
       // Esconder o alerta após alguns segundos
       setTimeout(() => {
         setShowCouponAlert(false);
@@ -197,11 +205,10 @@ const ClientCartPage: React.FC = () => {
   const handleCheckout = async () => {
     try {
       setIsCheckingOut(true);
-
-      // Simulação de processamento
-      setTimeout(() => {
-        navigate("/client/checkout");
-      }, 1000);
+      
+      // Redireciona para o checkout, onde a lógica de login/registro será tratada
+      navigate("/client/checkout");
+      
     } catch (error) {
       notification.showError("Erro ao processar pedido");
       setIsCheckingOut(false);
@@ -223,8 +230,8 @@ const ClientCartPage: React.FC = () => {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Meu Carrinho</Typography>
-        <Button
-          component={Link}
+        <Button 
+          component={Link} 
           to="/client/menu"
           startIcon={<ArrowBackIcon />}
           color="inherit"
@@ -251,9 +258,9 @@ const ClientCartPage: React.FC = () => {
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                   Adicione itens do cardápio para começar seu pedido
                 </Typography>
-                <Button
-                  variant="contained"
-                  component={Link}
+                <Button 
+                  variant="contained" 
+                  component={Link} 
                   to="/client/menu"
                 >
                   Ver Cardápio
@@ -265,141 +272,121 @@ const ClientCartPage: React.FC = () => {
                   Itens do Pedido ({cartItems.length})
                 </Typography>
                 <List sx={{ width: '100%' }}>
-                  {cartItems.map((item) => {
-                    const itemKey = `${item.id}-${JSON.stringify(item.selectedAddons || []).slice(0, 50)}-${item.observations?.slice(0, 50)}`; // Chave para manipulação
-                    return (
-                      <React.Fragment key={itemKey}>
-                        <ListItem alignItems="flex-start">
-                          <ListItemAvatar>
-                            {item.image_url ? (
-                              <Avatar
-                                alt={item.name}
-                                src={item.image_url}
-                                variant="rounded"
-                                sx={{ width: 70, height: 70 }}
+                  {cartItems.map((item) => (
+                    <React.Fragment key={item.id}>
+                      <ListItem alignItems="flex-start">
+                        <ListItemAvatar>
+                          {item.imagem_url ? (
+                            <Avatar 
+                              alt={item.name} 
+                              src={item.imagem_url} 
+                              variant="rounded"
+                              sx={{ width: 70, height: 70 }}
+                            />
+                          ) : (
+                            <Avatar 
+                              variant="rounded"
+                              sx={{ width: 70, height: 70, bgcolor: 'grey.300' }}
+                            >
+                              {item.name.charAt(0)}
+                            </Avatar>
+                          )}
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <Typography variant="subtitle1">{item.name}</Typography>
+                              <Chip 
+                                label={item.category_name} 
+                                size="small" 
+                                variant="outlined"
+                                sx={{ ml: 1 }}
                               />
-                            ) : (
-                              <Avatar
-                                variant="rounded"
-                                sx={{ width: 70, height: 70, bgcolor: 'grey.300' }}
-                              >
-                                {item.name.charAt(0)}
-                              </Avatar>
-                            )}
-                          </ListItemAvatar>
-                          <ListItemText
-                            primary={
-                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <Typography variant="subtitle1">{item.name}</Typography>
-                                <Chip
-                                  label={item.category_name}
-                                  size="small"
-                                  variant="outlined"
-                                  sx={{ ml: 1 }}
-                                />
-                              </Box>
-                            }
-                            secondary={
-                              <Box>
-                                <Typography
-                                  component="span"
-                                  variant="body2"
-                                  color="text.primary"
-                                >
-                                  R$ {item.price.toFixed(2)} cada (base)
-                                </Typography>
-                                {item.selectedAddons && item.selectedAddons.length > 0 && (
-                                  <Box sx={{ mt: 0.5 }}>
-                                    <Typography variant="body2" color="text.secondary">
-                                      Adicionais: {item.selectedAddons.map(addon => addon.name).join(', ')}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      (+ R$ {(item.totalItemPrice - item.price).toFixed(2)})
-                                    </Typography>
-                                  </Box>
-                                )}
-                                {item.observations && (
-                                  <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', mt: 0.5 }}>
-                                    Obs: {item.observations}
-                                  </Typography>
-                                )}
-                              </Box>
-                            }
-                            sx={{ ml: 2 }}
-                          />
-                          <ListItemSecondaryAction>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                              <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                                R$ {(item.totalItemPrice * item.quantity).toFixed(2)}
-                              </Typography>
-
-                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <IconButton
-                                  edge="end"
-                                  aria-label="diminuir"
-                                  onClick={() => handleUpdateQuantity(itemKey, item.quantity - 1)}
-                                  size="small"
-                                >
-                                  <RemoveIcon />
-                                </IconButton>
-
-                                <TextField
-                                  value={item.quantity}
-                                  onChange={(e) => {
-                                    const value = parseInt(e.target.value);
-                                    if (!isNaN(value)) {
-                                      handleUpdateQuantity(itemKey, value);
-                                    }
-                                  }}
-                                  inputProps={{
-                                    min: 1,
-                                    style: { textAlign: 'center' }
-                                  }}
-                                  variant="outlined"
-                                  size="small"
-                                  sx={{ width: 60, mx: 1 }}
-                                />
-
-                                <IconButton
-                                  edge="end"
-                                  aria-label="aumentar"
-                                  onClick={() => handleUpdateQuantity(itemKey, item.quantity + 1)}
-                                  size="small"
-                                >
-                                  <AddIcon />
-                                </IconButton>
-
-                                <IconButton
-                                  edge="end"
-                                  aria-label="remover"
-                                  onClick={() => handleRemoveItem(itemKey)}
-                                  color="error"
-                                  sx={{ ml: 1 }}
-                                  size="small"
-                                >
-                                  <DeleteIcon />
-                                </IconButton>
-                              </Box>
                             </Box>
-                          </ListItemSecondaryAction>
-                        </ListItem>
-                        <Divider variant="inset" component="li" />
-                      </React.Fragment>
-                    );
-                  })}
+                          }
+                          secondary={
+                            <Typography
+                              component="span"
+                              variant="body2"
+                              color="text.primary"
+                            >
+                              R$ {item.price.toFixed(2)} cada
+                            </Typography>
+                          }
+                          sx={{ ml: 2 }}
+                        />
+                        <ListItemSecondaryAction>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                            <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                              R$ {(item.price * item.quantidade).toFixed(2)}
+                            </Typography>
+                            
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <IconButton 
+                                edge="end" 
+                                aria-label="diminuir" 
+                                onClick={() => handleUpdateQuantity(item.id, item.quantidade - 1)}
+                                size="small"
+                              >
+                                <RemoveIcon />
+                              </IconButton>
+                              
+                              <TextField
+                                value={item.quantidade}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value);
+                                  if (!isNaN(value)) {
+                                    handleUpdateQuantity(item.id, value);
+                                  }
+                                }}
+                                inputProps={{ 
+                                  min: 1, 
+                                  style: { textAlign: 'center' } 
+                                }}
+                                variant="outlined"
+                                size="small"
+                                sx={{ width: 60, mx: 1 }}
+                              />
+                              
+                              <IconButton 
+                                edge="end" 
+                                aria-label="aumentar" 
+                                onClick={() => handleUpdateQuantity(item.id, item.quantidade + 1)}
+                                size="small"
+                              >
+                                <AddIcon />
+                              </IconButton>
+                              
+                              <IconButton 
+                                edge="end" 
+                                aria-label="remover" 
+                                onClick={() => handleRemoveItem(item.id)}
+                                color="error"
+                                sx={{ ml: 1 }}
+                                size="small"
+                              >
+                                <DeleteIcon />
+                              </IconButton>
+                            </Box>
+                          </Box>
+                        </ListItemSecondaryAction>
+                      </ListItem>
+                      <Divider variant="inset" component="li" />
+                    </React.Fragment>
+                  ))}
                 </List>
               </>
             )}
           </Paper>
         </Grid>
-
+        
         <Grid item xs={12} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 Resumo do Pedido
               </Typography>
-
+              
               <Box sx={{ mt: 2 }}>
                 <Grid container spacing={2}>
                   <Grid item xs={8}>
@@ -408,14 +395,14 @@ const ClientCartPage: React.FC = () => {
                   <Grid item xs={4} sx={{ textAlign: 'right' }}>
                     <Typography variant="body1">R$ {subtotal.toFixed(2)}</Typography>
                   </Grid>
-
+                  
                   <Grid item xs={8}>
                     <Typography variant="body1">Taxa de Entrega</Typography>
                   </Grid>
                   <Grid item xs={4} sx={{ textAlign: 'right' }}>
                     <Typography variant="body1">R$ {deliveryFee.toFixed(2)}</Typography>
                   </Grid>
-
+                  
                   {discount > 0 && (
                     <>
                       <Grid item xs={8}>
@@ -432,14 +419,14 @@ const ClientCartPage: React.FC = () => {
                   )}
                 </Grid>
               </Box>
-
+              
               <Divider sx={{ my: 2 }} />
-
+              
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                 <Typography variant="h6">Total</Typography>
                 <Typography variant="h6">R$ {totalAmount.toFixed(2)}</Typography>
               </Box>
-
+              
               <Box sx={{ mb: 2 }}>
                 <Grid container spacing={1}>
                   <Grid item xs={8}>
@@ -453,8 +440,8 @@ const ClientCartPage: React.FC = () => {
                     />
                   </Grid>
                   <Grid item xs={4}>
-                    <Button
-                      fullWidth
+                    <Button 
+                      fullWidth 
                       variant="outlined"
                       onClick={handleApplyCoupon}
                       disabled={!couponCode}
@@ -464,10 +451,10 @@ const ClientCartPage: React.FC = () => {
                     </Button>
                   </Grid>
                 </Grid>
-
+                
                 <Collapse in={showCouponAlert}>
-                  <Alert
-                    severity={couponAlertType}
+                  <Alert 
+                    severity={couponAlertType} 
                     sx={{ mt: 1 }}
                     onClose={() => setShowCouponAlert(false)}
                   >
@@ -475,7 +462,7 @@ const ClientCartPage: React.FC = () => {
                   </Alert>
                 </Collapse>
               </Box>
-
+              
               <Button
                 fullWidth
                 variant="contained"
@@ -486,7 +473,7 @@ const ClientCartPage: React.FC = () => {
               >
                 {isCheckingOut ? "Processando..." : "Finalizar Pedido"}
               </Button>
-
+              
               <Button
                 fullWidth
                 component={Link}
@@ -497,7 +484,7 @@ const ClientCartPage: React.FC = () => {
               </Button>
             </CardContent>
           </Card>
-
+          
           <Paper sx={{ p: 2, mt: 2 }}>
             <Typography variant="subtitle2" gutterBottom>
               Métodos de Pagamento Aceitos

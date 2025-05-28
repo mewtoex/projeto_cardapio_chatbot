@@ -1,10 +1,16 @@
-// src/modules/auth/components/ClientRegisterForm.tsx
+// frontend_pwa/src/modules/auth/components/ClientRegisterForm.tsx
 import React, { useState } from 'react';
 import AuthService from '../../shared/services/AuthService';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { TextField, Button, Box, Typography, Checkbox, FormControlLabel, Grid } from '@mui/material';
+import { useNotification } from '../../../contexts/NotificationContext';
 
-const ClientRegisterForm: React.FC = () => {
+interface ClientRegisterFormProps {
+  onRegisterSuccess?: () => void; // Nova prop
+}
+
+const ClientRegisterForm: React.FC<ClientRegisterFormProps> = ({ onRegisterSuccess }) => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -20,8 +26,9 @@ const ClientRegisterForm: React.FC = () => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth(); // Assuming registration also logs the user in or you have a separate flow
+  const { login } = useAuth(); 
   const navigate = useNavigate();
+  const notification = useNotification();
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -29,10 +36,12 @@ const ClientRegisterForm: React.FC = () => {
 
     if (password !== confirmPassword) {
       setError("As senhas não conferem!");
+      notification.showError("As senhas não conferem!");
       return;
     }
     if (!termsAccepted) {
       setError("Você precisa aceitar os Termos de Uso e Política de Privacidade.");
+      notification.showError("Você precisa aceitar os Termos de Uso e Política de Privacidade.");
       return;
     }
     setLoading(true);
@@ -41,7 +50,7 @@ const ClientRegisterForm: React.FC = () => {
         name,
         phone,
         email,
-        password, // The backend should handle hashing
+        password, 
         address: {
           cep: addressCep,
           street: addressStreet,
@@ -53,89 +62,135 @@ const ClientRegisterForm: React.FC = () => {
         }
       };
       const response = await AuthService.clientRegister(userData);
-      // Assuming successful registration also logs the user in or returns necessary data to do so
-      // For now, let's assume it returns a token and user object like login
-      // You might need to adjust this based on your AuthService.clientRegister response
-      // For example, if it doesn't auto-login, you might redirect to login page with a success message.
-      alert(response.message); // Or handle success more gracefully
-      // Optionally, log the user in directly if the API supports it and returns a token
-      // const loginResponse = await AuthService.clientLogin(email, password); 
-      // login(loginResponse.user, loginResponse.token);
-      navigate('/login'); // Redirect to login after successful registration
+      
+      // Automaticamente loga o usuário após o registro bem-sucedido
+      login(response.user, response.access_token);
+      
+      notification.showSuccess("Conta criada e login realizado com sucesso!");
+      if (onRegisterSuccess) {
+        onRegisterSuccess(); // Notifica o componente pai (CheckoutPage)
+      } else {
+        navigate('/client/dashboard'); // Redireciona para o dashboard se não houver callback
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ocorreu um erro no registro.');
+      const errorMessage = typeof err === 'string' ? err : 'Ocorreu um erro no registro.';
+      setError(errorMessage);
+      notification.showError(errorMessage);
     }
     setLoading(false);
   };
 
-  // TODO: Implement CEP auto-fill logic using a Brazilian CEP API
-
   return (
-    <form onSubmit={handleSubmit}>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <div>
-        <label htmlFor="name">Nome Completo:</label>
-        <input type="text" id="name" value={name} onChange={(e) => setName(e.target.value)} required disabled={loading} />
-      </div>
-      <div>
-        <label htmlFor="phone">Telefone:</label>
-        <input type="tel" id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} required disabled={loading} />
-      </div>
-      <div>
-        <label htmlFor="email">Email:</label>
-        <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={loading} />
-      </div>
-      <div>
-        <label htmlFor="password">Senha:</label>
-        <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={loading} />
-      </div>
-      <div>
-        <label htmlFor="confirmPassword">Confirmar Senha:</label>
-        <input type="password" id="confirmPassword" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required disabled={loading} />
-      </div>
+    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+      {error && <Typography color="error" variant="body2" sx={{ mb: 2 }}>{error}</Typography>}
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            label="Nome Completo"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            disabled={loading}
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            label="Telefone"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            disabled={loading}
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={loading}
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            label="Senha"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            label="Confirmar Senha"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            disabled={loading}
+          />
+        </Grid>
+      </Grid>
       
-      <h3>Endereço Principal</h3>
-      <div>
-        <label htmlFor="addressCep">CEP:</label>
-        <input type="text" id="addressCep" value={addressCep} onChange={(e) => setAddressCep(e.target.value)} required disabled={loading} />
-      </div>
-      <div>
-        <label htmlFor="addressStreet">Rua/Avenida:</label>
-        <input type="text" id="addressStreet" value={addressStreet} onChange={(e) => setAddressStreet(e.target.value)} required disabled={loading} />
-      </div>
-      <div>
-        <label htmlFor="addressNumber">Número:</label>
-        <input type="text" id="addressNumber" value={addressNumber} onChange={(e) => setAddressNumber(e.target.value)} required disabled={loading} />
-      </div>
-      <div>
-        <label htmlFor="addressComplement">Complemento:</label>
-        <input type="text" id="addressComplement" value={addressComplement} onChange={(e) => setAddressComplement(e.target.value)} disabled={loading} />
-      </div>
-      <div>
-        <label htmlFor="addressDistrict">Bairro:</label>
-        <input type="text" id="addressDistrict" value={addressDistrict} onChange={(e) => setAddressDistrict(e.target.value)} required disabled={loading} />
-      </div>
-      <div>
-        <label htmlFor="addressCity">Cidade:</label>
-        <input type="text" id="addressCity" value={addressCity} onChange={(e) => setAddressCity(e.target.value)} required disabled={loading} />
-      </div>
-      <div>
-        <label htmlFor="addressState">Estado:</label>
-        <input type="text" id="addressState" value={addressState} onChange={(e) => setAddressState(e.target.value)} required disabled={loading} />
-      </div>
+      <Typography variant="h6" sx={{ mt: 3, mb: 1 }}>Endereço Principal</Typography>
+      <Grid container spacing={2}>
+        <Grid item xs={12} sm={6}>
+          <TextField fullWidth label="CEP" value={addressCep} onChange={(e) => setAddressCep(e.target.value)} required disabled={loading} />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField fullWidth label="Rua/Avenida" value={addressStreet} onChange={(e) => setAddressStreet(e.target.value)} required disabled={loading} />
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <TextField fullWidth label="Número" value={addressNumber} onChange={(e) => setAddressNumber(e.target.value)} required disabled={loading} />
+        </Grid>
+        <Grid item xs={12} sm={8}>
+          <TextField fullWidth label="Complemento" value={addressComplement} onChange={(e) => setAddressComplement(e.target.value)} disabled={loading} />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField fullWidth label="Bairro" value={addressDistrict} onChange={(e) => setAddressDistrict(e.target.value)} required disabled={loading} />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField fullWidth label="Cidade" value={addressCity} onChange={(e) => setAddressCity(e.target.value)} required disabled={loading} />
+        </Grid>
+        <Grid item xs={12}>
+          <TextField fullWidth label="Estado" value={addressState} onChange={(e) => setAddressState(e.target.value)} required disabled={loading} />
+        </Grid>
+      </Grid>
 
-      <div>
-        <input type="checkbox" id="termsAccepted" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} disabled={loading} />
-        <label htmlFor="termsAccepted">Li e aceito os Termos de Uso e Política de Privacidade.</label>
-        {/* TODO: Add links to terms and policy */}
-      </div>
+      <FormControlLabel
+        control={<Checkbox checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} disabled={loading} />}
+        label={
+          <Typography variant="body2">
+            Li e aceito os <Link to="/terms" style={{ textDecoration: 'none' }}>Termos de Uso</Link> e <Link to="/privacy" style={{ textDecoration: 'none' }}>Política de Privacidade</Link>.
+          </Typography>
+        }
+        sx={{ mt: 2, mb: 2 }}
+      />
 
-      <button type="submit" disabled={loading}>
+      <Button
+        type="submit"
+        fullWidth
+        variant="contained"
+        sx={{ mt: 3, mb: 2 }}
+        disabled={loading}
+      >
         {loading ? 'Registrando...' : 'Criar Conta'}
-      </button>
-    </form>
+      </Button>
+    </Box>
   );
 };
 
 export default ClientRegisterForm;
-

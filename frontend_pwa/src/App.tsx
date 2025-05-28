@@ -1,4 +1,4 @@
-// src/App.tsx
+// frontend_pwa/src/App.tsx
 import React from "react";
 import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
@@ -8,9 +8,9 @@ import { AppNotificationProvider } from "./contexts/NotificationContext";
 import { AuthProvider } from "./modules/auth/contexts/AuthContext";
 
 // Auth Pages
-import ClientLoginPage from "./modules/auth/pages/ClientLoginPage";
-import ClientRegisterPage from "./modules/auth/pages/ClientRegisterPage";
-import AdminLoginPage from "./modules/admin/auth/pages/AdminLoginPage";
+// import ClientLoginPage from "./modules/auth/pages/ClientLoginPage"; // Remover esta importação
+// import AdminLoginPage from "./modules/admin/auth/pages/AdminLoginPage"; // Remover esta importação
+import UnifiedLoginPage from "./modules/auth/pages/UnifiedLoginPage"; // Adicionar esta nova página
 
 // Client Pages
 import ClientDashboardPage from "./modules/client/pages/ClientDashboardPage";
@@ -23,39 +23,11 @@ import ClientCheckoutPage from "./modules/client/pages/ClientCheckoutPage";
 import AdminDashboardPage from "./modules/admin/dashboard/pages/AdminDashboardPage";
 import AdminOrderManagementPage from "./modules/admin/pedidos/pages/AdminOrderManagementPage";
 import AdminItemManagementPage from "./modules/admin/itens/pages/AdminItemManagementPage";
-import AdminBotMessagesPage from "./modules/admin/bot_messages/pages/AdminBotMessagesPage"; // NOVO: Página de mensagens do bot
 
 // Layout and Routes
 import { MainLayout } from "./components/Layout/MainLayout";
 import ProtectedRoute from "./router/ProtectedRoute";
-
-// Página inicial temporária para desenvolvimento
-const HomePage: React.FC = () => {
-  return (
-    <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
-      <h1>Sistema de Cardápio Online</h1>
-      <p>Bem-vindo ao sistema de cardápio. Por favor, escolha uma opção:</p>
-      
-      <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
-        <div>
-          <h2>Área do Cliente</h2>
-          <ul>
-            <li><a href="/login">Login de Cliente</a></li>
-            <li><a href="/register">Cadastro de Cliente</a></li>
-            <li><a href="/client/menu">Ver Cardápio (Modo Demonstração)</a></li>
-          </ul>
-        </div>
-        
-        <div>
-          <h2>Área Administrativa</h2>
-          <ul>
-            <li><a href="/admin/login">Login de Administrador</a></li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  );
-};
+import ClientRegisterPage from "./modules/auth/pages/ClientRegisterPage";
 
 const App: React.FC = () => {
   return (
@@ -65,15 +37,16 @@ const App: React.FC = () => {
         <AppNotificationProvider>
           <Router>
             <Routes>
-              {/* Página inicial temporária para desenvolvimento */}
-              <Route path="/" element={<HomePage />} />
+              {/* Rota inicial agora direciona para o cardápio */}
+              <Route path="/" element={<Navigate to="/client/menu" replace />} />
               
-              {/* Rotas de autenticação */}
-              <Route path="/login" element={<ClientLoginPage />} />
+              {/* Rota unificada de login */}
+              <Route path="/login" element={<UnifiedLoginPage />} />
+              <Route path="/admin/login" element={<Navigate to="/login" replace />} /> {/* Redireciona admin para o login unificado */}
               <Route path="/register" element={<ClientRegisterPage />} />
-              <Route path="/admin/login" element={<AdminLoginPage />} />
 
-              {/* Rota de demonstração do cardápio sem autenticação */}
+
+              {/* Rota do cardápio acessível sem autenticação */}
               <Route path="/client/menu" element={
                 <MainLayout>
                   <ClientMenuPage />
@@ -121,14 +94,10 @@ const App: React.FC = () => {
                     <AdminItemManagementPage />
                   </MainLayout>
                 } />
-                <Route path="/admin/bot-messages" element={ 
-                  <MainLayout>
-                    <AdminBotMessagesPage />
-                  </MainLayout>
-                } />
               </Route>
 
-              <Route path="*" element={<Navigate to="/" replace />} />
+              {/* Rota para página não encontrada (redireciona para o cardápio) */}
+              <Route path="*" element={<Navigate to="/client/menu" replace />} />
             </Routes>
           </Router>
         </AppNotificationProvider>

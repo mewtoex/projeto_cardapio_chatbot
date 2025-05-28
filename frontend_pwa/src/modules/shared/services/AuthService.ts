@@ -9,14 +9,14 @@ const AuthService = {
   clientLogin: async (email, password ) => {
     try {
       console.log("Realizando login de cliente com:", email);
-      const response = await axios.post(`${API_BASE_URL}/auth//login`, {
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, { // Corrigido o endpoint para /auth/login
         email,
         password
       });
       
       const { access_token, user } = response.data;
       localStorage.setItem('authUser', JSON.stringify(user));
-      localStorage.setItem('Token', access_token);
+      localStorage.setItem('authToken', access_token); // Salvar como 'authToken' para consistência
       
       return response.data;
     } catch (error) {
@@ -28,6 +28,10 @@ const AuthService = {
   clientRegister: async (userData) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/register`, userData);
+      // Se o registro já retorna user e access_token, pode-se usar diretamente
+      const { access_token, user } = response.data;
+      localStorage.setItem('authUser', JSON.stringify(user));
+      localStorage.setItem('authToken', access_token); // Salvar como 'authToken'
       return response.data;
     } catch (error) {
       console.error("Erro no registro de cliente:", error);
@@ -45,7 +49,7 @@ const AuthService = {
       console.log(response.data)
       const { access_token, user } = response.data;
       localStorage.setItem('authUser', JSON.stringify(user));
-      localStorage.setItem('Token', JSON.stringify(access_token));
+      localStorage.setItem('authToken', access_token); // Salvar como 'authToken'
       return response.data;
     } catch (error) {
       console.error("Erro no login de administrador:", error);
@@ -53,56 +57,45 @@ const AuthService = {
     }
   },
 
-  // Logout com chamada real à API
   logout: async () => {
     try {
-      // Obtém o token atual para enviar no cabeçalho da requisição
-      const token = localStorage.getItem('Token');
-      
-      // Realiza a chamada à API para invalidar o token no backend
+      const token = localStorage.getItem('authToken'); // Usar 'authToken'
       if (token) {
-        await axios.post(`${API_BASE_URL}/logout`, {}, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        // Se houver um endpoint de logout no backend para invalidar o token
+        // await axios.post(`${API_BASE_URL}/logout`, {}, {
+        //   headers: {
+        //     'Authorization': `Bearer ${token}`
+        //   }
+        // });
       }
       
-      // Independente da resposta da API, remove os dados do localStorage
       localStorage.removeItem('authUser');
-      localStorage.removeItem('Token');
+      localStorage.removeItem('authToken'); // Remover 'authToken'
       
       return { message: "Logout realizado com sucesso" };
     } catch (error) {
       console.error("Erro ao realizar logout:", error);
-      
-      // Mesmo com erro na API, remove os dados do localStorage para garantir logout local
       localStorage.removeItem('authUser');
-      localStorage.removeItem('Token');
-      
+      localStorage.removeItem('authToken');
       return { message: "Logout realizado localmente" };
     }
   },
 
-  // Método para obter o token armazenado
   getToken: () => {
-    return localStorage.getItem('Token');
+    return localStorage.getItem('authToken'); // Usar 'authToken'
   },
 
-  // Método para obter o usuário armazenado
   getUser: () => {
     const userStr = localStorage.getItem('authUser');
     return userStr ? JSON.parse(userStr) : null;
   },
 
-  // Verificar se o usuário está autenticado
   isAuthenticated: () => {
-    return !!localStorage.getItem('Token');
+    return !!localStorage.getItem('authToken'); // Usar 'authToken'
   },
   
-  // Configurar cabeçalhos de autenticação para outras chamadas à API
   getAuthHeaders: () => {
-    const token = localStorage.getItem('Token');
+    const token = localStorage.getItem('authToken'); // Usar 'authToken'
     return token ? { 'Authorization': `Bearer ${token}` } : {};
   }
 };

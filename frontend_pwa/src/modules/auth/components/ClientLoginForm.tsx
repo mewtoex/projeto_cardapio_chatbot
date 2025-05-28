@@ -1,16 +1,21 @@
-// src/modules/auth/components/ClientLoginForm.tsx
+// frontend_pwa/src/modules/auth/components/ClientLoginForm.tsx
 import React, { useState } from 'react';
 import AuthService from '../../shared/services/AuthService';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom'; // Assuming you'll redirect after login
+import { useNavigate } from 'react-router-dom';
+import { TextField, Button, Box, Typography } from '@mui/material';
 
-const ClientLoginForm: React.FC = () => {
+interface ClientLoginFormProps {
+  onLoginSuccess?: () => void; // Nova prop
+}
+
+const ClientLoginForm: React.FC<ClientLoginFormProps> = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
-  const navigate = useNavigate(); // For redirection
+  const navigate = useNavigate();
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -18,48 +23,64 @@ const ClientLoginForm: React.FC = () => {
     setLoading(true);
     try {
       const response = await AuthService.clientLogin(email, password);
-      // Assuming response contains { token: string, user: AuthUser }
-      login(response.user, response.token);
-      // TODO: Redirect to client dashboard or home page
-      navigate('/client/dashboard'); // Example redirect
+      login(response.user, response.access_token); // Use access_token from response
+      
+      if (onLoginSuccess) {
+        onLoginSuccess(); // Notifica o componente pai (CheckoutPage)
+      } else {
+        navigate('/client/dashboard'); // Redireciona para o dashboard se não houver callback
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ocorreu um erro no login.');
+      setError(typeof err === 'string' ? err : 'Ocorreu um erro no login.');
     }
     setLoading(false);
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <div>
-        <label htmlFor="email">Email:</label>
-        <input
-          type="email"
-          id="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          disabled={loading}
-        />
-      </div>
-      <div>
-        <label htmlFor="password">Senha:</label>
-        <input
-          type="password"
-          id="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          disabled={loading}
-        />
-      </div>
-      <button type="submit" disabled={loading}>
+    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+      {error && (
+        <Typography color="error" variant="body2" sx={{ mb: 2 }}>
+          {error}
+        </Typography>
+      )}
+      <TextField
+        margin="normal"
+        required
+        fullWidth
+        id="email"
+        label="Email"
+        name="email"
+        autoComplete="email"
+        autoFocus
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        disabled={loading}
+      />
+      <TextField
+        margin="normal"
+        required
+        fullWidth
+        name="password"
+        label="Senha"
+        type="password"
+        id="password"
+        autoComplete="current-password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        disabled={loading}
+      />
+      <Button
+        type="submit"
+        fullWidth
+        variant="contained"
+        sx={{ mt: 3, mb: 2 }}
+        disabled={loading}
+      >
         {loading ? 'Entrando...' : 'Entrar'}
-      </button>
-      {/* TODO: Add link for password recovery */}
-    </form>
+      </Button>
+      {/* TODO: Adicionar link para recuperação de senha */}
+    </Box>
   );
 };
 
 export default ClientLoginForm;
-

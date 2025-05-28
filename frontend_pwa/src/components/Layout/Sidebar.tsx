@@ -1,4 +1,4 @@
-// src/components/Layout/Sidebar.tsx
+// frontend_pwa/src/components/Layout/Sidebar.tsx
 import React from 'react';
 import {
   Drawer,
@@ -17,8 +17,7 @@ import {
   Restaurant as RestaurantIcon,
   ShoppingCart as ShoppingCartIcon,
   History as HistoryIcon,
-  ExitToApp as LogoutIcon,
-  Message as MessageIcon // NOVO ÍCONE
+  ExitToApp as LogoutIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../modules/auth/contexts/AuthContext';
@@ -26,26 +25,20 @@ import { useAuth } from '../../modules/auth/contexts/AuthContext';
 interface SidebarProps {
   open: boolean;
   onClose: () => void;
-  cartItemsCount?: number;
+  cartItemsCount?: number; // Adicionar prop para contagem de itens
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, cartItemsCount = 0 }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
-  const cart = () => {
-    return <>
-      <Badge badgeContent={4} color="error">
-          <ShoppingCartIcon />
-      </Badge>
-    </>
-  }
+  
   const isAdmin = user?.role === 'admin';
 
   const clientMenuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/client/dashboard' },
     { text: 'Cardápio', icon: <RestaurantIcon />, path: '/client/menu' },
-    { text: 'Carrinho', icon: cart(), path: '/client/cart', badge: cartItemsCount },
+    { text: 'Carrinho', icon: <ShoppingCartIcon />, path: '/client/cart', badge: cartItemsCount }, // Usar a prop badge
     { text: 'Meus Pedidos', icon: <HistoryIcon />, path: '/client/orders' },
   ];
 
@@ -53,7 +46,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, cartItemsCount 
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/admin/dashboard' },
     { text: 'Gerenciar Itens', icon: <RestaurantIcon />, path: '/admin/items' },
     { text: 'Gerenciar Pedidos', icon: <HistoryIcon />, path: '/admin/orders' },
-    { text: 'Mensagens do Bot', icon: <MessageIcon />, path: '/admin/bot-messages' }, // NOVO ITEM DE MENU
   ];
 
   const menuItems = isAdmin ? adminMenuItems : clientMenuItems;
@@ -107,7 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onClose, cartItemsCount 
               }}
             >
               <ListItemIcon>
-                {item.badge ? (
+                {item.badge !== undefined ? ( // Verificar se a badge existe
                   <Badge badgeContent={item.badge} color="error">
                     {item.icon}
                   </Badge>

@@ -14,12 +14,12 @@ interface AuthContextType {
   token: string | null;
   login: (userData: AuthUser, token: string) => void;
   logout: () => void;
-  // Add register function if needed for context updates post-registration
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // Usar 'authToken' como chave para consistência
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => !!localStorage.getItem('authToken'));
   const [user, setUser] = useState<AuthUser | null>(() => {
     const storedUser = localStorage.getItem('authUser');
@@ -29,7 +29,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = (userData: AuthUser, authToken: string) => {
     localStorage.setItem('authUser', JSON.stringify(userData));
-    localStorage.setItem('authToken', authToken);
+    localStorage.setItem('authToken', authToken); // Salvar com 'authToken'
     setUser(userData);
     setToken(authToken);
     setIsAuthenticated(true);
@@ -37,7 +37,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = () => {
     localStorage.removeItem('authUser');
-    localStorage.removeItem('authToken');
+    localStorage.removeItem('authToken'); // Remover 'authToken'
     setUser(null);
     setToken(null);
     setIsAuthenticated(false);
@@ -58,4 +58,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
