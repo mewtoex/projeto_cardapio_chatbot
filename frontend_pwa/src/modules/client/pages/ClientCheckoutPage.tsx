@@ -19,12 +19,21 @@ interface Address {
   cep: string;
   isPrimary?: boolean;
 }
+
+interface AddonOption { // Interface para adicionar
+  id: string;
+  name: string;
+  price: number;
+}
+
 interface CartItemDetails {
-  item_cardapio_id: string; // ID do item no cardápio (vem da API)
-  nome: string; // Vem da API
-  quantidade: number; // Vem do localStorage
-  preco_unitario_momento: number; // Vem da API
-  observacoes_item?: string; // Pode ser adicionado futuramente
+  id: number; // ID do item no cardápio (vem da API)
+  name: string; // Vem da API
+  quantity: number; // Vem do localStorage
+  price: number; // Preço base do item
+  observations?: string; // NOVO: Observações do item
+  selectedAddons?: AddonOption[]; // NOVO: Adicionais selecionados
+  totalItemPrice: number; // NOVO: Preço total do item com adicionais
 }
 
 const ClientCheckoutPage: React.FC = () => {
@@ -40,7 +49,7 @@ const ClientCheckoutPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [loadingCart, setLoadingCart] = useState(true);
   const [loadingAddresses, setLoadingAddresses] = useState(true);
-  const subtotal = cartItems.reduce((sum, item) => sum + item.preco_unitario_momento * item.quantidade, 0);
+  const subtotal = cartItems.reduce((sum, item) => sum + item.totalItemPrice * item.quantity, 0); // Usar totalItemPrice
   const deliveryFee = 5.0;
   const total = subtotal + deliveryFee;
 
@@ -54,7 +63,7 @@ const ClientCheckoutPage: React.FC = () => {
         const profileData = await ApiService.getUserAddress();
         if (profileData) {
           setUserAddresses(profileData);
-          const primaryAddress = profileData.find((addr: Address) => addr.principal);
+          const primaryAddress = profileData.find((addr: Address) => addr.isPrimary);
           if (primaryAddress) {
             setSelectedAddressId(primaryAddress.id);
           }
@@ -69,27 +78,12 @@ const ClientCheckoutPage: React.FC = () => {
       }
 
       try {
-        // Buscar itens do carrinho (localStorage + API)
+        // Buscar itens do carrinho (localStorage)
         const savedCart = localStorage.getItem("cartItems");
-        const cartData = savedCart ? JSON.parse(savedCart) : {};
-        const itemIds = Object.keys(cartData);
-        if (itemIds.length === 0) {
-          setCartItems([]);
-          setLoadingCart(false);
-          return;
-        }
-        const allMenuItems = await ApiService.getMenuItems(); // Assumindo que isso retorna todos os itens
+        const parsedCart = savedCart ? JSON.parse(savedCart) : {};
 
-        const detailedCartItems: CartItemDetails[] = itemIds.map(id => {
-          const menuItem = allMenuItems.find((item: any) => String(item.id) === id);
-          if (!menuItem) return null; 
-          return {
-            item_cardapio_id: String(menuItem.id),
-            nome: menuItem.name,
-            quantidade: cartData[id],
-            preco_unitario_momento: menuItem.price, 
-          };
-        }).filter(item => item !== null) as CartItemDetails[];
+        // Os itens já vêm detalhados do ClientMenuPage e ClientCartPage, basta convertê-los para array
+        const detailedCartItems: CartItemDetails[] = Object.values(parsedCart);
 
         setCartItems(detailedCartItems);
 
@@ -131,22 +125,27 @@ const ClientCheckoutPage: React.FC = () => {
 
     setError(null);
     setLoading(true);
-    console.log(cartItems)
+
     const orderData = {
       address_id: selectedAddressId,
       payment_method: paymentMethod,
       items: cartItems.map(item => ({
-        menu_item_id: item.item_cardapio_id,
-        quantity: item.quantidade,
-        price_at_order_time: item.preco_unitario_momento || 0,
+        menu_item_id: item.id,
+        quantity: item.quantity,
+        price_at_order_time: item.totalItemPrice, // Enviar o preço total do item com adicionais
+        observations: item.observations, // NOVO: Observações
+        selected_addons: item.selectedAddons?.map(addon => ({ // NOVO: Adicionais
+            id: addon.id,
+            name: addon.name,
+            price: addon.price
+        })) || [],
       })),
-      //observacoes_cliente: "",
       valor_pago_dinheiro: valorPagoDinheiro,
     };
 
     try {
       const response = await ApiService.createOrder(orderData);
-      notification.showSuccess(`Pedido #${response.numero_pedido || response.id} confirmado!`);
+      notification.showSuccess(`Pedido #${response.id} confirmado!`);
       localStorage.removeItem("cartItems");
       setCartItems([]);
       navigate(`/client/orders/${response.id}`);
@@ -234,7 +233,13 @@ const ClientCheckoutPage: React.FC = () => {
           <p>Carregando itens do carrinho...</p>
         ) : cartItems.length > 0 ? (
           cartItems.map(item => (
-            <p key={item.item_cardapio_id}>{item.nome} (x{item.quantidade}) - R$ {(item.preco_unitario_momento * item.quantidade).toFixed(2)}</p>
+            <p key={`${item.id}-${item.observations}-${JSON.stringify(item.selectedAddons)}`}> {/* Chave mais robusta */}
+              {item.name} (x{item.quantity}) - R$ {(item.totalItemPrice * item.quantity).toFixed(2)}
+              {item.selectedAddons && item.selectedAddons.length > 0 && (
+                ` (+ Adicionais: ${item.selectedAddons.map(addon => addon.name).join(', ')})`
+              )}
+              {item.observations && ` (Obs: ${item.observations})`}
+            </p>
           ))
         ) : (
           <p>Seu carrinho está vazio.</p>
@@ -254,4 +259,3 @@ const ClientCheckoutPage: React.FC = () => {
 };
 
 export default ClientCheckoutPage;
-

@@ -1,11 +1,11 @@
-import AuthService from "./AuthService"; 
+import AuthService from "./AuthService";
 
-const API_BASE_URL = "http://localhost:5000/api/"; 
+const API_BASE_URL = "http://localhost:5000/api/";
 
 const getAuthHeaders = () => {
   let token = AuthService.getToken();
   if (token?.startsWith('"') && token?.endsWith('"')) {
-      token = token.slice(1, -1); 
+      token = token.slice(1, -1);
   }
   const headers: HeadersInit = {
     "Content-Type": "application/json",
@@ -19,9 +19,9 @@ const getAuthHeaders = () => {
 const getAuthHeadersFormData = () => {
   let token = AuthService.getToken();
   if (token?.startsWith('"') && token?.endsWith('"')) {
-      token = token.slice(1, -1); 
+      token = token.slice(1, -1);
   }
-  const headers: HeadersInit = {}; 
+  const headers: HeadersInit = {};
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
@@ -38,7 +38,7 @@ const handleResponse = async (response: Response) => {
     }
     throw new Error(errorData?.message || `HTTP error! status: ${response.status}`);
   }
-  if (response.status === 204) { 
+  if (response.status === 204) {
     return null;
   }
   return response.json();
@@ -59,11 +59,11 @@ const ApiService = {
   },
 
   getMenuItemById: async (id_item: string) => {
-    const response = await fetch(`${API_BASE_URL}/menu_items/${id_item}`, { headers: getAuthHeaders() });
+    const response = await fetch(`${API_BASE_URL}menu_items/${id_item}`, { headers: getAuthHeaders() });
     return handleResponse(response);
   },
 
-  createMenuItem: async (formData: FormData) => { 
+  createMenuItem: async (formData: FormData) => {
     const response = await fetch(`${API_BASE_URL}menu_items/admin`, {
       method: "POST",
       headers: getAuthHeadersFormData(),
@@ -112,12 +112,12 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  getCategoryById_Admin: async (id_categoria: string) => { 
+  getCategoryById_Admin: async (id_categoria: string) => {
     const response = await fetch(`${API_BASE_URL}categories/${id_categoria}`, { headers: getAuthHeaders() });
     return handleResponse(response);
   },
 
-  createCategory: async (data: { nome: string; descricao?: string }) => { 
+  createCategory: async (data: { nome: string; descricao?: string }) => {
     const response = await fetch(`${API_BASE_URL}categories`, {
       method: "POST",
       headers: getAuthHeaders(),
@@ -126,7 +126,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  updateCategory: async (id_categoria: string, data: { nome: string; descricao?: string }) => { 
+  updateCategory: async (id_categoria: string, data: { nome: string; descricao?: string }) => {
     const response = await fetch(`${API_BASE_URL}categories/${id_categoria}`, {
       method: "PUT",
       headers: getAuthHeaders(),
@@ -135,7 +135,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  deleteCategory: async (id_categoria: string) => { 
+  deleteCategory: async (id_categoria: string) => {
     const response = await fetch(`${API_BASE_URL}categories/${id_categoria}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
@@ -143,7 +143,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  createOrder: async (orderData: any) => { 
+  createOrder: async (orderData: any) => {
     const response = await fetch(`${API_BASE_URL}orders`, {
       method: "POST",
       headers: getAuthHeaders(),
@@ -165,21 +165,21 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  getClientOrderById: async (id_pedido: string) => { 
+  getClientOrderById: async (id_pedido: string) => {
     const response = await fetch(`${API_BASE_URL}orders/me/${id_pedido}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
-  
-  getAdminOrderById: async (id_pedido: string) => { 
+
+  getAdminOrderById: async (id_pedido: string) => {
     const response = await fetch(`${API_BASE_URL}orders/admin${id_pedido}`, {
         headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
-  getAdminOrders: async (filters?: { status?: string; data_inicio?: string; data_fim?: string; cliente_id?: string }) => { 
+  getAdminOrders: async (filters?: { status?: string; data_inicio?: string; data_fim?: string; cliente_id?: string }) => {
     let url = `${API_BASE_URL}orders/admin`;
     if (filters) {
       const params = new URLSearchParams();
@@ -192,8 +192,8 @@ const ApiService = {
     const response = await fetch(url, { headers: getAuthHeaders() });
     return handleResponse(response);
   },
-  
-  getResumeOrders: async () => { 
+
+  getResumeOrders: async () => {
     let url = `${API_BASE_URL}orders/resume`;
     const response = await fetch(url, { headers: getAuthHeaders() });
     return handleResponse(response);
@@ -208,7 +208,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  requestOrderCancellation_Client: async (id_pedido: string) => { 
+  requestOrderCancellation_Client: async (id_pedido: string) => {
     const response = await fetch(`${API_BASE_URL}/orders/me/${id_pedido}/solicitar-cancelamento`, {
       method: "PATCH",
       headers: getAuthHeaders(),
@@ -216,7 +216,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  approveOrderCancellation_Admin: async (id_pedido: string) => { 
+  approveOrderCancellation_Admin: async (id_pedido: string) => {
     const response = await fetch(`${API_BASE_URL}orders/admin/${id_pedido}/confirmar-cancelamento`, {
       method: "PATCH",
       headers: getAuthHeaders(),
@@ -224,7 +224,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  rejectOrderCancellation_Admin: async (id_pedido: string) => { 
+  rejectOrderCancellation_Admin: async (id_pedido: string) => {
     const response = await fetch(`${API_BASE_URL}orders/admin/${id_pedido}/recusar-cancelamento`, {
       method: "PATCH",
       headers: getAuthHeaders(),
@@ -274,14 +274,14 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  getUserProfile: async () => { 
+  getUserProfile: async () => {
     const response = await fetch(`${API_BASE_URL}users/me`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
-  updateUserProfile: async (profileData: any) => { 
+  updateUserProfile: async (profileData: any) => {
     const response = await fetch(`${API_BASE_URL}users/me`, {
       method: "PUT",
       headers: getAuthHeaders(),
@@ -290,7 +290,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  getUserAddress: async () => { 
+  getUserAddress: async () => {
     const response = await fetch(`${API_BASE_URL}users/me/addresses`, {
       method: "GET",
       headers: getAuthHeaders(),
@@ -298,7 +298,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  getItemsOrder: async (id_orden: string) => { 
+  getItemsOrder: async (id_orden: string) => {
     const response = await fetch(`${API_BASE_URL}orders/order_items/${id_orden}`, {
       method: "GET",
       headers: getAuthHeaders(),
@@ -307,7 +307,7 @@ const ApiService = {
   },
 
 
-  addUserAddress: async (addressData: any) => { 
+  addUserAddress: async (addressData: any) => {
     const response = await fetch(`${API_BASE_URL}users/me/addresses`, {
       method: "POST",
       headers: getAuthHeaders(),
@@ -316,7 +316,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  updateUserAddress: async (id_endereco: string, addressData: any) => { 
+  updateUserAddress: async (id_endereco: string, addressData: any) => {
     const response = await fetch(`${API_BASE_URL}users/me/addresses/${id_endereco}`, {
       method: "PUT",
       headers: getAuthHeaders(),
@@ -325,7 +325,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  deleteUserAddress: async (id_endereco: string) => { 
+  deleteUserAddress: async (id_endereco: string) => {
     const response = await fetch(`${API_BASE_URL}users/me/addresses/${id_endereco}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
@@ -368,7 +368,102 @@ const ApiService = {
     });
     return handleResponse(response);
   },
+
+  // NOVO: Rotas para Addon Categories
+  getAddonCategories: async () => {
+    const response = await fetch(`${API_BASE_URL}addons/categories`, { headers: getAuthHeaders() });
+    return handleResponse(response);
+  },
+
+  createAddonCategory: async (data: { name: string; min_selections?: number; max_selections?: number; is_required?: boolean }) => {
+    const response = await fetch(`${API_BASE_URL}addons/categories`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  updateAddonCategory: async (id: string, data: { name?: string; min_selections?: number; max_selections?: number; is_required?: boolean }) => {
+    const response = await fetch(`${API_BASE_URL}addons/categories/${id}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  deleteAddonCategory: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}addons/categories/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  // NOVO: Rotas para Addon Options
+  createAddonOption: async (categoryId: string, data: { name: string; price: number }) => {
+    const response = await fetch(`${API_BASE_URL}addons/categories/${categoryId}/options`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  updateAddonOption: async (id: string, data: { name?: string; price?: number }) => {
+    const response = await fetch(`${API_BASE_URL}addons/options/${id}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  deleteAddonOption: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}addons/options/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  // NOVO: Rotas para Bot Messages
+  getBotMessages: async () => { // Usado pelo chatbot (rota pública)
+    const response = await fetch(`${API_BASE_URL}bot_messages`, { headers: getAuthHeaders() });
+    return handleResponse(response);
+  },
+
+  getAllBotMessagesAdmin: async () => { // Usado pelo admin (rota protegida)
+    const response = await fetch(`${API_BASE_URL}bot_messages/admin`, { headers: getAuthHeaders() });
+    return handleResponse(response);
+  },
+
+  createBotMessage: async (data: { command: string; response_text: string; is_active?: boolean }) => {
+    const response = await fetch(`${API_BASE_URL}bot_messages/admin`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  updateBotMessage: async (id: string, data: { command?: string; response_text?: string; is_active?: boolean }) => {
+    const response = await fetch(`${API_BASE_URL}bot_messages/admin/${id}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  deleteBotMessage: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}bot_messages/admin/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
 };
 
 export default ApiService;
-
