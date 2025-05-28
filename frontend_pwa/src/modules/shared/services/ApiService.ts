@@ -1,7 +1,7 @@
 // src/modules/shared/services/ApiService.ts
-import AuthService from "./AuthService"; 
+import AuthService from "./AuthService";
 
-const API_BASE_URL = "http://localhost:5000/api/"; 
+const API_BASE_URL = "http://localhost:5000/api/";
 
 const getAuthHeaders = () => {
   let token = AuthService.getToken();
@@ -370,6 +370,20 @@ const ApiService = {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
+  },
+  printOrder: async (orderId: string) => {
+    const response = await fetch(`${API_BASE_URL}admin/orders/${orderId}/print`, {
+      headers: {
+        ...getAuthHeaders(),
+        'Accept': 'application/pdf' // Indicar que espera um PDF
+      }
+    });
+    if (!response.ok) {
+        let errorData;
+        try { errorData = await response.json(); } catch (e) { errorData = { message: response.statusText }; }
+        throw new Error(errorData?.message || `HTTP error! status: ${response.status}`);
+    }
+    return response.blob(); // Retorna o blob do PDF
   },
 };
 

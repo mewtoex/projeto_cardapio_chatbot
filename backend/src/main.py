@@ -1,6 +1,7 @@
+# backend/src/main.py
 import os
 import sys
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone # Adicionar timezone
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from flask import Flask, send_from_directory, jsonify
 from flask_cors import CORS
@@ -14,8 +15,12 @@ from src.models.menu_item import MenuItem
 from src.models.order import Order
 from src.models.order_item import OrderItem
 from src.models.promotion import Promotion
-from src.models.addon import AddonCategory, AddonOption, OrderItemAddon # NOVOS MODELOS
-from src.models.bot_message import BotMessage # NOVO MODELO
+from src.models.addon import AddonCategory, AddonOption, OrderItemAddon
+from src.models.bot_message import BotMessage
+# NOVOS MODELOS PARA ENTREGA
+from src.models.store import Store
+from src.models.delivery_area import DeliveryArea
+
 
 # Import blueprints
 from src.routes.auth_routes import auth_bp
@@ -23,8 +28,11 @@ from src.routes.user_profile_routes import user_profile_bp
 from src.routes.order_routes import order_bp
 from src.routes.category_routes import category_bp
 from src.routes.menu_item_routes import menu_item_bp
-from src.routes.addon_routes import addon_bp # NOVO BLUEPRINT
-from src.routes.bot_message_routes import bot_message_bp # NOVO BLUEPRINT
+from src.routes.addon_routes import addon_bp
+from src.routes.bot_message_routes import bot_message_bp
+# NOVOS BLUEPRINTS PARA ENTREGA
+from src.routes.store_routes import store_bp
+from src.routes.delivery_routes import delivery_bp
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), "static"))
 
@@ -67,6 +75,12 @@ if not os.path.exists(UPLOAD_FOLDER):
 # Initialize SQLAlchemy with the app
 db.init_app(app)
 
+# NOVO: Configurar um timezone para a sessão do SQLAlchemy
+# Isso é importante para comparações de data e hora corretas
+with app.app_context():
+    db.session.info['timezone'] = timezone.utc # Usar UTC para consistência
+
+
 # JWT Configuration
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "um_jwt_segredo_super_secreto_e_longo")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
@@ -79,14 +93,17 @@ with app.app_context():
     print("Database tables checked/created.")
 
 # --- Register Blueprints ---
-app.register_blueprint(auth_bp) # /api/auth
-app.register_blueprint(user_profile_bp) # /api/users
-app.register_blueprint(order_bp) # /api/orders
-app.register_blueprint(category_bp) # /api/categories
-app.register_blueprint(menu_item_bp) # /api/menu_items
-app.register_blueprint(addon_bp) # NOVO BLUEPRINT: /api/addons
-app.register_blueprint(bot_message_bp) # NOVO BLUEPRINT: /api/bot_messages
-# TODO: Register promotion_bp, admin_dashboard_bp
+app.register_blueprint(auth_bp)
+app.register_blueprint(user_profile_bp)
+app.register_blueprint(order_bp)
+app.register_blueprint(category_bp)
+app.register_blueprint(menu_item_bp)
+app.register_blueprint(addon_bp)
+app.register_blueprint(bot_message_bp)
+# NOVOS BLUEPRINTS REGISTRADOS
+app.register_blueprint(store_bp)
+app.register_blueprint(delivery_bp)
+
 
 # --- Basic Routes ---
 @app.route("/api/health", methods=["GET"])

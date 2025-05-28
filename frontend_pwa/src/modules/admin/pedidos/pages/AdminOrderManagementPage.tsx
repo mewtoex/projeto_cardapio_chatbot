@@ -1,11 +1,13 @@
+// src/modules/admin/pedidos/pages/AdminOrderManagementPage.tsx
 import React, { useEffect, useState } from "react";
 import ApiService from "../../../shared/services/ApiService";
 import { Link, useSearchParams } from "react-router-dom";
 import { Button } from '@mui/material';
-import ClientOrderItemPage from '../../../client/pages/ClientOrderItemPage';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
+import ClientOrderItemPage from '../../../client/pages/ClientOrderItemPage';
 import { styled } from '@mui/material/styles';
+import { useNotification } from '../../../../contexts/NotificationContext'; // Importar notification
 
 interface Order {
   id: string;
@@ -22,6 +24,7 @@ const AdminOrderManagementPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [open, setOpen] = useState(false);
   const [orderId, setOrderId] = useState('0');
+  const notification = useNotification(); // Inicializar notification
 
   const statusFilter = searchParams.get("status");
   const BootstrapDialog = styled(Dialog)(({ theme }) => ({
@@ -41,41 +44,52 @@ const AdminOrderManagementPage: React.FC = () => {
           filters.status = statusFilter;
         }
         const fetchedOrders = await ApiService.getAdminOrders(filters);
-        setOrders(fetchedOrders as Order[]); // Type assertion for simulated data
+        setOrders(fetchedOrders as Order[]);
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Falha ao buscar pedidos.");
+        notification.showError('Erro ao carregar pedidos.'); // Adicionar notificação de erro
       }
       setLoading(false);
     };
 
     fetchOrders();
-  }, [statusFilter]); //
-  const handleOpenItemsOrder = (date: string) => {
-    console.log(date)
-    setOrderId(date)
+  }, [statusFilter, notification]); // Adicionar notification como dependência
+
+  const handleOpenItemsOrder = (id: string) => { // Renomeado 'date' para 'id' para clareza
+    console.log(id)
+    setOrderId(id)
     setOpen(true);
   }
 
   const handleClose = () => {
     setOpen(false);
   };
+
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
-    // Optimistic update example (optional)
-    // setOrders(prevOrders => 
-    //   prevOrders.map(order => order.id === orderId ? { ...order, status: newStatus } : order)
-    // );
     try {
       await ApiService.updateOrderStatus(orderId, newStatus);
-      // Refetch orders to confirm change and get latest data
       const updatedOrders = await ApiService.getAdminOrders(statusFilter ? { status: statusFilter } : {});
       setOrders(updatedOrders as Order[]);
-      alert(`Status do pedido ${orderId} atualizado para ${newStatus}`);
+      notification.showSuccess(`Status do pedido ${orderId} atualizado para ${newStatus}`); // Notificação de sucesso
     } catch (err) {
-      alert(`Falha ao atualizar status do pedido ${orderId}: ${err instanceof Error ? err.message : "Erro desconhecido"}`);
-      // Optionally revert optimistic update here if it failed
+      notification.showError(`Falha ao atualizar status do pedido ${orderId}: ${err instanceof Error ? err.message : "Erro desconhecido"}`); // Notificação de erro
     }
   };
+
+  // NOVO: Função para imprimir o pedido
+  const handlePrintOrder = async (orderId: string) => {
+    try {
+      const pdfBlob = await ApiService.printOrder(orderId); // Chama o novo método no ApiService
+      const url = window.URL.createObjectURL(pdfBlob);
+      window.open(url, '_blank'); // Abre o PDF em uma nova aba para impressão
+      notification.showInfo('Gerando PDF para impressão...');
+    } catch (error) {
+      notification.showError('Erro ao gerar PDF do pedido.');
+      console.error('Erro ao imprimir pedido:', error);
+    }
+  };
+
 
   if (loading) {
     return <p>Carregando pedidos...</p>;
@@ -88,15 +102,16 @@ const AdminOrderManagementPage: React.FC = () => {
   return (
     <div>
       <h1>Gerenciamento de Pedidos</h1>
-      {/* TODO: Add filters for date, client, status etc. */}
       <div>
         <strong>Filtrar por Status: </strong>
         <button onClick={() => setSearchParams({})}>Todos</button>
         <button onClick={() => setSearchParams({ status: "Novo" })}>Novos</button>
+        <button onClick={() => setSearchParams({ status: "Recebido" })}>Recebidos</button> {/* Adicionar Recebido */}
         <button onClick={() => setSearchParams({ status: "Em Preparo" })}>Em Preparo</button>
         <button onClick={() => setSearchParams({ status: "Saiu para Entrega" })}>Saiu para Entrega</button>
         <button onClick={() => setSearchParams({ status: "Concluído" })}>Concluídos</button>
         <button onClick={() => setSearchParams({ status: "Cancelado" })}>Cancelados</button>
+        <button onClick={() => setSearchParams({ status: "Cancelamento Solicitado" })}>Cancelamento Solicitado</button> {/* Adicionar Cancelamento Solicitado */}
       </div>
 
       {orders.length === 0 ? (
@@ -133,12 +148,20 @@ const AdminOrderManagementPage: React.FC = () => {
                     <option value="Saiu para Entrega">Saiu para Entrega</option>
                     <option value="Concluído">Concluído</option>
                     <option value="Cancelado">Cancelado</option>
+                    <option value="Cancelamento Solicitado">Cancelamento Solicitado</option>
                   </select>
                   <Button
                     variant="contained"
                     onClick={() => handleOpenItemsOrder(order.id)}
+                    sx={{ mr: 1 }}
                   >
                     Ver Detalhes
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={() => handlePrintOrder(order.id)}
+                  >
+                    Imprimir
                   </Button>
                 </td>
               </tr>
@@ -166,4 +189,3 @@ const AdminOrderManagementPage: React.FC = () => {
 };
 
 export default AdminOrderManagementPage;
-

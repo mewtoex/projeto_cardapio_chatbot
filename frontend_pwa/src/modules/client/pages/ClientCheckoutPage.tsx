@@ -47,9 +47,10 @@ const ClientCheckoutPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [loadingCart, setLoadingCart] = useState(true);
   const [loadingAddresses, setLoadingAddresses] = useState(true);
+  const [deliveryFee, setDeliveryFee] = useState(0.0); // Inicializa a taxa de entrega como 0
+
   const subtotal = cartItems.reduce((sum, item) => sum + item.totalItemPrice * item.quantity, 0);
-  const deliveryFee = 5.0;
-  const total = subtotal + deliveryFee;
+  const total = subtotal + deliveryFee; // O total agora inclui a taxa de entrega calculada
 
   useEffect(() => {
     const loadCheckoutData = async () => {
@@ -105,6 +106,31 @@ const ClientCheckoutPage: React.FC = () => {
 
     loadCheckoutData();
   }, [notification, navigate]);
+
+  // NOVO useEffect para calcular a taxa de entrega quando o endereço selecionado mudar
+  useEffect(() => {
+    const calculateFee = async () => {
+      if (selectedAddressId) {
+        try {
+          // AuthService.getToken() is used by ApiService internally
+          const response = await ApiService.calculateDeliveryFee(selectedAddressId); // Novo método no ApiService
+          setDeliveryFee(response.delivery_fee);
+          // Opcional: exibir mensagem se não houver taxa específica para o bairro
+          if (response.message) {
+            notification.showInfo(response.message);
+          }
+        } catch (err) {
+          console.error("Erro ao calcular taxa de entrega:", err);
+          notification.showError("Erro ao calcular taxa de entrega.");
+          setDeliveryFee(0.0); // Se falhar, assume 0 ou um valor padrão de erro
+        }
+      } else {
+        setDeliveryFee(0.0); // Nenhuma taxa se nenhum endereço estiver selecionado
+      }
+    };
+
+    calculateFee();
+  }, [selectedAddressId, notification]); // Depende do selectedAddressId e notification
 
   const handleConfirmOrder = async () => {
     if (!selectedAddressId) {
@@ -262,7 +288,7 @@ const ClientCheckoutPage: React.FC = () => {
           <p>Seu carrinho está vazio.</p>
         )}
         <p>Subtotal: R$ {subtotal.toFixed(2)}</p>
-        <p>Taxa de Entrega: R$ {deliveryFee.toFixed(2)}</p>
+        <p>Taxa de Entrega: R$ {deliveryFee.toFixed(2)}</p> {/* Exibe a taxa de entrega calculada */}
         <p><strong>Total a Pagar: R$ {total.toFixed(2)}</strong></p>
       </div>
 
