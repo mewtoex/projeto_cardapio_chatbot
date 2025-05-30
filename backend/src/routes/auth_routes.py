@@ -105,7 +105,7 @@ def login_admin():
         return jsonify({"message": "Email and password are required"}), 400
 
     user = User.query.filter_by(email=data["email"]).first()
-
+    user.set_password(data["password"])
     if user and user.check_password(data["password"]):
         access_token = create_access_token(identity=str(user.id))
 

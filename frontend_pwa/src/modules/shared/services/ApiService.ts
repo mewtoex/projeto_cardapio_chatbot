@@ -1,5 +1,8 @@
 // src/modules/shared/services/ApiService.ts
 import AuthService from "./AuthService";
+import {type Store, type Address } from "../../../types/Store";
+import {type DeliveryArea } from "../../../types/DeliveryArea"; 
+
 
 const API_BASE_URL = "http://localhost:5000/api/";
 
@@ -481,6 +484,72 @@ const ApiService = {
     });
     return handleResponse(response);
   },
+
+  // NOVO: Rotas para Store Management
+  getMyStore: async (): Promise<Store> => {
+    const response = await fetch(`${API_BASE_URL}admin/stores/me`, { headers: getAuthHeaders() });
+    return handleResponse(response);
+  },
+
+  createMyStore: async (storeData: Store): Promise<Store> => {
+    const response = await fetch(`${API_BASE_URL}admin/stores/me`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(storeData),
+    });
+    return handleResponse(response);
+  },
+
+  updateMyStore: async (storeData: Store): Promise<Store> => {
+    const response = await fetch(`${API_BASE_URL}admin/stores/me`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(storeData),
+    });
+    return handleResponse(response);
+  },
+
+  // NOVO: Rotas para Delivery Area Management
+  getDeliveryAreas: async (): Promise<DeliveryArea[]> => {
+    const response = await fetch(`${API_BASE_URL}admin/delivery_areas`, { headers: getAuthHeaders() });
+    return handleResponse(response);
+  },
+
+  createDeliveryArea: async (areaData: { district_name: string; delivery_fee: number }): Promise<DeliveryArea> => {
+    const response = await fetch(`${API_BASE_URL}admin/delivery_areas`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(areaData),
+    });
+    return handleResponse(response);
+  },
+
+  updateDeliveryArea: async (id: string, areaData: { district_name?: string; delivery_fee?: number }): Promise<DeliveryArea> => {
+    const response = await fetch(`${API_BASE_URL}admin/delivery_areas/${id}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(areaData),
+    });
+    return handleResponse(response);
+  },
+
+  deleteDeliveryArea: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}admin/delivery_areas/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  calculateDeliveryFee: async (addressId: string): Promise<{ delivery_fee: number; message?: string }> => {
+    const response = await fetch(`${API_BASE_URL}delivery_fee/calculate`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ address_id: addressId }),
+    });
+    return handleResponse(response);
+  },
+
 };
 
 export default ApiService;

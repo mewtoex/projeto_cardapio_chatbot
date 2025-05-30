@@ -25,7 +25,9 @@ import ClientCheckoutPage from "./modules/client/pages/ClientCheckoutPage";
 import AdminDashboardPage from "./modules/admin/dashboard/pages/AdminDashboardPage";
 import AdminOrderManagementPage from "./modules/admin/pedidos/pages/AdminOrderManagementPage";
 import AdminItemManagementPage from "./modules/admin/itens/pages/AdminItemManagementPage";
-import AdminBotMessagesPage from "./modules/admin/bot_messages/pages/AdminBotMessagesPage"; // NOVO: Página de mensagens do bot
+import AdminBotMessagesPage from "./modules/admin/bot_messages/pages/AdminBotMessagesPage";
+import AdminStoreManagementPage from "./modules/admin/loja/pages/AdminStoreManagementPage"; 
+import AdminDeliveryAreaManagementPage from "./modules/admin/delivery/pages/AdminDeliveryAreaManagementPage"; 
 
 // Layout and Routes
 import { MainLayout } from "./components/Layout/MainLayout";
@@ -104,6 +106,16 @@ const App: React.FC = () => {
                 <Route path="/admin/bot-messages" element={ 
                   <MainLayout>
                     <AdminBotMessagesPage />
+                  </MainLayout>
+                } />
+                <Route path="/admin/store" element={ // New Admin Route
+                  <MainLayout>
+                    <AdminStoreManagementPage />
+                  </MainLayout>
+                } />
+                <Route path="/admin/delivery-areas" element={ // New Admin Route
+                  <MainLayout>
+                    <AdminDeliveryAreaManagementPage />
                   </MainLayout>
                 } />
               </Route>

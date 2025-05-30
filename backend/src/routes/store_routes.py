@@ -14,7 +14,8 @@ def get_my_store():
     current_user_id = get_jwt_identity()
     store = Store.query.filter_by(admin_user_id=current_user_id).first()
     if not store:
-        return jsonify({"message": "Loja não encontrada para este administrador. Por favor, cadastre uma."}), 404
+        #return jsonify({"message": "Loja não encontrada para este administrador. Por favor, cadastre uma."}), 404
+        return jsonify([]), 200
     return jsonify(store.to_dict()), 200
 
 @store_bp.route("/me", methods=["POST"])
@@ -24,7 +25,6 @@ def create_my_store():
     current_user_id = get_jwt_identity()
     if Store.query.filter_by(admin_user_id=current_user_id).first():
         return jsonify({"message": "Você já possui uma loja cadastrada."}), 409
-
     data = request.get_json()
     required_fields_store = ["name", "phone", "email"]
     required_fields_address = ["street", "number", "district", "city", "state", "cep"]
@@ -42,10 +42,11 @@ def create_my_store():
             city=data["address"]["city"],
             state=data["address"]["state"],
             cep=data["address"]["cep"],
-            is_primary=True # Endereço da loja é primário para a loja
+            is_primary=True,
+            
         )
         db.session.add(new_address)
-        db.session.flush() # Para obter new_address.id
+        db.session.flush() 
 
         new_store = Store(
             name=data["name"],
@@ -54,6 +55,7 @@ def create_my_store():
             address_id=new_address.id,
             admin_user_id=current_user_id
         )
+        print(new_store)
         db.session.add(new_store)
         db.session.commit()
         return jsonify(new_store.to_dict()), 201
