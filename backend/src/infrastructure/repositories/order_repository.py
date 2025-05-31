@@ -11,6 +11,7 @@ from src.domain.models.menu_item import MenuItem
 from src.domain.models.addon import OrderItemAddon # Para carregar no order_item
 from src.infrastructure.database.extensions import db
 from src.domain.exceptions import NotFoundError # Importar NotFoundError
+from datetime import datetime, date # Garanta que 'date' está incluído aqui
 
 class OrderRepository(BaseRepository):
     def __init__(self, session=None):

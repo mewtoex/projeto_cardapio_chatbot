@@ -2,11 +2,12 @@
 import os
 import sys
 
-# Garante que o diretório 'src' é a primeira entrada no sys.path
-# Isso faz com que Python o trate como a raiz para imports como 'src.infra...'
-current_dir = os.path.dirname(os.path.abspath(__file__))
-if current_dir not in sys.path:
-    sys.path.insert(0, current_dir)
+# Garante que o diretório 'backend' (pai de 'src') é adicionado ao sys.path.
+# Isso é crucial para importações como 'from src.app_factory import create_app'
+# e para que os submódulos dentro de 'src' se resolvam corretamente.
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 # --- Ponto de Depuração ---
 print("\n--- Conteúdo de sys.path (após ajuste) ---")

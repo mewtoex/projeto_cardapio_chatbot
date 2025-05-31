@@ -10,8 +10,8 @@ class MenuItemSchema(Schema):
     price = fields.Float(required=True, validate=validate.Range(min=0.01))
     image_url = fields.String(allow_none=True) # URL da imagem, não o arquivo em si
     category_id = fields.Integer(required=True)
-    available = fields.Boolean(missing=True) # Default para True na entrada se não fornecido
-    has_addons = fields.Boolean(missing=False) # Default para False
+    available = fields.Boolean(load_default=True) # Default para True na entrada se não fornecido
+    has_addons = fields.Boolean(load_default=False) # Default para False
     addon_category_ids = fields.List(fields.Integer(), data_key="addon_category_ids[]") # Espera lista de ints
 
 class MenuItemDetailSchema(MenuItemSchema):

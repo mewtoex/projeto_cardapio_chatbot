@@ -12,7 +12,7 @@ class AddonCategorySchema(Schema):
     name = fields.String(required=True, validate=validate.Length(min=1, max=80))
     min_selections = fields.Integer(required=True, validate=validate.Range(min=0))
     max_selections = fields.Integer(required=True, validate=validate.Range(min=0))
-    is_required = fields.Boolean(missing=False)
+    is_required = fields.Boolean(load_default=False)
     options = fields.List(fields.Nested(AddonOptionSchema), dump_only=True) # Aninha as opções
 
 # Instâncias para uso

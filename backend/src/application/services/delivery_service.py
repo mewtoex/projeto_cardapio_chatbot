@@ -5,6 +5,7 @@ from src.infrastructure.repositories.delivery_area_repository import DeliveryAre
 from src.infrastructure.repositories.store_repository import StoreRepository
 from src.infrastructure.repositories.address_repository import AddressRepository
 from src.domain.exceptions import NotFoundError, ConflictError, BadRequestError
+from typing import List, Optional, Dict 
 
 class DeliveryService:
     def __init__(self, delivery_area_repository: DeliveryAreaRepository, 

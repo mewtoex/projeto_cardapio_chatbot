@@ -5,7 +5,7 @@ class BotMessageSchema(Schema):
     id = fields.Integer(dump_only=True)
     command = fields.String(required=True, validate=validate.Length(min=1, max=100))
     response_text = fields.String(required=True, validate=validate.Length(min=1))
-    is_active = fields.Boolean(missing=True) # Default para True na entrada
+    is_active = fields.Boolean(load_default=True) # Default para True na entrada
     last_updated = fields.DateTime(dump_only=True)
 
 # Instâncias para uso

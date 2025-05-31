@@ -3,6 +3,7 @@ from typing import List
 from src.infrastructure.repositories.base_repository import BaseRepository
 from src.domain.models.address import Address
 from src.domain.exceptions import NotFoundError
+from typing import List, Optional
 
 class AddressRepository(BaseRepository):
     def __init__(self, session=None):

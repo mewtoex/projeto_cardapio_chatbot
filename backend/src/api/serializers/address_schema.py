@@ -11,7 +11,7 @@ class AddressSchema(Schema):
     city = fields.String(required=True, validate=validate.Length(min=1, max=100))
     state = fields.String(required=True, validate=validate.Length(min=2, max=50)) # Ex: "MG"
     cep = fields.String(required=True, validate=validate.Length(min=8, max=10)) # Ex: "12345-678"
-    is_primary = fields.Boolean(missing=False) # Default para False na entrada
+    is_primary = fields.Boolean(load_default=False) # Default para False na entrada
 
 # Instâncias para uso
 address_schema = AddressSchema()
