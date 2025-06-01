@@ -30,6 +30,8 @@ import {
 } from '@mui/icons-material';
 import ApiService from '../../../shared/services/ApiService';
 import { useNotification } from '../../../../contexts/NotificationContext';
+import useApiData from '../../../../hooks/useApiData';
+import useForm from '../../../../hooks/useForm';
 
 interface BotMessage {
   id: string;
@@ -46,34 +48,24 @@ interface BotMessageFormData {
 }
 
 const AdminBotMessagesPage: React.FC = () => {
-  const [botMessages, setBotMessages] = useState<BotMessage[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [currentMessage, setCurrentMessage] = useState<BotMessage | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const [formData, setFormData] = useState<BotMessageFormData>({
+
+  const notification = useNotification();
+
+  const { data: botMessages, loading, error, refetch: fetchBotMessages, setData: setBotMessages } = useApiData<BotMessage[]>(
+    ApiService.getAllBotMessagesAdmin,
+    [],
+    { initialData: [], errorMessage: 'Falha ao buscar mensagens do bot.' }
+  );
+
+  const { formData, setForm, handleInputChange } = useForm<BotMessageFormData>({
     command: '',
     response_text: '',
     is_active: true,
   });
-
-  const notification = useNotification();
-
-  const fetchBotMessages = async () => {
-    try {
-      setLoading(true);
-      const data = await ApiService.getAllBotMessagesAdmin();
-      setBotMessages(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao buscar mensagens do bot.');
-      notification.showError('Erro ao carregar mensagens do bot');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     fetchBotMessages();
@@ -82,14 +74,14 @@ const AdminBotMessagesPage: React.FC = () => {
   const handleOpenDialog = (message?: BotMessage) => {
     if (message) {
       setCurrentMessage(message);
-      setFormData({
+      setForm({
         command: message.command,
         response_text: message.response_text,
         is_active: message.is_active,
       });
     } else {
       setCurrentMessage(null);
-      setFormData({
+      setForm({
         command: '',
         response_text: '',
         is_active: true,
@@ -102,20 +94,7 @@ const AdminBotMessagesPage: React.FC = () => {
     setOpenDialog(false);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
 
-  const handleSwitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      is_active: e.target.checked
-    }));
-  };
 
   const handleSubmit = async () => {
     try {
@@ -264,7 +243,7 @@ const AdminBotMessagesPage: React.FC = () => {
             onChange={handleInputChange}
             margin="normal"
             required
-            disabled={!!currentMessage} 
+            disabled={!!currentMessage}
             helperText={currentMessage ? "Comando não pode ser alterado" : "Ex: 'saudacao', 'cardapio_vazio'"}
           />
           <TextField
