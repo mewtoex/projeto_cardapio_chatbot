@@ -1,4 +1,3 @@
-// src/modules/admin/store/pages/AdminStoreManagementPage.tsx
 import React, { useEffect, useState } from "react";
 import {
   Typography,
@@ -12,6 +11,7 @@ import {
 } from "@mui/material";
 import ApiService from "../../../shared/services/ApiService";
 import { useNotification } from "../../../../contexts/NotificationContext";
+import { useIMask } from 'react-imask'; 
 
 interface Address {
   id?: string;
@@ -39,7 +39,20 @@ const AdminStoreManagementPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const notification = useNotification();
+  const notification = useNotification(); 
+
+  const { ref: storeCepInputRef, setValue: setStoreCepMaskedValue } = useIMask({
+    mask: '00000-000',
+    onAccept: (value: string) => {
+      setStore(prev => ({
+        ...prev!,
+        address: {
+          ...prev!.address!,
+          cep: value
+        }
+      }));
+    },
+  });
 
   const fetchStoreData = async () => {
     try {
@@ -77,6 +90,52 @@ const AdminStoreManagementPage: React.FC = () => {
     }
   };
 
+  const handleStoreCepBlur = async () => {
+    if (!store?.address?.cep) return;
+    const cleanCep = store.address.cep.replace(/\D/g, '');
+
+    if (cleanCep.length === 8) {
+      setLoading(true);
+      try {
+        const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+        const data = await response.json();
+
+        if (data.erro) {
+          notification.showError('CEP não encontrado ou inválido.'); //
+          setStore(prev => ({
+            ...prev!,
+            address: {
+              ...prev!.address!,
+              street: '',
+              complement: '',
+              district: '',
+              city: '',
+              state: '',
+            }
+          }));
+        } else {
+          setStore(prev => ({
+            ...prev!,
+            address: {
+              ...prev!.address!,
+              street: data.logradouro || '',
+              complement: data.complemento || '',
+              district: data.bairro || '',
+              city: data.localidade || '',
+              state: data.uf || '',
+            }
+          }));
+          notification.showSuccess('Endereço preenchido automaticamente!'); //
+        }
+      } catch (err) {
+        notification.showError('Erro ao buscar CEP. Tente novamente mais tarde.'); //
+        console.error('Erro ao buscar CEP para a loja:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   const handleSubmit = async () => {
     if (!store) return;
 
@@ -90,16 +149,16 @@ const AdminStoreManagementPage: React.FC = () => {
     try {
       if (store.id) {
         // Update existing store
-        await ApiService.updateMyStore(store);
-        notification.showSuccess("Dados da loja atualizados com sucesso!");
+        await ApiService.updateMyStore(store); //
+        notification.showSuccess("Dados da loja atualizados com sucesso!"); //
       } else {
         // Create new store
-        await ApiService.createMyStore(store);
+        await ApiService.createMyStore(store); //
         notification.showSuccess("Loja cadastrada com sucesso!");
       }
       fetchStoreData(); // Re-fetch to get updated IDs if created
     } catch (err) {
-      notification.showError(err instanceof Error ? err.message : "Erro ao salvar dados da loja.");
+      notification.showError(err instanceof Error ? err.message : "Erro ao salvar dados da loja."); 
     } finally {
       setIsSaving(false);
     }
@@ -186,9 +245,11 @@ const AdminStoreManagementPage: React.FC = () => {
               label="CEP"
               name="address.cep"
               value={store?.address?.cep || ''}
-              onChange={handleInputChange}
-              margin="normal"
+              onChange={(e) => setStoreCepMaskedValue(e.target.value)} // Use o setter mascarado
+              onBlur={handleStoreCepBlur} // Adicione o evento onBlur
+              inputRef={storeCepInputRef} // Passe o ref
               required
+              disabled={isSaving || loading}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -200,6 +261,7 @@ const AdminStoreManagementPage: React.FC = () => {
               onChange={handleInputChange}
               margin="normal"
               required
+              disabled={isSaving || loading}
             />
           </Grid>
           <Grid item xs={12} sm={4}>
@@ -211,6 +273,7 @@ const AdminStoreManagementPage: React.FC = () => {
               onChange={handleInputChange}
               margin="normal"
               required
+              disabled={isSaving || loading}
             />
           </Grid>
           <Grid item xs={12} sm={8}>
@@ -221,6 +284,7 @@ const AdminStoreManagementPage: React.FC = () => {
               value={store?.address?.complement || ''}
               onChange={handleInputChange}
               margin="normal"
+              disabled={isSaving || loading}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -232,6 +296,7 @@ const AdminStoreManagementPage: React.FC = () => {
               onChange={handleInputChange}
               margin="normal"
               required
+              disabled={isSaving || loading}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -243,6 +308,7 @@ const AdminStoreManagementPage: React.FC = () => {
               onChange={handleInputChange}
               margin="normal"
               required
+              disabled={isSaving || loading}
             />
           </Grid>
           <Grid item xs={12}>
@@ -254,6 +320,7 @@ const AdminStoreManagementPage: React.FC = () => {
               onChange={handleInputChange}
               margin="normal"
               required
+              disabled={isSaving || loading}
             />
           </Grid>
         </Grid>

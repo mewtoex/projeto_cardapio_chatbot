@@ -1,13 +1,13 @@
-// frontend_pwa/src/modules/auth/components/ClientRegisterForm.tsx
 import React, { useState } from 'react';
 import AuthService from '../../shared/services/AuthService';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { TextField, Button, Box, Typography, Checkbox, FormControlLabel, Grid, Link } from '@mui/material';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useIMask } from 'react-imask'; // Importe useIMask
 
 interface ClientRegisterFormProps {
-  onRegisterSuccess?: () => void; // Nova prop
+  onRegisterSuccess?: () => void;
 }
 
 const ClientRegisterForm: React.FC<ClientRegisterFormProps> = ({ onRegisterSuccess }) => {
@@ -26,9 +26,48 @@ const ClientRegisterForm: React.FC<ClientRegisterFormProps> = ({ onRegisterSucce
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth(); 
+  const { login } = useAuth(); //
   const navigate = useNavigate();
   const notification = useNotification();
+
+  // IMask para CEP
+  const { ref: cepInputRef, setValue: setCepMaskedValue } = useIMask({
+    mask: '00000-000',
+    onAccept: (value: string) => setAddressCep(value),
+  });
+
+  const handleCepBlur = async () => {
+    const cleanCep = addressCep.replace(/\D/g, '');
+
+    if (cleanCep.length === 8) { 
+      setLoading(true); 
+      try {
+        const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+        const data = await response.json();
+
+        if (data.erro) {
+          notification.showError('CEP não encontrado ou inválido.');
+          setAddressStreet('');
+          setAddressComplement('');
+          setAddressDistrict('');
+          setAddressCity('');
+          setAddressState('');
+        } else {
+          setAddressStreet(data.logradouro || '');
+          setAddressComplement(data.complemento || '');
+          setAddressDistrict(data.bairro || '');
+          setAddressCity(data.localidade || '');
+          setAddressState(data.uf || '');
+          notification.showSuccess('Endereço preenchido automaticamente!');
+        }
+      } catch (err) {
+        notification.showError('Erro ao buscar CEP. Tente novamente mais tarde.');
+        console.error('Erro ao buscar CEP:', err);
+      } finally {
+        setLoading(false); 
+      }
+    }
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -50,7 +89,7 @@ const ClientRegisterForm: React.FC<ClientRegisterFormProps> = ({ onRegisterSucce
         name,
         phone,
         email,
-        password, 
+        password,
         address: {
           cep: addressCep,
           street: addressStreet,
@@ -61,16 +100,15 @@ const ClientRegisterForm: React.FC<ClientRegisterFormProps> = ({ onRegisterSucce
           state: addressState,
         }
       };
-      const response = await AuthService.clientRegister(userData);
-      
-      // Automaticamente loga o usuário após o registro bem-sucedido
-      login(response.user, response.access_token);
-      
+      const response = await AuthService.clientRegister(userData); 
+
+      login(response.user, response.access_token); 
+
       notification.showSuccess("Conta criada e login realizado com sucesso!");
       if (onRegisterSuccess) {
-        onRegisterSuccess(); // Notifica o componente pai (CheckoutPage)
+        onRegisterSuccess();
       } else {
-        navigate('/client/dashboard'); // Redireciona para o dashboard se não houver callback
+        navigate('/client/dashboard');
       }
     } catch (err) {
       const errorMessage = typeof err === 'string' ? err : 'Ocorreu um erro no registro.';
@@ -144,11 +182,21 @@ const ClientRegisterForm: React.FC<ClientRegisterFormProps> = ({ onRegisterSucce
           />
         </Grid>
       </Grid>
-      
+
       <Typography variant="h6" sx={{ mt: 3, mb: 1 }}>Endereço Principal</Typography>
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6}>
-          <TextField fullWidth label="CEP" value={addressCep} onChange={(e) => setAddressCep(e.target.value)} required disabled={loading} />
+          <TextField
+            fullWidth
+            label="CEP"
+            value={addressCep}
+            onChange={(e) => setCepMaskedValue(e.target.value)}
+            onBlur={handleCepBlur} 
+            inputRef={cepInputRef}
+            required
+            disabled={loading}
+            helperText="Digite o CEP e tecle TAB ou clique fora para preencher o endereço."
+          />
         </Grid>
         <Grid item xs={12} sm={6}>
           <TextField fullWidth label="Rua/Avenida" value={addressStreet} onChange={(e) => setAddressStreet(e.target.value)} required disabled={loading} />
