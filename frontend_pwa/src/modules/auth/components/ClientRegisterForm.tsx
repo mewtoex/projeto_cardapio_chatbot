@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { TextField, Button, Box, Typography, Checkbox, FormControlLabel, Grid, Link } from '@mui/material';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useIMask } from 'react-imask'; 
+import { type UserRegisterData } from '../../../types'; 
 
 interface ClientRegisterFormProps {
   onRegisterSuccess?: () => void;
@@ -26,12 +27,12 @@ const ClientRegisterForm: React.FC<ClientRegisterFormProps> = ({ onRegisterSucce
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth(); //
+  const { login } = useAuth(); 
   const navigate = useNavigate();
   const notification = useNotification();
 
   // IMask para CEP
-  const { ref: cepInputRef, setValue: setCepMaskedValue } = useIMask({
+  const { ref: cepInputRef, setValue: setCepMaskedValue } = useIMask<HTMLInputElement>({ // Adicionado <HTMLInputElement>
     mask: '00000-000',
     onAccept: (value: string) => setAddressCep(value),
   });
@@ -85,7 +86,7 @@ const ClientRegisterForm: React.FC<ClientRegisterFormProps> = ({ onRegisterSucce
     }
     setLoading(true);
     try {
-      const userData = {
+      const userData: UserRegisterData = { // Usando o tipo importado
         name,
         phone,
         email,
@@ -110,8 +111,8 @@ const ClientRegisterForm: React.FC<ClientRegisterFormProps> = ({ onRegisterSucce
       } else {
         navigate('/client/dashboard');
       }
-    } catch (err) {
-      const errorMessage = typeof err === 'string' ? err : 'Ocorreu um erro no registro.';
+    } catch (err: any) { // Adicionado 'any' para o tipo de erro
+      const errorMessage = err instanceof Error ? err.message : 'Ocorreu um erro no registro.';
       setError(errorMessage);
       notification.showError(errorMessage);
     }

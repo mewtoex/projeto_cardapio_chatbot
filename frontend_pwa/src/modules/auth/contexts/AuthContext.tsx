@@ -1,12 +1,5 @@
-// src/modules/auth/contexts/AuthContext.tsx
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-
-interface AuthUser {
-  name: string;
-  email: string;
-  role: 'client' | 'admin';
-  // Add other user properties as needed
-}
+import React, { createContext, useContext, useState, type ReactNode } from 'react';
+import { type AuthUser, type AuthResponse } from '../../../types'; 
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -37,11 +30,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = () => {
     localStorage.removeItem('authUser');
-    localStorage.removeItem('authToken'); // Remover 'authToken'
+    localStorage.removeItem('authToken'); 
     setUser(null);
     setToken(null);
     setIsAuthenticated(false);
-    // TODO: redirect to login page or home
   };
 
   return (

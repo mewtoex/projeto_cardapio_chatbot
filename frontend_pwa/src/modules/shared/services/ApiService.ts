@@ -1,16 +1,26 @@
-// src/modules/shared/services/ApiService.ts
 import AuthService from "./AuthService";
-import {type Store, type Address } from "../../../types/Store";
-import {type DeliveryArea } from "../../../types/DeliveryArea"; 
+import {
+  type Store,
+  type Address,
+  type DeliveryArea,
+  type MenuItem,
+  type Category,
+  type Order,
+  type OrderCreateItem,
+  type OrderFilters,
+  type AddonCategory,
+  type AddonOption,
+  type MenuItemFormData,
+  type UserProfile
+} from "../../../types";
 
 
 const API_BASE_URL = "http://localhost:5000/api/";
 
 const getAuthHeaders = () => {
   let token = AuthService.getToken();
-  // Remover aspas se o token for uma string JSON de um token
   if (token && token.startsWith('"') && token.endsWith('"')) {
-      token = token.slice(1, -1); 
+    token = token.slice(1, -1);
   }
   const headers: HeadersInit = {
     "Content-Type": "application/json",
@@ -23,11 +33,10 @@ const getAuthHeaders = () => {
 
 const getAuthHeadersFormData = () => {
   let token = AuthService.getToken();
-  // Remover aspas se o token for uma string JSON de um token
   if (token && token.startsWith('"') && token.endsWith('"')) {
-      token = token.slice(1, -1); 
+    token = token.slice(1, -1);
   }
-  const headers: HeadersInit = {}; 
+  const headers: HeadersInit = {};
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
@@ -44,32 +53,32 @@ const handleResponse = async (response: Response) => {
     }
     throw new Error(errorData?.message || `HTTP error! status: ${response.status}`);
   }
-  if (response.status === 204) { 
+  if (response.status === 204) {
     return null;
   }
   return response.json();
 };
 
 const ApiService = {
-  getMenuItems: async (filters?: { categoria_id?: string; disponivel?: boolean; nome?: string }) => {
+  getMenuItems: async (filters?: { category_id?: string; available?: boolean; name?: string }): Promise<MenuItem[]> => {
     let url = `${API_BASE_URL}menu_items`;
     if (filters) {
       const params = new URLSearchParams();
-      if (filters.categoria_id) params.append("categoria_id", filters.categoria_id);
-      if (filters.disponivel !== undefined) params.append("disponivel", String(filters.disponivel));
-      if (filters.nome) params.append("nome", filters.nome);
+      if (filters.category_id) params.append("category_id", filters.category_id);
+      if (filters.available !== undefined) params.append("disponivel", String(filters.available));
+      if (filters.name) params.append("name", filters.name);
       if (params.toString()) url += `?${params.toString()}`;
     }
     const response = await fetch(url, { headers: getAuthHeaders() });
     return handleResponse(response);
   },
 
-  getMenuItemById: async (id_item: string) => {
+  getMenuItemById: async (id_item: string): Promise<MenuItem> => {
     const response = await fetch(`${API_BASE_URL}menu_items/${id_item}`, { headers: getAuthHeaders() });
     return handleResponse(response);
   },
 
-  createMenuItem: async (formData: FormData) => { 
+  createMenuItem: async (formData: FormData): Promise<MenuItem> => {
     const response = await fetch(`${API_BASE_URL}menu_items/admin`, {
       method: "POST",
       headers: getAuthHeadersFormData(),
@@ -78,7 +87,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  updateMenuItem: async (id_item: string, formData: FormData) => { // Admin
+  updateMenuItem: async (id_item: string, formData: FormData): Promise<MenuItem> => {
     const response = await fetch(`${API_BASE_URL}menu_items/admin/${id_item}`, {
       method: "PUT",
       headers: getAuthHeadersFormData(),
@@ -87,7 +96,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  deleteMenuItem: async (id_item: string) => { // Admin
+  deleteMenuItem: async (id_item: string): Promise<void> => {
     const response = await fetch(`${API_BASE_URL}/menu_items/admin/${id_item}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
@@ -95,35 +104,35 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  updateMenuItemAvailability: async (id_item: string, disponivel: boolean) => { // Admin
+  updateMenuItemAvailability: async (id_item: string, available: boolean): Promise<MenuItem> => { // Admin
     const response = await fetch(`${API_BASE_URL}/menu_items/admin/${id_item}/availability`, {
       method: "PATCH",
       headers: getAuthHeaders(),
-      body: JSON.stringify({ disponivel }),
+      body: JSON.stringify({ disponivel: available }),
     });
     return handleResponse(response);
   },
 
-  reorderMenuItems: async (reorderData: Array<{ id_item: string; nova_ordem: number }>) => { // Admin
-    const response = await fetch(`${API_BASE_URL}/admin/menu_items/reordenar`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(reorderData),
-    });
-    return handleResponse(response);
-  },
+  // reorderMenuItems: async (reorderData: Array<{ id_item: string; nova_ordem: number }>) => { // Admin
+  //   const response = await fetch(`${API_BASE_URL}/admin/menu_items/reordenar`, {
+  //       method: "POST",
+  //       headers: getAuthHeaders(),
+  //       body: JSON.stringify(reorderData),
+  //   });
+  //   return handleResponse(response);
+  // },
 
-  getCategories: async () => {
+  getCategories: async (): Promise<Category[]> => {
     const response = await fetch(`${API_BASE_URL}categories`, { headers: getAuthHeaders() });
     return handleResponse(response);
   },
 
-  getCategoryById_Admin: async (id_categoria: string) => { 
+  getCategoryById_Admin: async (id_categoria: string): Promise<Category> => {
     const response = await fetch(`${API_BASE_URL}categories/${id_categoria}`, { headers: getAuthHeaders() });
     return handleResponse(response);
   },
 
-  createCategory: async (data: { nome: string; descricao?: string }) => { 
+  createCategory: async (data: { name: string; description?: string }): Promise<Category> => {
     const response = await fetch(`${API_BASE_URL}categories`, {
       method: "POST",
       headers: getAuthHeaders(),
@@ -132,7 +141,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  updateCategory: async (id_categoria: string, data: { nome: string; descricao?: string }) => { 
+  updateCategory: async (id_categoria: string, data: { name?: string; description?: string }): Promise<Category> => {
     const response = await fetch(`${API_BASE_URL}categories/${id_categoria}`, {
       method: "PUT",
       headers: getAuthHeaders(),
@@ -141,7 +150,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  deleteCategory: async (id_categoria: string) => { 
+  deleteCategory: async (id_categoria: string): Promise<void> => {
     const response = await fetch(`${API_BASE_URL}categories/${id_categoria}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
@@ -149,7 +158,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  createOrder: async (orderData: any) => { 
+  createOrder: async (orderData: { address_id: number; payment_method: string; items: OrderCreateItem[]; cash_provided?: number; total_amount: number }): Promise<Order> => {
     const response = await fetch(`${API_BASE_URL}orders`, {
       method: "POST",
       headers: getAuthHeaders(),
@@ -158,7 +167,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  getClientOrders: async (filters?: { status?: string; data_inicio?: string; data_fim?: string }) => { // Client
+  getClientOrders: async (filters?: OrderFilters): Promise<Order[]> => { // Client
     let url = `${API_BASE_URL}orders`;
     if (filters) {
       const params = new URLSearchParams();
@@ -171,21 +180,21 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  getClientOrderById: async (id_pedido: string) => { 
-    const response = await fetch(`${API_BASE_URL}orders/${id_pedido}`, { // Corrigido de /orders/me/ para /orders/
+  getClientOrderById: async (id_pedido: string): Promise<Order> => {
+    const response = await fetch(`${API_BASE_URL}orders/${id_pedido}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
-  
-  getAdminOrderById: async (id_pedido: string) => { 
-    const response = await fetch(`${API_BASE_URL}orders/admin/${id_pedido}`, { // Corrigido de /orders/admin para /orders/admin/
-        headers: getAuthHeaders(),
+
+  getAdminOrderById: async (id_pedido: string): Promise<Order> => {
+    const response = await fetch(`${API_BASE_URL}orders/admin/${id_pedido}`, {
+      headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
-  getAdminOrders: async (filters?: { status?: string; data_inicio?: string; data_fim?: string; cliente_id?: string }) => { 
+  getAdminOrders: async (filters?: OrderFilters): Promise<Order[]> => {
     let url = `${API_BASE_URL}orders/admin`;
     if (filters) {
       const params = new URLSearchParams();
@@ -198,14 +207,14 @@ const ApiService = {
     const response = await fetch(url, { headers: getAuthHeaders() });
     return handleResponse(response);
   },
-  
-  getResumeOrders: async () => { 
-    let url = `${API_BASE_URL}orders/resume`;
+
+  getResumeOrders: async (): Promise<{ status_counts: { [key: string]: number }; filter_date: string; daily_total_amount: number }> => {
+    let url = `${API_BASE_URL}admin/dashboard/metrics`;
     const response = await fetch(url, { headers: getAuthHeaders() });
     return handleResponse(response);
   },
 
-  updateOrderStatus: async (id_pedido: string, status: string) => { // Admin
+  updateOrderStatus: async (id_pedido: string, status: string): Promise<Order> => {
     const response = await fetch(`${API_BASE_URL}orders/admin/${id_pedido}/status`, {
       method: "PATCH",
       headers: getAuthHeaders(),
@@ -214,15 +223,15 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  requestOrderCancellation_Client: async (id_pedido: string) => { 
-    const response = await fetch(`${API_BASE_URL}/orders/${id_pedido}/cancel`, { // Corrigido para /orders/
+  requestOrderCancellation_Client: async (id_pedido: string): Promise<Order> => {
+    const response = await fetch(`${API_BASE_URL}/orders/${id_pedido}/cancel`, { 
       method: "PATCH",
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
-  approveOrderCancellation_Admin: async (id_pedido: string) => { 
+  approveOrderCancellation_Admin: async (id_pedido: string): Promise<Order> => {
     const response = await fetch(`${API_BASE_URL}orders/admin/${id_pedido}/approve_cancellation`, { // Endpoint corrigido
       method: "PATCH",
       headers: getAuthHeaders(),
@@ -230,7 +239,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  rejectOrderCancellation_Admin: async (id_pedido: string) => { 
+  rejectOrderCancellation_Admin: async (id_pedido: string): Promise<Order> => {
     const response = await fetch(`${API_BASE_URL}orders/admin/${id_pedido}/reject_cancellation`, { // Endpoint corrigido
       method: "PATCH",
       headers: getAuthHeaders(),
@@ -238,56 +247,15 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  getPromotions: async (filters?: { ativa?: boolean }) => {
-    let url = `${API_BASE_URL}/promotions`; // Corrigido de /promocoes
-    if (filters) {
-        const params = new URLSearchParams();
-        if (filters.ativa !== undefined) params.append("active", String(filters.ativa)); // Corrigido para 'active'
-        if (params.toString()) url += `?${params.toString()}`;
-    }
-    const response = await fetch(url, { headers: getAuthHeaders() });
-    return handleResponse(response);
-  },
 
-  getPromotionById: async (id_promocao: string) => {
-    const response = await fetch(`${API_BASE_URL}/promotions/${id_promocao}`, { headers: getAuthHeaders() }); // Corrigido de /promocoes
-    return handleResponse(response);
-  },
-
-  createPromotion: async (promotionData: any) => { // Admin
-    const response = await fetch(`${API_BASE_URL}promotions/admin`, { // Corrigido de /admin/promocoes
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(promotionData),
-    });
-    return handleResponse(response);
-  },
-
-  updatePromotion: async (id_promocao: string, promotionData: any) => { // Admin
-    const response = await fetch(`${API_BASE_URL}promotions/admin/${id_promocao}`, { // Corrigido de /admin/promocoes
-      method: "PUT",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(promotionData),
-    });
-    return handleResponse(response);
-  },
-
-  deletePromotion: async (id_promocao: string) => { // Admin
-    const response = await fetch(`${API_BASE_URL}promotions/admin/${id_promocao}`, { // Corrigido de /admin/promocoes
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-    return handleResponse(response);
-  },
-
-  getUserProfile: async () => { 
+  getUserProfile: async (): Promise<UserProfile> => {
     const response = await fetch(`${API_BASE_URL}users/me`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
-  updateUserProfile: async (profileData: any) => { 
+  updateUserProfile: async (profileData: any): Promise<UserProfile> => {
     const response = await fetch(`${API_BASE_URL}users/me`, {
       method: "PUT",
       headers: getAuthHeaders(),
@@ -296,7 +264,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  getUserAddress: async () => { 
+  getUserAddress: async (): Promise<Address[]> => {
     const response = await fetch(`${API_BASE_URL}users/me/addresses`, {
       method: "GET",
       headers: getAuthHeaders(),
@@ -304,7 +272,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  getItemsOrder: async (id_orden: string) => { 
+  getItemsOrder: async (id_orden: string): Promise<any[]> => {
     const response = await fetch(`${API_BASE_URL}orders/order_items/${id_orden}`, {
       method: "GET",
       headers: getAuthHeaders(),
@@ -313,7 +281,7 @@ const ApiService = {
   },
 
 
-  addUserAddress: async (addressData: any) => { 
+  addUserAddress: async (addressData: Address): Promise<Address> => {
     const response = await fetch(`${API_BASE_URL}users/me/addresses`, {
       method: "POST",
       headers: getAuthHeaders(),
@@ -322,7 +290,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  updateUserAddress: async (id_endereco: string, addressData: any) => { 
+  updateUserAddress: async (id_endereco: string, addressData: Partial<Address>): Promise<Address> => {
     const response = await fetch(`${API_BASE_URL}users/me/addresses/${id_endereco}`, {
       method: "PUT",
       headers: getAuthHeaders(),
@@ -331,7 +299,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  deleteUserAddress: async (id_endereco: string) => { 
+  deleteUserAddress: async (id_endereco: string): Promise<void> => {
     const response = await fetch(`${API_BASE_URL}users/me/addresses/${id_endereco}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
@@ -339,63 +307,27 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  // Admin: User Management - /admin/clientes
-  getAdminUsers: async (filters?: { nome?: string; email?: string }) => { // Admin
-    let url = `${API_BASE_URL}/admin/clientes`; // Este endpoint não existe no backend, seria users/admin
-    if (filters) {
-        const params = new URLSearchParams();
-        if (filters.nome) params.append("nome", filters.nome);
-        if (filters.email) params.append("email", filters.email);
-        if (params.toString()) url += `?${params.toString()}`;
-    }
-    const response = await fetch(url, { headers: getAuthHeaders() });
-    return handleResponse(response);
-  },
-
-  getAdminUserById: async (id_cliente: string) => { // Admin
-    const response = await fetch(`${API_BASE_URL}/admin/clientes/${id_cliente}`, { // Este endpoint não existe no backend
-      headers: getAuthHeaders(),
-    });
-    return handleResponse(response);
-  },
-
-  toggleUserActive_Admin: async (id_cliente: string) => { // Admin
-    const response = await fetch(`${API_BASE_URL}/admin/clientes/${id_cliente}/toggle-active`, { // Este endpoint não existe no backend
-        method: "PUT", 
-        headers: getAuthHeaders(),
-    });
-    return handleResponse(response);
-  },
-
-  // Admin: Dashboard - /admin/dashboard
-  getAdminDashboardMetrics: async () => { // Admin
-    const response = await fetch(`${API_BASE_URL}/admin/dashboard/metrics`, { // Corrigido para /metrics
-      headers: getAuthHeaders(),
-    });
-    return handleResponse(response);
-  },
-  printOrder: async (orderId: string) => {
-    const response = await fetch(`${API_BASE_URL}admin/orders/${orderId}/print`, {
+  printOrder: async (orderId: string): Promise<Blob> => {
+    const response = await fetch(`${API_BASE_URL}orders/admin/${orderId}/print`, {
       headers: {
         ...getAuthHeaders(),
-        'Accept': 'application/pdf' // Indicar que espera um PDF
+        'Accept': 'application/pdf'
       }
     });
     if (!response.ok) {
-        let errorData;
-        try { errorData = await response.json(); } catch (e) { errorData = { message: response.statusText }; }
-        throw new Error(errorData?.message || `HTTP error! status: ${response.status}`);
+      let errorData;
+      try { errorData = await response.json(); } catch (e) { errorData = { message: response.statusText }; }
+      throw new Error(errorData?.message || `HTTP error! status: ${response.status}`);
     }
-    return response.blob(); // Retorna o blob do PDF
+    return response.blob();
   },
-  
-  // NOVO: Rotas para Addon Categories
-  getAddonCategories: async () => {
+
+  getAddonCategories: async (): Promise<AddonCategory[]> => {
     const response = await fetch(`${API_BASE_URL}addons/categories`, { headers: getAuthHeaders() });
     return handleResponse(response);
   },
 
-  createAddonCategory: async (data: { name: string; min_selections?: number; max_selections?: number; is_required?: boolean }) => {
+  createAddonCategory: async (data: { name: string; min_selections?: number; max_selections?: number; is_required?: boolean }): Promise<AddonCategory> => {
     const response = await fetch(`${API_BASE_URL}addons/categories`, {
       method: "POST",
       headers: getAuthHeaders(),
@@ -404,7 +336,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  updateAddonCategory: async (id: string, data: { name?: string; min_selections?: number; max_selections?: number; is_required?: boolean }) => {
+  updateAddonCategory: async (id: string, data: { name?: string; min_selections?: number; max_selections?: number; is_required?: boolean }): Promise<AddonCategory> => {
     const response = await fetch(`${API_BASE_URL}addons/categories/${id}`, {
       method: "PUT",
       headers: getAuthHeaders(),
@@ -413,7 +345,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  deleteAddonCategory: async (id: string) => {
+  deleteAddonCategory: async (id: string): Promise<void> => {
     const response = await fetch(`${API_BASE_URL}addons/categories/${id}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
@@ -421,8 +353,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  // NOVO: Rotas para Addon Options
-  createAddonOption: async (categoryId: string, data: { name: string; price: number }) => {
+  createAddonOption: async (categoryId: string, data: { name: string; price: number }): Promise<AddonOption> => {
     const response = await fetch(`${API_BASE_URL}addons/categories/${categoryId}/options`, {
       method: "POST",
       headers: getAuthHeaders(),
@@ -431,7 +362,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  updateAddonOption: async (id: string, data: { name?: string; price?: number }) => {
+  updateAddonOption: async (id: string, data: { name?: string; price?: number }): Promise<AddonOption> => {
     const response = await fetch(`${API_BASE_URL}addons/options/${id}`, {
       method: "PUT",
       headers: getAuthHeaders(),
@@ -440,7 +371,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  deleteAddonOption: async (id: string) => {
+  deleteAddonOption: async (id: string): Promise<void> => {
     const response = await fetch(`${API_BASE_URL}addons/options/${id}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
@@ -449,17 +380,17 @@ const ApiService = {
   },
 
   // NOVO: Rotas para Bot Messages
-  getBotMessages: async () => { // Usado pelo chatbot (rota pública)
+  getBotMessages: async (): Promise<any[]> => { 
     const response = await fetch(`${API_BASE_URL}bot_messages`, { headers: getAuthHeaders() });
     return handleResponse(response);
   },
 
-  getAllBotMessagesAdmin: async () => { // Usado pelo admin (rota protegida)
+  getAllBotMessagesAdmin: async (): Promise<any[]> => { 
     const response = await fetch(`${API_BASE_URL}bot_messages/admin`, { headers: getAuthHeaders() });
     return handleResponse(response);
   },
 
-  createBotMessage: async (data: { command: string; response_text: string; is_active?: boolean }) => {
+  createBotMessage: async (data: { command: string; response_text: string; is_active?: boolean }): Promise<any> => {
     const response = await fetch(`${API_BASE_URL}bot_messages/admin`, {
       method: "POST",
       headers: getAuthHeaders(),
@@ -468,7 +399,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  updateBotMessage: async (id: string, data: { command?: string; response_text?: string; is_active?: boolean }) => {
+  updateBotMessage: async (id: string, data: { command?: string; response_text?: string; is_active?: boolean }): Promise<any> => {
     const response = await fetch(`${API_BASE_URL}bot_messages/admin/${id}`, {
       method: "PUT",
       headers: getAuthHeaders(),
@@ -477,7 +408,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  deleteBotMessage: async (id: string) => {
+  deleteBotMessage: async (id: string): Promise<void> => {
     const response = await fetch(`${API_BASE_URL}bot_messages/admin/${id}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
@@ -485,7 +416,6 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  // NOVO: Rotas para Store Management
   getMyStore: async (): Promise<Store> => {
     const response = await fetch(`${API_BASE_URL}admin/stores/me`, { headers: getAuthHeaders() });
     return handleResponse(response);
@@ -509,7 +439,6 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  // NOVO: Rotas para Delivery Area Management
   getDeliveryAreas: async (): Promise<DeliveryArea[]> => {
     const response = await fetch(`${API_BASE_URL}admin/delivery_areas`, { headers: getAuthHeaders() });
     return handleResponse(response);
@@ -533,7 +462,7 @@ const ApiService = {
     return handleResponse(response);
   },
 
-  deleteDeliveryArea: async (id: string) => {
+  deleteDeliveryArea: async (id: string): Promise<void> => {
     const response = await fetch(`${API_BASE_URL}admin/delivery_areas/${id}`, {
       method: "DELETE",
       headers: getAuthHeaders(),

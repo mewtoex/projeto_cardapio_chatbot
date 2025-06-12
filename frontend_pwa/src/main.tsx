@@ -2,14 +2,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import './index.css'; // Assuming you have a global CSS file
-import { AuthProvider } from './modules/auth/contexts/AuthContext';
+import './index.css'; 
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
+    <App /> 
   </React.StrictMode>
 );
-

@@ -28,19 +28,11 @@ import {
 } from '@mui/icons-material';
 import ApiService from '../../../shared/services/ApiService';
 import { useNotification } from '../../../../contexts/NotificationContext';
-
-interface DeliveryArea {
-  id: string;
-  store_id: string;
-  district_name: string;
-  delivery_fee: number;
-  created_at?: string;
-  updated_at?: string;
-}
+import {type DeliveryArea } from '../../../../types'; // Importar DeliveryArea do novo caminho
 
 interface DeliveryAreaFormData {
   district_name: string;
-  delivery_fee: string; // Keep as string for TextField input
+  delivery_fee: string; 
 }
 
 const AdminDeliveryAreaManagementPage: React.FC = () => {

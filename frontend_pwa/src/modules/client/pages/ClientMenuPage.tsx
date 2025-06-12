@@ -40,53 +40,13 @@ import { useAuth } from '../../auth/contexts/AuthContext';
 import ApiService from '../../shared/services/ApiService';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useNavigate } from 'react-router-dom';
-
-interface MenuItem {
-  id: number;
-  name: string;
-  category_id: string;
-  category_name: string;
-  price: number;
-  description: string;
-  available: boolean;
-  image_url?: string;
-  has_addons: boolean;
-  addon_categories?: AddonCategory[];
-}
-
-interface Category {
-  id: string;
-  name: string;
-  description?: string;
-}
-
-interface AddonCategory {
-  id: string;
-  name: string;
-  min_selections: number;
-  max_selections: number;
-  is_required: boolean;
-  options: AddonOption[];
-}
-
-interface AddonOption {
-  id: string;
-  addon_category_id: string;
-  name: string;
-  price: number;
-}
-
-interface CartItemData {
-  id: number;
-  name: string;
-  price: number;
-  quantity: number;
-  image_url?: string;
-  category_name: string;
-  observations?: string;
-  selectedAddons?: AddonOption[];
-  totalItemPrice: number;
-}
+import { 
+  type MenuItem, 
+  type Category, 
+  type AddonCategory, 
+  type AddonOption, 
+  type CartItemData 
+} from '../../../types'; 
 
 
 const ClientMenuPage: React.FC = () => {

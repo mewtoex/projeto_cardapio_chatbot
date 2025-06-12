@@ -2,30 +2,25 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../auth/contexts/AuthContext';
 import ApiService from '../../shared/services/ApiService';
 import { Link } from 'react-router-dom';
-
-
-interface Order {
-  id: string;
-  menu_item_description: string;
-  menu_item_name: string;
-  price_at_order_time: number;
-  quantity: number;
+import { type OrderItem } from '../../../types';
+interface ClientOrderItemPageProps {
+  order_id: string;
 }
 
-const ClientOrderItemPage: React.FC = (prop) => {
+const ClientOrderItemPage: React.FC<ClientOrderItemPageProps> = (prop) => {
   const { user, token } = useAuth();
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchOrders = async () => {
-      if (user) {
+      if (user && prop.order_id) {
         try {
           setLoading(true);
           console.log(prop.order_id)
           const fetchedOrders = await ApiService.getItemsOrder(prop.order_id);
-          setOrders(fetchedOrders as Order[]);
+          setOrders(fetchedOrders as OrderItem[]);
           setError(null);
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Falha ao buscar Items do pedidos.');
@@ -35,7 +30,7 @@ const ClientOrderItemPage: React.FC = (prop) => {
     };
 
     fetchOrders();
-  }, [user, token]);
+  }, [user, token, prop.order_id]); // Adicionar prop.order_id como dependência
 
   if (loading) {
     return <p>Carregando items do pedidos...</p>;
@@ -47,41 +42,37 @@ const ClientOrderItemPage: React.FC = (prop) => {
 
   return (
     <div>
-      <h1>Meus Pedidos</h1>
-      {user && <p>Histórico de pedidos de {user.name}:</p>}
+      <h1>Itens do Pedido #{prop.order_id}</h1> {/* Exibir o ID do pedido */}
       {orders.length === 0 ? (
-        <p>Você ainda não fez nenhum pedido.</p>
+        <p>Nenhum item encontrado para este pedido.</p>
       ) : (
         <table>
           <thead>
             <tr>
-              <th>ID do Pedido</th>
+              <th>ID do Item</th>
               <th>Produto</th>
               <th>Quantidade</th>
-              <th>Oberservação</th>
-              <th>Valor</th>
+              <th>Observação</th>
+              <th>Valor Unitário (no pedido)</th>
             </tr>
           </thead> 
           <tbody>
-            {orders?.map((order) => (
-              <tr key={order.id}>
-                <td>{order.id}</td>
-                <td>{order.menu_item_name}</td>
-                <td>{order.quantity}</td>
-                <td>{order.menu_item_description}</td>
-                <td>{order.price_at_order_time}</td>
-                <td>
-                </td>
+            {orders?.map((item) => (
+              <tr key={item.id}>
+                <td>{item.id}</td>
+                <td>{item.menu_item_name}</td>
+                <td>{item.quantity}</td>
+                <td>{item.observations || '-'}</td> {/* Usar observations */}
+                <td>R$ {item.price_at_order_time.toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
       <br />
-      <Link to="/client/dashboard">Voltar ao Dashboard</Link>
+      <Link to="/client/orders">Voltar para Meus Pedidos</Link>
     </div>
   );
 };
 
 export default ClientOrderItemPage;
-

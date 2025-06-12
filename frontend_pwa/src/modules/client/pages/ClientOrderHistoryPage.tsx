@@ -8,13 +8,7 @@ import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import ClientOrderItemPage from './ClientOrderItemPage';
 import { styled } from '@mui/material/styles';
-
-interface Order {
-  id: string;
-  order_date: string;
-  status: string;
-  total_amount: number;
-}
+import { type Order } from '../../../types'; 
 
 const ClientOrderHistoryPage: React.FC = () => {
   const { user, token } = useAuth();
@@ -56,9 +50,9 @@ const ClientOrderHistoryPage: React.FC = () => {
   if (error) {
     return <p style={{ color: 'red' }}>Erro: {error}</p>;
   }
-  const handleOpenItemsOrder = (date: string) => {
-    console.log(date)
-    setOrderId(date)
+  const handleOpenItemsOrder = (id: string) => { // Renomeado 'date' para 'id' para clareza
+    console.log(id)
+    setOrderId(id)
     setOpen(true);
   }
 
@@ -124,4 +118,3 @@ const ClientOrderHistoryPage: React.FC = () => {
 };
 
 export default ClientOrderHistoryPage;
-

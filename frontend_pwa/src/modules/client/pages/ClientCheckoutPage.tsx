@@ -4,35 +4,7 @@ import { useAuth } from "../../auth/contexts/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
 import ApiService from "../../shared/services/ApiService";
 import { useNotification } from '../../../contexts/NotificationContext';
-
-
-interface Address {
-  id: string;
-  street: string;
-  number: string;
-  complement?: string;
-  district: string;
-  city: string;
-  state: string;
-  cep: string;
-  isPrimary?: boolean;
-}
-
-interface AddonOption {
-  id: string;
-  name: string;
-  price: number;
-}
-
-interface CartItemDetails {
-  id: number;
-  name: string;
-  quantity: number;
-  price: number;
-  observations?: string;
-  selectedAddons?: AddonOption[];
-  totalItemPrice: number;
-}
+import { type Address, type AddonOption, type CartItemData as CartItemDetails,type OrderCreateItem } from '../../../types'; 
 
 const ClientCheckoutPage: React.FC = () => {
   const { user } = useAuth();
@@ -61,11 +33,11 @@ const ClientCheckoutPage: React.FC = () => {
         const profileData = await ApiService.getUserAddress();
         if (profileData) {
           setUserAddresses(profileData);
-          const primaryAddress = profileData.find((addr: Address) => addr.isPrimary);
+          const primaryAddress = profileData.find((addr: Address) => addr.is_primary); // Corrigido para is_primary
           if (primaryAddress) {
-            setSelectedAddressId(primaryAddress.id);
+            setSelectedAddressId(primaryAddress.id || null); // ID pode ser opcional
           } else if (profileData.length > 0) {
-            setSelectedAddressId(profileData[0].id);
+            setSelectedAddressId(profileData[0].id || null);
           }
         } else {
           setUserAddresses([]);
@@ -113,7 +85,7 @@ const ClientCheckoutPage: React.FC = () => {
       if (selectedAddressId) {
         try {
           // AuthService.getToken() is used by ApiService internally
-          const response = await ApiService.calculateDeliveryFee(selectedAddressId); // Novo método no ApiService
+          const response = await ApiService.calculateDeliveryFee(selectedAddressId); 
           setDeliveryFee(response.delivery_fee);
           // Opcional: exibir mensagem se não houver taxa específica para o bairro
           if (response.message) {
@@ -122,15 +94,15 @@ const ClientCheckoutPage: React.FC = () => {
         } catch (err) {
           console.error("Erro ao calcular taxa de entrega:", err);
           notification.showError("Erro ao calcular taxa de entrega.");
-          setDeliveryFee(0.0); // Se falhar, assume 0 ou um valor padrão de erro
+          setDeliveryFee(0.0); 
         }
       } else {
-        setDeliveryFee(0.0); // Nenhuma taxa se nenhum endereço estiver selecionado
+        setDeliveryFee(0.0); 
       }
     };
 
     calculateFee();
-  }, [selectedAddressId, notification]); // Depende do selectedAddressId e notification
+  }, [selectedAddressId, notification]); 
 
   const handleConfirmOrder = async () => {
     if (!selectedAddressId) {
@@ -177,7 +149,7 @@ const ClientCheckoutPage: React.FC = () => {
             name: addon.name,
             price: addon.price
         })) || [],
-      })),
+      })) as OrderCreateItem[], // Casting para o tipo correto
       cash_provided: cashProvidedAmount,
       total_amount: total
     };
@@ -190,7 +162,7 @@ const ClientCheckoutPage: React.FC = () => {
       localStorage.removeItem("cartItems");
       setCartItems([]);
       navigate(`/client/orders`);
-    } catch (err) {
+    } catch (err: any) { // Adicionado 'any' para o tipo de erro
       const errorMessage = err instanceof Error ? err.message : String(err);
       console.error("Erro ao confirmar pedido:", err);
       setError("Falha ao confirmar o pedido: " + errorMessage);
@@ -220,11 +192,11 @@ const ClientCheckoutPage: React.FC = () => {
                 margin: "5px",
                 cursor: "pointer"
               }}
-              onClick={() => setSelectedAddressId(addr.id)}
+              onClick={() => setSelectedAddressId(addr.id || null)} // Garante que é string ou null
             >
               <p>{addr.street}, {addr.number}{addr.complement ? ` - ${addr.complement}` : ""} - {addr.district}</p>
               <p>{addr.city} - {addr.state}, CEP: {addr.cep}</p>
-              {addr.isPrimary && <strong>(Principal)</strong>}
+              {addr.is_primary && <strong>(Principal)</strong>} {/* Corrigido para is_primary */}
             </div>
           ))
         ) : (
@@ -288,7 +260,7 @@ const ClientCheckoutPage: React.FC = () => {
           <p>Seu carrinho está vazio.</p>
         )}
         <p>Subtotal: R$ {subtotal.toFixed(2)}</p>
-        <p>Taxa de Entrega: R$ {deliveryFee.toFixed(2)}</p> {/* Exibe a taxa de entrega calculada */}
+        <p>Taxa de Entrega: R$ {deliveryFee.toFixed(2)}</p> 
         <p><strong>Total a Pagar: R$ {total.toFixed(2)}</strong></p>
       </div>
 

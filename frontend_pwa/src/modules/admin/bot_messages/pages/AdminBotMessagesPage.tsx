@@ -30,20 +30,10 @@ import {
 } from '@mui/icons-material';
 import ApiService from '../../../shared/services/ApiService';
 import { useNotification } from '../../../../contexts/NotificationContext';
+// Removidas as interfaces locais e importado os tipos globais
+import {type BotMessage, type BotMessageFormData } from '../../../../types/BotMessage'; // Ajustar conforme a estrutura BotMessage.ts
 
-interface BotMessage {
-  id: string;
-  command: string;
-  response_text: string;
-  is_active: boolean;
-  last_updated?: string;
-}
 
-interface BotMessageFormData {
-  command: string;
-  response_text: string;
-  is_active: boolean;
-}
 
 const AdminBotMessagesPage: React.FC = () => {
   const [botMessages, setBotMessages] = useState<BotMessage[]>([]);

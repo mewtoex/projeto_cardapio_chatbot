@@ -12,26 +12,7 @@ import {
 import ApiService from "../../../shared/services/ApiService";
 import { useNotification } from "../../../../contexts/NotificationContext";
 import { useIMask } from 'react-imask'; 
-
-interface Address {
-  id?: string;
-  street: string;
-  number: string;
-  complement?: string;
-  district: string;
-  city: string;
-  state: string;
-  cep: string;
-}
-
-interface Store {
-  id?: string;
-  name: string;
-  phone: string;
-  email: string;
-  address_id?: string;
-  address?: Address;
-}
+import { type Store, type Address } from '../../../../types';
 
 const AdminStoreManagementPage: React.FC = () => {
   const [store, setStore] = useState<Store | null>(null);
@@ -41,7 +22,7 @@ const AdminStoreManagementPage: React.FC = () => {
 
   const notification = useNotification(); 
 
-  const { ref: storeCepInputRef, setValue: setStoreCepMaskedValue } = useIMask({
+  const { ref: storeCepInputRef, setValue: setStoreCepMaskedValue } = useIMask<HTMLInputElement>({
     mask: '00000-000',
     onAccept: (value: string) => {
       setStore(prev => ({

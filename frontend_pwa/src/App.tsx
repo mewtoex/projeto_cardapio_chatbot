@@ -5,12 +5,11 @@ import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { theme } from "./theme";
 import { AppNotificationProvider } from "./contexts/NotificationContext";
-import { AuthProvider } from "./modules/auth/contexts/AuthContext";
+import { AuthProvider } from "./modules/auth/contexts/AuthContext"; // Importar AuthProvider aqui
 
 // Auth Pages
 import UnifiedLoginPage from "./modules/auth/pages/UnifiedLoginPage";
 import ClientRegisterPage from "./modules/auth/pages/ClientRegisterPage";
-// NOVO: Páginas de recuperação de senha
 import ForgotPasswordPage from "./modules/auth/pages/ForgotPasswordPage";
 import ResetPasswordPage from "./modules/auth/pages/ResetPasswordPage";
 
@@ -37,7 +36,7 @@ const App: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AuthProvider>
+      <AuthProvider> {/* AuthProvider encapsula toda a aplicação */}
         <AppNotificationProvider>
           <Router>
             <Routes>

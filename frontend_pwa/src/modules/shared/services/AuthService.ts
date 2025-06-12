@@ -1,30 +1,30 @@
 // src/modules/shared/services/AuthService.ts
-
 import axios from 'axios';
+import { type UserLoginData, type UserRegisterData, type AuthResponse, type UserProfile } from '../../../types'; 
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
 const AuthService = {
-  clientLogin: async (email, password ) => {
+  clientLogin: async (email: string, password: string): Promise<AuthResponse> => {
     try {
       console.log("Realizando login de cliente com:", email);
-      const response = await axios.post(`${API_BASE_URL}/auth/login`, { // Corrigido o endpoint para /auth/login
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, { 
         email,
         password
       });
       
       const { access_token, user } = response.data;
       localStorage.setItem('authUser', JSON.stringify(user));
-      localStorage.setItem('authToken', access_token); // Salvar como 'authToken' para consistência
+      localStorage.setItem('authToken', access_token); 
       
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro no login de cliente:", error);
       throw error.response?.data?.message || "Erro ao realizar login. Verifique suas credenciais.";
     }
   },
 
-   clientRegister: async (userData) => {
+  clientRegister: async (userData: UserRegisterData): Promise<AuthResponse> => {
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/register`, userData);
       // Se o registro já retorna user e access_token, pode-se usar diretamente
@@ -32,13 +32,13 @@ const AuthService = {
       localStorage.setItem('authUser', JSON.stringify(user));
       localStorage.setItem('authToken', access_token); // Salvar como 'authToken'
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro no registro de cliente:", error);
       throw error.response?.data?.message || "Erro ao registrar cliente. Verifique os dados informados.";
     }
   },
 
-  adminLogin: async (email, password) => {
+  adminLogin: async (email: string, password: string): Promise<AuthResponse> => {
     try {
       console.log("Realizando login de administrador com:", email);
       const response = await axios.post(`${API_BASE_URL}/auth/admin`, {
@@ -48,15 +48,15 @@ const AuthService = {
       console.log(response.data)
       const { access_token, user } = response.data;
       localStorage.setItem('authUser', JSON.stringify(user));
-      localStorage.setItem('authToken', access_token); // Salvar como 'authToken'
+      localStorage.setItem('authToken', access_token); 
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro no login de administrador:", error);
       throw error.response?.data?.message || "Erro ao realizar login. Verifique suas credenciais.";
     }
   },
 
-  logout: async () => {
+  logout: async (): Promise<{ message: string }> => {
     try {
       const token = localStorage.getItem('authToken'); // Usar 'authToken'
       if (token) {
@@ -80,39 +80,39 @@ const AuthService = {
     }
   },
 
-  getToken: () => {
-    return localStorage.getItem('authToken'); // Usar 'authToken'
+  getToken: (): string | null => {
+    return localStorage.getItem('authToken'); 
   },
 
-  getUser: () => {
+  getUser: (): UserProfile | null => {
     const userStr = localStorage.getItem('authUser');
     return userStr ? JSON.parse(userStr) : null;
   },
 
-  isAuthenticated: () => {
-    return !!localStorage.getItem('authToken'); // Usar 'authToken'
+  isAuthenticated: (): boolean => {
+    return !!localStorage.getItem('authToken'); 
   },
   
-  getAuthHeaders: () => {
-    const token = localStorage.getItem('authToken'); // Usar 'authToken'
+  getAuthHeaders: (): { [key: string]: string } => {
+    const token = localStorage.getItem('authToken');
     return token ? { 'Authorization': `Bearer ${token}` } : {};
   },
   
-  forgotPassword: async (email: string) => {
+  forgotPassword: async (email: string): Promise<any> => {
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/forgot_password`, { email });
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao solicitar recuperação de senha:", error);
       throw error.response?.data?.message || "Erro ao solicitar redefinição de senha.";
     }
   },
 
-  resetPassword: async (token: string, new_password: string) => {
+  resetPassword: async (token: string, new_password: string): Promise<any> => {
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/reset_password`, { token, new_password });
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao redefinir senha:", error);
       throw error.response?.data?.message || "Erro ao redefinir senha. O token pode ser inválido ou expirado.";
     }

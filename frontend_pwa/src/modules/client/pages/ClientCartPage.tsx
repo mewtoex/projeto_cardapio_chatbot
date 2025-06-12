@@ -32,25 +32,7 @@ import {
 import { useAuth } from "../../auth/contexts/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
 import { useNotification } from "../../../contexts/NotificationContext";
-
-interface AddonOption {
-  id: string;
-  addon_category_id: string;
-  name: string;
-  price: number;
-}
-
-interface ICartItem {
-  id: number;
-  name: string;
-  quantity: number;
-  price: number;
-  image_url?: string;
-  category_name: string;
-  observations?: string;
-  selectedAddons?: AddonOption[];
-  totalItemPrice: number;
-}
+import { type AddonOption, type CartItemData as ICartItem } from '../../../types'; 
 
 const ClientCartPage: React.FC = () => {
   const { user } = useAuth();

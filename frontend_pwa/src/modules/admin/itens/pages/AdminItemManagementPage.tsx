@@ -30,106 +30,44 @@ import {
   Divider,
   CircularProgress,
   Alert,
-  Checkbox, // NOVO: Checkbox para seleção de categorias de adicionais
-  FormGroup, // NOVO: Para agrupar checkboxes
+  Checkbox,
+  FormGroup,
 } from "@mui/material";
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Add as AddIcon,
   Close as CloseIcon,
-  Category as CategoryIcon
 } from "@mui/icons-material";
 import ApiService from "../../../shared/services/ApiService";
 import { useNotification } from "../../../../contexts/NotificationContext";
 import { ImageUpload } from "../../../../components/UI/ImageUpload";
-
-interface MenuItem {
-  id: number;
-  name: string;
-  category_id: string; // Pode ser string se o backend retornar UUIDs, senão number
-  category_name: string;
-  price: number;
-  description: string;
-  available: boolean;
-  image_url?: string;
-  has_addons: boolean;
-  addon_categories?: AddonCategory[];
-}
-
-interface Category {
-  id: string; // Pode ser string se o backend retornar UUIDs, senão number
-  name: string;
-  description?: string;
-}
-
-interface AddonCategory {
-  id: string; // Assume string para IDs do backend (UUID ou INT como string)
-  name: string;
-  min_selections: number;
-  max_selections: number;
-  is_required: boolean;
-  options: AddonOption[];
-}
-
-interface AddonOption {
-  id: string; // Assume string para IDs do backend
-  addon_category_id: string;
-  name: string;
-  price: number;
-}
-
-
-// Interface para o formulário de item
-interface ItemFormData {
-  name: string;
-  category_id: string;
-  price: string;
-  description: string;
-  available: boolean;
-  image_url: string;
-  has_addons: boolean;
-  addon_category_ids: string[]; // Array de strings para IDs
-}
-
-// Interface para o formulário de categoria
-interface CategoryFormData {
-  name: string;
-  description: string;
-}
-
-// Interface para o formulário de categoria de adicional
-interface AddonCategoryFormData {
-  name: string;
-  min_selections: number;
-  max_selections: number;
-  is_required: boolean;
-}
-
-// Interface para o formulário de opção de adicional
-interface AddonOptionFormData {
-  name: string;
-  price: string;
-}
-
+// Importar todos os tipos do novo caminho centralizado
+import { 
+  type MenuItem as MenuItemC, 
+  type Category, 
+  type AddonCategory, 
+  type AddonOption, 
+  type MenuItemFormData, 
+  type CategoryFormData, 
+  type AddonCategoryFormData, 
+  type AddonOptionFormData 
+} from '../../../../types'; 
 
 const AdminItemManagementPage: React.FC = () => {
-  // Estados para itens
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItemC[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openItemDialog, setOpenItemDialog] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [currentItem, setCurrentItem] = useState<MenuItem | null>(null);
+  const [currentItem, setCurrentItem] = useState<MenuItemC | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
-  // Estados para categorias
   const [openCategoryDialog, setOpenCategoryDialog] = useState(false);
   const [currentCategory, setCurrentCategory] = useState<Category | null>(null);
   const [isSavingCategory, setIsSavingCategory] = useState(false);
 
-  // Estados para gerenciamento de adicionais
   const [addonCategories, setAddonCategories] = useState<AddonCategory[]>([]);
   const [openAddonCategoryDialog, setOpenAddonCategoryDialog] = useState(false);
   const [currentAddonCategory, setCurrentAddonCategory] = useState<AddonCategory | null>(null);
@@ -146,7 +84,7 @@ const AdminItemManagementPage: React.FC = () => {
   const notification = useNotification();
 
   // Form states
-  const [itemFormData, setItemFormData] = useState<ItemFormData>({
+  const [itemFormData, setItemFormData] = useState<MenuItemFormData>({
     name: "",
     category_id: "",
     price: "",
@@ -162,7 +100,6 @@ const AdminItemManagementPage: React.FC = () => {
     description: ""
   });
 
-  // Form states para adicionais
   const [addonCategoryFormData, setAddonCategoryFormData] = useState<AddonCategoryFormData>({
     name: "",
     min_selections: 0,
@@ -175,17 +112,13 @@ const AdminItemManagementPage: React.FC = () => {
     price: ""
   });
 
-  // Função para buscar itens, categorias e categorias de adicionais
   const fetchData = async () => {
     try {
       setLoading(true);
 
-      // Buscar categorias
       const categoriesData = await ApiService.getCategories();
-      // Garanta que os IDs das categorias sejam strings se o backend pode retornar numbers
       setCategories(categoriesData.map((cat: any) => ({ ...cat, id: String(cat.id) })));
 
-      // Buscar categorias de adicionais
       const addonCategoriesData = await ApiService.getAddonCategories();
       setAddonCategories(addonCategoriesData.map((cat: any) => ({
         ...cat,
@@ -193,12 +126,11 @@ const AdminItemManagementPage: React.FC = () => {
         options: cat.options.map((opt: any) => ({ ...opt, id: String(opt.id), addon_category_id: String(opt.addon_category_id) }))
       })));
 
-      // Depois buscar itens
       const itemsData = await ApiService.getMenuItems();
       setMenuItems(itemsData.map((item: any) => ({
         ...item,
-        id: String(item.id), // Garanta que o ID do item seja string
-        category_id: String(item.category_id), // Garanta que o category_id do item seja string
+        id: String(item.id),
+        category_id: String(item.category_id), 
         addon_categories: item.addon_categories ? item.addon_categories.map((ac: any) => ({ ...ac, id: String(ac.id) })) : []
       })));
 
@@ -215,10 +147,8 @@ const AdminItemManagementPage: React.FC = () => {
     fetchData();
   }, []);
 
-  // Funções para gerenciamento de itens
   const handleToggleAvailability = async (itemId: number, currentAvailability: boolean) => {
     try {
-      // Importante: garantir que itemId seja string para a API
       await ApiService.updateMenuItemAvailability(String(itemId), !currentAvailability);
 
       setMenuItems(prevItems =>
@@ -233,7 +163,7 @@ const AdminItemManagementPage: React.FC = () => {
     }
   };
 
-  const handleOpenItemDialog = (item?: MenuItem) => {
+  const handleOpenItemDialog = (item?: MenuItemC) => {
     if (item) {
       setCurrentItem(item);
       setItemFormData({
@@ -244,14 +174,12 @@ const AdminItemManagementPage: React.FC = () => {
         available: item.available,
         image_url: item.image_url || "",
         has_addons: item.has_addons,
-        // Ao abrir para edição, converta os IDs para string, se necessário
         addon_category_ids: item.addon_categories?.map(ac => String(ac.id)) || [],
       });
     } else {
       setCurrentItem(null);
       setItemFormData({
         name: "",
-        // Garanta que o ID da categoria padrão seja string
         category_id: categories.length > 0 ? String(categories[0].id) : "",
         price: "",
         description: "",
@@ -302,14 +230,12 @@ const AdminItemManagementPage: React.FC = () => {
       let newAddonCategoryIds: string[];
 
       if (checked) {
-        // Adiciona apenas se o ID (como string) não estiver já presente
         if (!prev.addon_category_ids.includes(categoryIdAsString)) {
           newAddonCategoryIds = [...prev.addon_category_ids, categoryIdAsString];
         } else {
           newAddonCategoryIds = [...prev.addon_category_ids]; // Já existe, não faz nada
         }
       } else {
-        // Remove todas as ocorrências do ID (como string)
         newAddonCategoryIds = prev.addon_category_ids.filter(id => id !== categoryIdAsString);
       }
 
@@ -337,7 +263,6 @@ const AdminItemManagementPage: React.FC = () => {
     try {
       setIsUploading(true);
 
-      // Validação básica
       if (!itemFormData.name || !itemFormData.category_id || !itemFormData.price) {
         notification.showError("Preencha todos os campos obrigatórios");
         setIsUploading(false);
@@ -350,7 +275,6 @@ const AdminItemManagementPage: React.FC = () => {
       }
 
 
-      // Criar FormData para envio com image
       const formData = new FormData();
       formData.append("name", itemFormData.name);
       formData.append("category_id", itemFormData.category_id); // Já é string
@@ -371,19 +295,15 @@ const AdminItemManagementPage: React.FC = () => {
 
       let response;
       if (currentItem) {
-        // Atualizar item existente
-        await ApiService.updateMenuItem(String(currentItem.id), formData); // Garante que currentItem.id é string
+        await ApiService.updateMenuItem(String(currentItem.id), formData); 
         notification.showSuccess("Item atualizado com sucesso");
       } else {
-        // Adicionar novo item
         await ApiService.createMenuItem(formData);
         notification.showSuccess("Item adicionado com sucesso");
       }
 
-      // Atualizar a lista de itens
       fetchData();
 
-      // Fechar o diálogo e limpar o estado
       handleCloseItemDialog();
     } catch (error) {
       notification.showError("Erro ao salvar item");
@@ -395,7 +315,7 @@ const AdminItemManagementPage: React.FC = () => {
   const handleDeleteItem = async (itemId: number) => {
     if (window.confirm("Tem certeza que deseja excluir este item?")) {
       try {
-        await ApiService.deleteMenuItem(String(itemId)); // Garante que itemId é string
+        await ApiService.deleteMenuItem(String(itemId)); 
         setMenuItems(prevItems => prevItems.filter(item => item.id !== itemId));
         notification.showSuccess("Item removido com sucesso");
       } catch (error) {
@@ -404,7 +324,6 @@ const AdminItemManagementPage: React.FC = () => {
     }
   };
 
-  // Funções para gerenciamento de categorias
   const handleOpenCategoryDialog = (category?: Category) => {
     if (category) {
       setCurrentCategory(category);
@@ -448,14 +367,12 @@ const AdminItemManagementPage: React.FC = () => {
       }
 
       if (currentCategory) {
-        // Atualizar categoria existente
         await ApiService.updateCategory(String(currentCategory.id), { // Garante que ID é string
           name: categoryFormData.name,
           description: categoryFormData.description
         });
         notification.showSuccess("Categoria atualizada com sucesso");
       } else {
-        // Adicionar nova categoria
         await ApiService.createCategory({
           name: categoryFormData.name,
           description: categoryFormData.description
@@ -463,10 +380,8 @@ const AdminItemManagementPage: React.FC = () => {
         notification.showSuccess("Categoria adicionada com sucesso");
       }
 
-      // Atualizar a lista de categorias
       fetchData();
 
-      // Fechar o diálogo e limpar o estado
       handleCloseCategoryDialog();
     } catch (error) {
       notification.showError("Erro ao salvar categoria");
@@ -476,7 +391,6 @@ const AdminItemManagementPage: React.FC = () => {
   };
 
   const handleDeleteCategory = async (categoryId: string) => {
-    // Verificar se há itens usando esta categoria
     const itemsUsingCategory = menuItems.filter(item => item.category_id === categoryId);
 
     if (itemsUsingCategory.length > 0) {
@@ -495,7 +409,6 @@ const AdminItemManagementPage: React.FC = () => {
     }
   };
 
-  // Funções para gerenciamento de Categorias de Adicionais (NOVO)
   const handleOpenAddonCategoryDialog = (cat?: AddonCategory) => {
     if (cat) {
       setCurrentAddonCategory(cat);
@@ -554,7 +467,7 @@ const AdminItemManagementPage: React.FC = () => {
         await ApiService.createAddonCategory(addonCategoryFormData);
         notification.showSuccess("Categoria de adicional adicionada com sucesso!");
       }
-      fetchData(); // Recarregar todos os dados
+      fetchData(); 
       handleCloseAddonCategoryDialog();
     } catch (error) {
       notification.showError("Erro ao salvar categoria de adicional.");
@@ -566,7 +479,7 @@ const AdminItemManagementPage: React.FC = () => {
   const handleDeleteAddonCategory = async (id: string) => {
     if (window.confirm("Tem certeza que deseja excluir esta categoria de adicional? Isso também a removerá de quaisquer itens associados.")) {
       try {
-        await ApiService.deleteAddonCategory(String(id)); // Garante que ID é string
+        await ApiService.deleteAddonCategory(String(id)); 
         fetchData();
         notification.showSuccess("Categoria de adicional removida com sucesso!");
       } catch (error) {
@@ -575,9 +488,8 @@ const AdminItemManagementPage: React.FC = () => {
     }
   };
 
-  // Funções para gerenciamento de Opções de Adicionais (NOVO)
   const handleOpenAddonOptionDialog = (addonCategoryId: string, option?: AddonOption) => {
-    setSelectedAddonCategoryIdForOption(String(addonCategoryId)); // Garante que é string
+    setSelectedAddonCategoryIdForOption(String(addonCategoryId)); 
     if (option) {
       setCurrentAddonOption(option);
       setAddonOptionFormData({
@@ -641,7 +553,7 @@ const AdminItemManagementPage: React.FC = () => {
         });
         notification.showSuccess("Opção de adicional adicionada com sucesso!");
       }
-      fetchData(); // Recarregar todos os dados
+      fetchData(); 
       handleCloseAddonOptionDialog();
     } catch (error) {
       notification.showError("Erro ao salvar opção de adicional.");
@@ -663,12 +575,10 @@ const AdminItemManagementPage: React.FC = () => {
   };
 
 
-  // Função para alternar entre abas
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
-  // Renderização condicional para loading e erro
   if (loading) {
     return (
       <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
@@ -701,11 +611,10 @@ const AdminItemManagementPage: React.FC = () => {
         <Tabs value={tabValue} onChange={handleTabChange} aria-label="gerenciamento de cardápio">
           <Tab label="Itens" id="tab-0" />
           <Tab label="Categorias" id="tab-1" />
-          <Tab label="Adicionais" id="tab-2" /> {/* NOVA ABA */}
+          <Tab label="Adicionais" id="tab-2" /> 
         </Tabs>
       </Box>
 
-      {/* Aba de Itens */}
       <div role="tabpanel" hidden={tabValue !== 0}>
         {tabValue === 0 && (
           <>
@@ -788,7 +697,6 @@ const AdminItemManagementPage: React.FC = () => {
         )}
       </div>
 
-      {/* Aba de Categorias */}
       <div role="tabpanel" hidden={tabValue !== 1}>
         {tabValue === 1 && (
           <>
@@ -866,7 +774,6 @@ const AdminItemManagementPage: React.FC = () => {
         )}
       </div>
 
-      {/* Aba de Adicionais (NOVA) */}
       <div role="tabpanel" hidden={tabValue !== 2}>
         {tabValue === 2 && (
           <>
@@ -958,7 +865,6 @@ const AdminItemManagementPage: React.FC = () => {
       </div>
 
 
-      {/* Dialog para adicionar/editar item */}
       <Dialog
         open={openItemDialog}
         onClose={handleCloseItemDialog}
@@ -1232,7 +1138,6 @@ const AdminItemManagementPage: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Dialog para adicionar/editar Opção de Adicional (NOVO) */}
       <Dialog
         open={openAddonOptionDialog}
         onClose={handleCloseAddonOptionDialog}
