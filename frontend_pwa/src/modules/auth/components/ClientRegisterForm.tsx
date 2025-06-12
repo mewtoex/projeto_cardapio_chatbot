@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { TextField, Button, Box, Typography, Checkbox, FormControlLabel, Grid, Link } from '@mui/material';
 import { useNotification } from '../../../contexts/NotificationContext';
-import { useIMask } from 'react-imask'; // Importe useIMask
+import { useIMask } from 'react-imask'; 
 
 interface ClientRegisterFormProps {
   onRegisterSuccess?: () => void;
