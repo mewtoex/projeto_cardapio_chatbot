@@ -1,5 +1,5 @@
 // frontend_pwa/src/hooks/useForm.ts
-import { useState, useCallback, ChangeEvent } from 'react';
+import { useState, useCallback, type ChangeEvent } from 'react';
 
 type FormValues = {
   [key: string]: any;

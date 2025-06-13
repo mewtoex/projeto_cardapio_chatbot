@@ -45,9 +45,13 @@ const ClientLoginForm: React.FC = () => {
       console.error("Erro no login do cliente (tratado pelo hook):", error);
     }
   };
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault(); // Importante para prevenir o comportamento padrão do formulário
+    handleClientLogin(); // Chama a função assíncrona
+  };
 
   return (
-    <Box component="form" onSubmit={handleSubmit(handleClientLogin)} sx={{ mt: 3 }}>
+    <Box component="form" onSubmit={handleFormSubmit} sx={{ mt: 3 }}>
       <Typography variant="h5" component="h2" gutterBottom align="center">
         Login do Cliente
       </Typography>

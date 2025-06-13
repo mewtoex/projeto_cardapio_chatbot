@@ -28,3 +28,4 @@ export interface UserUpdateProfileData {
     current_password?: string;
     new_password?: string;
 }
+

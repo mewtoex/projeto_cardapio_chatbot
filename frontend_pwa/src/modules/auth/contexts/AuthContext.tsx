@@ -13,20 +13,13 @@ import {
   type User, 
   type AuthResponse, 
   type UserLoginData, 
-  type UserRegisterData 
+  type UserRegisterData,
+  type AuthContextType
 } from '../../../types';
 
-interface AuthContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  login: (credentials: UserLoginData, isAdmin?: boolean) => Promise<void>;
-  register: (userData: UserRegisterData) => Promise<void>;
-  logout: () => void;
-  loading: boolean;
-  error: string | null;
-}
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(AuthService.getUserData());

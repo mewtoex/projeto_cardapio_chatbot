@@ -127,8 +127,13 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({
     await onSubmit(data); 
   };
 
+  const handleFormSubmit = (e: React.FormEvent) => {
+  e.preventDefault(); // Importante para prevenir o comportamento padrão do formulário
+  submitForm(); // Chama a função assíncrona
+};
+
   return (
-    <Box component="form" onSubmit={handleSubmit(submitForm)} sx={{ p: 2 }}>
+    <Box component="form" onSubmit={handleFormSubmit} sx={{ p: 2 }}>
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, sm: 6 }}>
           <TextField

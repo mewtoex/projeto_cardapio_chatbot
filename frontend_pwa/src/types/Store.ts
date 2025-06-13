@@ -13,4 +13,7 @@ export interface Store {
     is_open: boolean; 
     created_at?: string;
     updated_at?: string;
+    address?: string;
+    opening_hours?: string; 
+    avg_preparation_time_minutes?: number;
 }

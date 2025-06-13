@@ -187,7 +187,15 @@ export interface Store_ {
     opening_hours: string; 
     avg_preparation_time_minutes: number;
 }
-
+export interface AuthContextType {
+  user: User | null;
+  isAuthenticated: boolean;
+  login: (credentials: UserLoginData, isAdmin?: boolean) => Promise<void>;
+  register: (userData: UserRegisterData) => Promise<void>;
+  logout: () => void;
+  loading: boolean;
+  error: string | null;
+}
 export interface Promotion {
   id: number;
   name: string;
@@ -195,6 +203,14 @@ export interface Promotion {
   discount_percentage: number;
   active: boolean;
 }
+
+export interface  RegisterData  {
+  name: string;
+  email: string;
+  password: string;
+  confirm_password: string;
+  phone: string; 
+};
 
 export interface ProductPriceHistory {
   id: number;

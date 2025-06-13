@@ -20,6 +20,8 @@ interface ImageUploadProps {
   onImageRemove: () => void;
   previewUrl?: string | null;
   isUploading?: boolean;
+  currentImage?: string | null;
+  label?: string | null;
 }
 
 export const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload, onImageRemove, previewUrl, isUploading = false }) => {

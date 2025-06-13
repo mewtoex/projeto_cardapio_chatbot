@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Star as StarIcon, StarBorder as StarBorderIcon } from '@mui/icons-material';
 import { type Address_ as  Address } from '../../../../types';
-import ConfirmationDialog from '../../../../components/ui/ConfirmationDialog'; 
+import ConfirmationDialog from '../../../../components/UI/ConfirmationDialog'; 
 
 interface AddressListProps {
   addresses: Address[];

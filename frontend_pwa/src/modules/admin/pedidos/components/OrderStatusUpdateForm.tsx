@@ -32,8 +32,14 @@ const OrderStatusUpdateForm: React.FC<OrderStatusUpdateFormProps> = ({
     await onSubmit(values.status);
   };
 
+  const handleFormSubmit = (e: React.FormEvent) => {
+  e.preventDefault(); 
+  submitForm(); 
+};
+
+
   return (
-    <Box component="form" onSubmit={handleSubmit(submitForm)} sx={{ p: 2 }}>
+    <Box component="form" onSubmit={handleFormSubmit} sx={{ p: 2 }}>
       <Typography variant="body1" sx={{ mb: 2 }}>
         Status atual: <Chip label={OrderStatusMapping[currentStatus]} color="info" size="small" />
       </Typography>

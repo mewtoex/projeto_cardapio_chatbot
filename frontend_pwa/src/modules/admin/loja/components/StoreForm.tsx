@@ -123,8 +123,13 @@ const StoreForm: React.FC<StoreFormProps> = ({ initialData, onSubmit, onCancel, 
     await onSubmit(values);
   };
 
+  const handleFormSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
+  submitForm(); 
+};
+
   return (
-    <Box component="form" onSubmit={handleSubmit(submitForm)} sx={{ p: 2 }}>
+    <Box component="form" onSubmit={handleFormSubmit} sx={{ p: 2 }}>
       <TextField
         fullWidth
         label="Nome da Loja"
@@ -242,8 +247,9 @@ const StoreForm: React.FC<StoreFormProps> = ({ initialData, onSubmit, onCancel, 
       <ImageUpload
         currentImage={values.logo_url}
         onImageUpload={(url) => handleManualChange('logo_url', url)}
-        label="Logo da Loja"
-      />
+        label="Logo da Loja" onImageRemove={function (): void {
+          throw new Error('Function not implemented.');
+        } }      />
 
       <FormControlLabel
         control={

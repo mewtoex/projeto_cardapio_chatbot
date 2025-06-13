@@ -2,7 +2,7 @@
 import React from 'react';
 import { TextField, Button, Box, Typography, CircularProgress } from '@mui/material';
 import { useForm } from '../../../hooks/useForm';
-import { RegisterData } from '../../../types';
+import { type RegisterData } from '../../../types';
 import InputMask from 'react-input-mask'; // Importe InputMask
 
 interface ClientRegisterFormProps {
@@ -68,8 +68,13 @@ const ClientRegisterForm: React.FC<ClientRegisterFormProps> = ({ onSubmit, onLog
     await onSubmit(values);
   };
 
+  const handleFormSubmit = (e: React.FormEvent) => {
+  e.preventDefault(); 
+  submitForm();
+};
+
   return (
-    <Box component="form" onSubmit={handleSubmit(submitForm)} sx={{ maxWidth: 400, mx: 'auto', mt: 4, p: 3, border: '1px solid #ccc', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+    <Box component="form" onSubmit={handleFormSubmit} sx={{ maxWidth: 400, mx: 'auto', mt: 4, p: 3, border: '1px solid #ccc', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
       <Typography variant="h5" component="h1" gutterBottom align="center">
         Criar Nova Conta
       </Typography>
