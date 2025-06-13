@@ -1,4 +1,3 @@
-// frontend_pwa/src/types/Store.ts
 export interface Store {
     id?: string;
     name: string;
@@ -9,9 +8,9 @@ export interface Store {
     address_district: string;
     address_city: string;
     address_state: string;
-    address_cep: string; // Adicionado para consistência
+    address_cep: string; 
     logo_url?: string;
-    is_open: boolean; // Adicionado para consistência
+    is_open: boolean; 
     created_at?: string;
     updated_at?: string;
 }

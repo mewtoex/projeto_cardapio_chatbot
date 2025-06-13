@@ -1,16 +1,13 @@
 #root {
-  /* Removido: max-width: 1280px; */
-  /* Isso estava limitando a largura do #root e impedindo a centralização completa em telas largas */
   
-  margin: 0 auto; /* Centraliza horizontalmente o conteúdo dentro do #root */
-  padding: 0; /* Gerenciar padding por componente ou via MainLayout */
-  text-align: center; /* Manter se desejar centralizar texto, mas para blocos usar flexbox */
+  margin: 0 auto; 
+  padding: 0; 
+  text-align: center; 
 
-  width: 100%; /* Garantir que ocupe toda a largura */
-  min-height: 100vh; /* Garantir que ocupe a altura total da viewport */
+  width: 100%; 
+  min-height: 100vh; 
 }
 
-/* O restante do seu App.css pode permanecer inalterado */
 
 .logo {
   height: 6em;

@@ -7,8 +7,6 @@ export interface User {
 }
 
 export interface UserProfile extends User {
-  // Dados adicionais do perfil, se houver
-  // ex: birthday: string;
 }
 
 export interface UserLoginData {
@@ -21,7 +19,7 @@ export interface UserRegisterData {
     email: string;
     password: string;
     phone: string;
-    address: string; // Endereço inicial para o registro
+    address: string; 
 }
 
 export interface AuthResponse {
@@ -29,7 +27,6 @@ export interface AuthResponse {
     user: User;
 }
 
-// --- Endereços ---
 export interface Address {
     id: number;
     user_id: number;
@@ -49,7 +46,6 @@ export interface DeliveryArea {
     delivery_fee: number;
 }
 
-// --- Cardápio e Itens ---
 export interface Category {
     id: number;
     name: string;
@@ -79,25 +75,23 @@ export interface MenuItem {
     price: number;
     image_url?: string;
     category_id: number;
-    category_name: string; // Adicionado para facilitar exibição
+    category_name: string; 
     available: boolean;
     has_addons: boolean;
-    addon_categories?: AddonCategory[]; // Categorias de adicionais associadas a este item
+    addon_categories?: AddonCategory[]; 
 }
 
-// Tipo para dados de formulário de item de menu (inclui campos para FormData)
 export interface MenuItemFormData {
     name: string;
-    category_id: string; // string para o Select
-    price: string; // string para o TextField
+    category_id: string; 
+    price: string; 
     description: string;
     available: boolean;
-    image_url: string; // URL para preview
+    image_url: string; 
     has_addons: boolean;
-    addon_category_ids: string[]; // IDs das categorias de adicionais selecionadas
+    addon_category_ids: string[]; 
 }
 
-// Tipo para dados de formulário de mensagem do bot
 export interface BotMessageFormData {
     command_keyword: string;
     response_text: string;
@@ -110,32 +104,30 @@ export interface BotMessage {
 }
 
 
-// --- Carrinho ---
 export interface CartItemData {
-    id: number; // ID do MenuItem original
+    id: number; 
     name: string;
-    price: number; // Preço base do MenuItem
+    price: number; 
     quantity: number;
     image_url?: string;
     category_name: string;
     observations: string;
     selectedAddons: AddonOption[];
-    totalItemPrice: number; // Preço de uma unidade do item com os adicionais selecionados
+    totalItemPrice: number; 
 }
 
 export interface CartUpdateItem {
-    itemKey: string; // Chave única do item no carrinho
+    itemKey: string; 
     newQuantity: number;
 }
 
-// --- Pedidos ---
 export enum OrderStatus {
     PENDENTE = 'pendente',
     EM_PREPARO = 'em_preparo',
     A_CAMINHO = 'a_caminho',
     CONCLUIDO = 'concluido',
     CANCELADO = 'cancelado',
-    SOLICITADO_CANCELAMENTO = 'solicitado_cancelamento', // Novo status para solicitação de cancelamento pelo cliente
+    SOLICITADO_CANCELAMENTO = 'solicitado_cancelamento', 
 }
 
 export const OrderStatusMapping: { [key in OrderStatus]: string } = {
@@ -153,54 +145,49 @@ export interface OrderItem {
     menu_item_id: number;
     menu_item_name: string;
     quantity: number;
-    price: number; // Preço unitário do item no momento do pedido
+    price: number;
     observations?: string;
-    addon_options?: AddonOption[]; // Adicionais específicos deste item no pedido
+    addon_options?: AddonOption[]; 
 }
 
 export interface OrderCreateItem {
     menu_item_id: number;
     quantity: number;
     observations?: string;
-    addon_options_ids?: number[]; // IDs dos adicionais selecionados para este item
+    addon_options_ids?: number[]; 
 }
 
 export interface Order {
     id: number;
     client_id: number;
     client_name: string;
-    order_date: string; // ISO string
+    order_date: string; 
     status: OrderStatus;
     total_amount: number;
     payment_method: string;
-    cash_provided?: number; // Valor em dinheiro dado pelo cliente para troco
-    delivery_address: Address | null; // Pode ser nulo se for retirada
+    cash_provided?: number; 
+    delivery_address: Address | null; 
     items: OrderItem[];
-    // Campos adicionais para o admin
     delivery_fee?: number;
-    // ... outros campos que podem ser retornados pela API
 }
 
 export interface OrderFilters {
     status?: string;
     data_inicio?: string;
     data_fim?: string;
-    cliente_id?: string; // Para filtro de admin
+    cliente_id?: string; 
 }
 
-// --- Loja ---
 export interface Store {
-    id?: number; // Pode ser nulo se for uma nova loja sendo criada
+    id?: number; 
     name: string;
     address: string;
     phone: string;
     is_open: boolean;
-    opening_hours: string; // Ex: "09:00-23:00"
+    opening_hours: string; 
     avg_preparation_time_minutes: number;
-    // ... outros dados da loja
 }
 
-// Você pode ter outros tipos aqui, como Promoção, Histórico de Preços, etc.
 export interface Promotion {
   id: number;
   name: string;

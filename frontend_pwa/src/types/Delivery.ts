@@ -1,4 +1,3 @@
-// frontend_pwa/src/types/Delivery.ts
 export interface DeliveryArea {
     id: string;
     store_id: string;

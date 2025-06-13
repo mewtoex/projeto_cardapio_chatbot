@@ -1,4 +1,3 @@
-// frontend_pwa/src/types/Order.ts
 import { type AddonOption } from './Addon';
 import { type UserProfile } from './User';
 import { type Address } from './Address';

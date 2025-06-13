@@ -1,5 +1,4 @@
 import { type AddonCategory } from './Addon'; 
-import { type Category } from './Category'; 
 
 export interface MenuItem {
     id: number;
