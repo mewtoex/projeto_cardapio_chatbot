@@ -1,3 +1,4 @@
+# backend/src/domain/models/store.py
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -9,6 +10,7 @@ class Store(db.Model):
     name = Column(String(150), nullable=False)
     phone = Column(String(20), nullable=True)
     email = Column(String(120), nullable=True)
+    cnpj = Column(String(14), unique=True, nullable=True) # Adicionado campo CNPJ
     address_id = Column(Integer, ForeignKey('addresses.id'), nullable=False)
     admin_user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
 
@@ -25,6 +27,7 @@ class Store(db.Model):
             'name': self.name,
             'phone': self.phone,
             'email': self.email,
+            'cnpj': self.cnpj, # Incluir CNPJ no dict
             'address_id': self.address_id,
             'address': self.address.to_dict() if self.address else None,
             'admin_user_id': self.admin_user_id,

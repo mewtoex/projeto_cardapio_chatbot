@@ -10,6 +10,9 @@ class StoreRepository(BaseRepository):
 
     def get_by_admin_user_id(self, admin_user_id: int) -> Store:
         return self.session.query(Store).filter_by(admin_user_id=admin_user_id).options(joinedload(Store.address)).first()
+    
+    def get_by_cnpj(self, cnpj: str) -> Store: # Novo método para buscar por CNPJ
+        return self.session.query(Store).filter_by(cnpj=cnpj).first()
 
     def get_first_store(self) -> Store:
         """

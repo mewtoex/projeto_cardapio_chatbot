@@ -5,6 +5,7 @@ from src.domain.models.address import Address
 from src.infrastructure.repositories.store_repository import StoreRepository
 from src.infrastructure.repositories.address_repository import AddressRepository
 from src.domain.exceptions import NotFoundError, ConflictError, BadRequestError
+from src.utils.validators import validate_cnpj # Importar para validação de CNPJ
 
 class StoreService:
     def __init__(self, store_repository: StoreRepository, address_repository: AddressRepository):
@@ -15,9 +16,14 @@ class StoreService:
         """Retorna a loja associada ao administrador logado, ou None se não houver."""
         return self.store_repository.get_by_admin_user_id(admin_user_id)
 
-    def create_my_store(self, admin_user_id: int, name: str, phone: str, email: str, address_data: Dict) -> Store:
+    def create_my_store(self, admin_user_id: int, name: str, phone: str, email: str, address_data: Dict, cnpj: str = None) -> Store:
         if self.store_repository.get_by_admin_user_id(admin_user_id):
             raise ConflictError("You already have a store registered.")
+        
+        if cnpj:
+            existing_store_with_cnpj = self.store_repository.get_by_cnpj(cnpj)
+            if existing_store_with_cnpj:
+                raise ConflictError("CNPJ já registrado por outra loja.")
 
         # Validação de campos de endereço
         required_address_fields = ["street", "number", "district", "city", "state", "cep"]
@@ -41,6 +47,7 @@ class StoreService:
             name=name,
             phone=phone,
             email=email,
+            cnpj=cnpj, # Adicionado cnpj
             address_id=new_address.id,
             admin_user_id=admin_user_id
         )
@@ -48,7 +55,7 @@ class StoreService:
 
     def update_my_store(self, admin_user_id: int, name: Optional[str] = None, 
                         phone: Optional[str] = None, email: Optional[str] = None, 
-                        address_data: Optional[Dict] = None) -> Store:
+                        address_data: Optional[Dict] = None, cnpj: Optional[str] = None) -> Store:
         store = self.store_repository.get_by_admin_user_id(admin_user_id)
         if not store:
             raise NotFoundError("Store not found for this administrator.")
@@ -59,6 +66,12 @@ class StoreService:
             store.phone = phone
         if email is not None:
             store.email = email
+        
+        if cnpj is not None and cnpj != store.cnpj:
+            existing_store_with_cnpj = self.store_repository.get_by_cnpj(cnpj)
+            if existing_store_with_cnpj and existing_store_with_cnpj.id != store.id:
+                raise ConflictError("CNPJ já registrado por outra loja.")
+            store.cnpj = cnpj
 
         if address_data is not None and store.address:
             # Atualiza o endereço associado à loja

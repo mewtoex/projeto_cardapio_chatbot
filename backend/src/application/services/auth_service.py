@@ -5,19 +5,28 @@ from src.domain.models.address import Address
 from src.infrastructure.repositories.user_repository import UserRepository
 from src.infrastructure.database.extensions import db # Para commits e rollbacks
 from src.domain.exceptions import ConflictError, UnauthorizedError, BadRequestError, NotFoundError
+from src.utils.validators import validate_cpf # Importar para validação de CPF
 
 class AuthService:
     def __init__(self, user_repository: UserRepository):
         self.user_repository = user_repository
 
-    def register_user(self, name: str, email: str, phone: str, password: str, address_data: dict) -> dict:
+    def register_user(self, name: str, email: str, phone: str, password: str, address_data: dict, cpf: str = None) -> dict:
         if self.user_repository.get_by_email(email):
             raise ConflictError("Email already registered.")
+        
+        if cpf:
+            existing_user_with_cpf = self.user_repository.get_by_cpf(cpf)
+            if existing_user_with_cpf:
+                raise ConflictError("CPF já registrado.")
+            # A validação de formato e dígitos do CPF já é feita no schema Marshmallow,
+            # mas é bom ter uma checagem de duplicidade aqui.
 
         new_user = User(
             name=name,
             email=email,
             phone=phone,
+            cpf=cpf, # Adicionado cpf
             role='client'
         )
         new_user.set_password(password)

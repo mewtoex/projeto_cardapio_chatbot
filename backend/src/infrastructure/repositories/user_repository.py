@@ -10,6 +10,9 @@ class UserRepository(BaseRepository):
     def get_by_email(self, email: str) -> User:
         return self.session.query(User).filter_by(email=email).first()
 
+    def get_by_cpf(self, cpf: str) -> User: # Novo método para buscar por CPF
+        return self.session.query(User).filter_by(cpf=cpf).first()
+
     def get_by_id_with_addresses(self, user_id: int) -> User:
         user = self.session.query(User).options(joinedload(User.addresses)).get(user_id)
         if not user:

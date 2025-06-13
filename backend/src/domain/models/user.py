@@ -12,6 +12,7 @@ class User(db.Model):
     name = Column(String(150), nullable=False)
     email = Column(String(120), unique=True, nullable=False)
     phone = Column(String(20), nullable=True)
+    cpf = Column(String(11), unique=True, nullable=True) # Adicionado campo CPF
     password_hash = Column(String(256), nullable=False) 
     role = Column(String(20), nullable=False, default='client')
 
@@ -48,6 +49,7 @@ class User(db.Model):
             'name': self.name,
             'email': self.email,
             'phone': self.phone,
+            'cpf': self.cpf, # Incluir CPF no dict
             'role': self.role
         }
         if include_addresses:

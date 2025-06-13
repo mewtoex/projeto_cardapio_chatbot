@@ -5,6 +5,7 @@ from src.domain.models.address import Address
 from src.infrastructure.repositories.user_repository import UserRepository
 from src.infrastructure.repositories.address_repository import AddressRepository
 from src.domain.exceptions import NotFoundError, ConflictError, BadRequestError, UnauthorizedError
+from src.utils.validators import validate_cpf # Importar para validação de CPF
 
 class UserService:
     def __init__(self, user_repository: UserRepository, address_repository: AddressRepository):
@@ -15,7 +16,7 @@ class UserService:
         return self.user_repository.get_by_id_with_addresses(user_id)
 
     def update_user_profile(self, user_id: int, name: Optional[str] = None, 
-                           phone: Optional[str] = None, 
+                           phone: Optional[str] = None, cpf: Optional[str] = None, # Adicionado cpf
                            current_password: Optional[str] = None, 
                            new_password: Optional[str] = None) -> User:
         user = self.user_repository.get_by_id(user_id)
@@ -25,6 +26,12 @@ class UserService:
         if phone is not None:
             user.phone = phone
         
+        if cpf is not None and cpf != user.cpf:
+            existing_user_with_cpf = self.user_repository.get_by_cpf(cpf)
+            if existing_user_with_cpf and existing_user_with_cpf.id != user.id:
+                raise ConflictError("CPF já registrado por outro usuário.")
+            user.cpf = cpf
+
         if new_password:
             if not current_password:
                 raise BadRequestError("Current password is required to set a new password.")
