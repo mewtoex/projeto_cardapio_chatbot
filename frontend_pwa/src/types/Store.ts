@@ -1,13 +1,17 @@
-import { type Address } from './Address'; 
-
+// frontend_pwa/src/types/Store.ts
 export interface Store {
     id?: string;
     name: string;
     phone: string;
-    email: string;
-    address_id?: string;
-    address?: Address; 
-    admin_user_id?: string;
+    address_street: string;
+    address_number: string;
+    address_complement?: string;
+    address_district: string;
+    address_city: string;
+    address_state: string;
+    address_cep: string; // Adicionado para consistência
+    logo_url?: string;
+    is_open: boolean; // Adicionado para consistência
     created_at?: string;
     updated_at?: string;
 }

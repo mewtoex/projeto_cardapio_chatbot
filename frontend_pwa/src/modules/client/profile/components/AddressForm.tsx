@@ -1,8 +1,10 @@
 // frontend_pwa/src/modules/client/profile/components/AddressForm.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { TextField, Button, Box, CircularProgress, FormControlLabel, Switch, Typography } from '@mui/material';
 import { useForm } from '../../../../hooks/useForm';
 import { type Address } from '../../../../types';
+import axios from 'axios';
+import InputMask from 'react-input-mask'; // Importe InputMask
 
 interface AddressFormProps {
   initialData?: Address | null;
@@ -12,15 +14,13 @@ interface AddressFormProps {
 }
 
 const initialFormState: Address = {
-  id: 0, // Será ignorado na criação, mas usado na edição
-  user_id: 0, // Será definido pelo backend ou useAuth
   street: "",
   number: "",
   complement: "",
-  district_name: "",
+  district: "",
   city: "",
   state: "",
-  zip_code: "",
+  cep: "",
   is_primary: false,
 };
 
@@ -31,30 +31,95 @@ const AddressForm: React.FC<AddressFormProps> = ({
 
   useEffect(() => {
     if (initialData) {
-      setAllValues(initialData); // Preenche o formulário com dados existentes
+      setAllValues({
+        ...initialData,
+        complement: initialData.complement || "",
+      });
     } else {
-      setAllValues(initialFormState); // Reseta para o estado inicial para "novo endereço"
+      setAllValues(initialFormState);
     }
   }, [initialData, setAllValues]);
+
+  const fetchAddressByCep = useCallback(async (cep: string) => {
+    const cleanCep = cep.replace(/\D/g, '');
+    if (cleanCep.length !== 8) {
+      if (cleanCep === '') {
+        setErrors(prev => ({ ...prev, cep: "" }));
+      } else {
+        setErrors(prev => ({ ...prev, cep: "CEP inválido." }));
+      }
+      return;
+    }
+    setErrors(prev => ({ ...prev, cep: "" }));
+
+    try {
+      const response = await axios.get(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const data = response.data;
+
+      if (data.erro) {
+        setErrors(prev => ({ ...prev, cep: "CEP não encontrado." }));
+        return;
+      }
+
+      handleManualChange('street', data.logradouro);
+      handleManualChange('district', data.bairro);
+      handleManualChange('city', data.localidade);
+      handleManualChange('state', data.uf);
+    } catch (error) {
+      console.error("Erro ao buscar CEP:", error);
+      setErrors(prev => ({ ...prev, cep: "Erro ao buscar CEP. Verifique sua conexão." }));
+    }
+  }, [handleManualChange, setErrors]);
+
+  const handleCepChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = event.target;
+    handleChange(event);
+    if (value.replace(/\D/g, '').length === 8) {
+      fetchAddressByCep(value);
+    }
+  }, [handleChange, fetchAddressByCep]);
 
   function validateForm(formData: Address): { [key: string]: string } {
     const newErrors: { [key: string]: string } = {};
     if (!formData.street.trim()) newErrors.street = "Rua é obrigatória.";
     if (!formData.number.trim()) newErrors.number = "Número é obrigatório.";
-    if (!formData.district_name.trim()) newErrors.district_name = "Bairro é obrigatório.";
+    if (!formData.district.trim()) newErrors.district = "Bairro é obrigatório.";
     if (!formData.city.trim()) newErrors.city = "Cidade é obrigatória.";
     if (!formData.state.trim()) newErrors.state = "Estado é obrigatório.";
-    if (!formData.zip_code.trim()) newErrors.zip_code = "CEP é obrigatório.";
+    if (!formData.cep.trim()) {
+      newErrors.cep = "CEP é obrigatório.";
+    } else if (formData.cep.replace(/\D/g, '').length !== 8) {
+      newErrors.cep = "CEP deve conter 8 dígitos.";
+    }
     return newErrors;
   }
 
   const submitForm = async () => {
-    // O id e user_id serão tratados pelo backend ou no componente pai antes de chamar onSubmit
     await onSubmit(values);
   };
 
   return (
     <Box component="form" onSubmit={handleSubmit(submitForm)} sx={{ p: 2 }}>
+      <InputMask
+        mask="99999-999"
+        value={values.cep}
+        onChange={handleCepChange}
+        maskChar="_"
+      >
+        {(inputProps: any) => (
+          <TextField
+            {...inputProps}
+            fullWidth
+            label="CEP"
+            name="cep"
+            margin="normal"
+            required
+            error={!!errors.cep}
+            helperText={errors.cep}
+            placeholder="Ex: 12345-678"
+          />
+        )}
+      </InputMask>
       <TextField
         fullWidth
         label="Rua"
@@ -88,13 +153,13 @@ const AddressForm: React.FC<AddressFormProps> = ({
       <TextField
         fullWidth
         label="Bairro"
-        name="district_name"
-        value={values.district_name}
+        name="district"
+        value={values.district}
         onChange={handleChange}
         margin="normal"
         required
-        error={!!errors.district_name}
-        helperText={errors.district_name}
+        error={!!errors.district}
+        helperText={errors.district}
       />
       <TextField
         fullWidth
@@ -118,18 +183,8 @@ const AddressForm: React.FC<AddressFormProps> = ({
         error={!!errors.state}
         helperText={errors.state}
       />
-      <TextField
-        fullWidth
-        label="CEP"
-        name="zip_code"
-        value={values.zip_code}
-        onChange={handleChange}
-        margin="normal"
-        required
-        error={!!errors.zip_code}
-        helperText={errors.zip_code}
-      />
-      {initialData && ( // A opção de tornar primário só aparece ao editar um endereço existente
+      
+      {initialData && (
         <FormControlLabel
           control={
             <Switch
