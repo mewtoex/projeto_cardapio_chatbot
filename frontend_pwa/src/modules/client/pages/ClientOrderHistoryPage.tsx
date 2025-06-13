@@ -1,119 +1,218 @@
-// src/modules/client/pages/ClientOrderHistoryPage.tsx
-import React, { useEffect, useState } from 'react';
-import { useAuth } from '../../auth/contexts/AuthContext';
-import ApiService from '../../shared/services/ApiService';
-import { Link } from 'react-router-dom';
-import { Button } from '@mui/material';
-import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
-import ClientOrderItemPage from './ClientOrderItemPage';
-import { styled } from '@mui/material/styles';
-import { type Order } from '../../../types'; 
+// frontend_pwa/src/modules/client/pages/ClientOrderHistoryPage.tsx
+import React, { useState, useEffect } from 'react';
+import {
+  Box, Typography, Button, Container, Paper, Table, TableBody, TableCell, TableContainer,
+  TableHead, TableRow, Chip, CircularProgress, Tabs, Tab, TextField, InputAdornment
+} from '@mui/material';
+import { Link, useNavigate } from 'react-router-dom';
+import api from '../../../api/api';
+import { useLoading } from '../../../hooks/useLoading';
+import { useNotification } from '../../../contexts/NotificationContext';
+import { type Order, OrderStatus, OrderStatusMapping } from '../../../types';
+import { Search as SearchIcon, CalendarToday as CalendarTodayIcon } from '@mui/icons-material';
 
 const ClientOrderHistoryPage: React.FC = () => {
-  const { user, token } = useAuth();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [open, setOpen] = useState(false);
-  const [orderId, setOrderId] = useState('0');
-  const BootstrapDialog = styled(Dialog)(({ theme }) => ({
-    '& .MuiDialogContent-root': {
-      padding: theme.spacing(2),
-    },
-    '& .MuiDialogActions-root': {
-      padding: theme.spacing(1),
-    },
-  }));
-  useEffect(() => {
-    const fetchOrders = async () => {
-      if (user) {
-        try {
-          setLoading(true);
-          const fetchedOrders = await ApiService.getClientOrders({});
-          setOrders(fetchedOrders as Order[]);
-          setError(null);
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Falha ao buscar histórico de pedidos.');
-        }
-        setLoading(false);
-      }
-    };
+  const navigate = useNavigate();
+  const notification = useNotification();
+  const {
+    data: orders,
+    loading,
+    error,
+    execute: fetchOrders,
+  } = useLoading<Order[]>();
 
-    fetchOrders();
-  }, [user, token]);
+  const [filterStatus, setFilterStatus] = useState<string>('todos');
+  const [filterStartDate, setFilterStartDate] = useState<string>('');
+  const [filterEndDate, setFilterEndDate] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
+  useEffect(() => {
+    loadOrders();
+  }, [filterStatus, filterStartDate, filterEndDate]); // Recarrega quando filtros mudam
+
+  const loadOrders = async () => {
+    const filters: { status?: string; data_inicio?: string; data_fim?: string } = {};
+    if (filterStatus !== 'todos') {
+      filters.status = filterStatus;
+    }
+    if (filterStartDate) {
+      filters.data_inicio = filterStartDate;
+    }
+    if (filterEndDate) {
+      filters.data_fim = filterEndDate;
+    }
+
+    await fetchOrders(
+      api.getClientOrders(filters),
+      undefined,
+      "Erro ao carregar seu histórico de pedidos."
+    );
+  };
+
+  const filteredOrders = orders?.filter(order =>
+    order.id.toString().includes(searchQuery) ||
+    order.items.some(item => item.menu_item_name.toLowerCase().includes(searchQuery.toLowerCase()))
+  ) || [];
+
+  const handleFilterStatusChange = (_event: React.SyntheticEvent, newValue: string) => {
+    setFilterStatus(newValue);
+  };
+
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value);
+  };
+
 
   if (loading) {
-    return <p>Carregando histórico de pedidos...</p>;
+    return (
+      <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+        <Paper elevation={3} sx={{ p: 4, textAlign: 'center' }}>
+          <CircularProgress />
+          <Typography variant="h6" sx={{ mt: 2 }}>Carregando seus pedidos...</Typography>
+        </Paper>
+      </Container>
+    );
   }
 
   if (error) {
-    return <p style={{ color: 'red' }}>Erro: {error}</p>;
-  }
-  const handleOpenItemsOrder = (id: string) => { // Renomeado 'date' para 'id' para clareza
-    console.log(id)
-    setOrderId(id)
-    setOpen(true);
+    return (
+      <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+        <Paper elevation={3} sx={{ p: 4, textAlign: 'center', color: 'error.main' }}>
+          <Typography variant="h6">Erro ao carregar seu histórico de pedidos:</Typography>
+          <Typography>{error}</Typography>
+          <Button onClick={loadOrders} sx={{ mt: 2 }}>Tentar Novamente</Button>
+        </Paper>
+      </Container>
+    );
   }
 
-  const handleClose = () => {
-    setOpen(false);
-  };
   return (
-    <div>
-      <h1>Meus Pedidos</h1>
-      {user && <p>Histórico de pedidos de {user.name}:</p>}
-      {orders.length === 0 ? (
-        <p>Você ainda não fez nenhum pedido.</p>
-      ) : (<>
-        <table>
-          <thead>
-            <tr>
-              <th>ID do Pedido</th>
-              <th>Data</th>
-              <th>Status</th>
-              <th>Total</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((order) => (
-              <tr key={order.id}>
-                <td>{order.id}</td>
-                <td>{new Date(order.order_date).toLocaleDateString()}</td>
-                <td>{order.status}</td>
-                <td>R$ {order.total_amount.toFixed(2)}</td>
-                <td>
-                  <Button
-                    variant="contained"
-                    onClick={() => handleOpenItemsOrder(order.id)}
-                  >
-                    Ver Detalhes
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <>
-          <BootstrapDialog
-            onClose={handleClose}
-            aria-labelledby="customized-dialog-title"
-            open={open}
-          >
-            <DialogContent dividers>
-              <ClientOrderItemPage
-                order_id={orderId}
-              />
-            </DialogContent>
-          </BootstrapDialog>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ mb: 3 }}>
+        Meus Pedidos
+      </Typography>
 
-        </>
-      </>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs
+          value={filterStatus}
+          onChange={handleFilterStatusChange}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+        >
+          {Object.entries(OrderStatusMapping).map(([key, value]) => (
+            <Tab key={key} label={value} value={key} />
+          ))}
+          <Tab label="Todos" value="todos" />
+        </Tabs>
+      </Box>
+
+      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <TextField
+            label="Data Início"
+            type="date"
+            value={filterStartDate}
+            onChange={(e) => setFilterStartDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            size="small"
+          />
+          <TextField
+            label="Data Fim"
+            type="date"
+            value={filterEndDate}
+            onChange={(e) => setFilterEndDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            size="small"
+          />
+          <Button variant="outlined" onClick={loadOrders} startIcon={<CalendarTodayIcon />}>
+            Filtrar por Data
+          </Button>
+        </Box>
+        <TextField
+          label="Buscar por ID ou item"
+          variant="outlined"
+          size="small"
+          value={searchQuery}
+          onChange={handleSearchChange}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ minWidth: 200 }}
+        />
+      </Box>
+
+      {filteredOrders.length === 0 ? (
+        <Paper elevation={3} sx={{ p: 4, textAlign: 'center' }}>
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            Você não tem pedidos com os filtros selecionados.
+          </Typography>
+          <Button variant="contained" onClick={() => navigate('/cardapio')} sx={{ mt: 2 }}>
+            Fazer um Pedido
+          </Button>
+        </Paper>
+      ) : (
+        <TableContainer component={Paper} elevation={3}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>ID do Pedido</TableCell>
+                <TableCell>Data</TableCell>
+                <TableCell>Total</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Itens</TableCell>
+                <TableCell>Ações</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredOrders.map((order) => (
+                <TableRow key={order.id}>
+                  <TableCell>{order.id}</TableCell>
+                  <TableCell>{new Date(order.order_date).toLocaleString('pt-BR')}</TableCell>
+                  <TableCell>R$ {order.total_amount.toFixed(2)}</TableCell>
+                  <TableCell>
+                    <Chip label={OrderStatusMapping[order.status] || order.status} color={
+                      order.status === OrderStatus.CONCLUIDO ? 'success' :
+                      order.status === OrderStatus.CANCELADO ? 'error' :
+                      order.status === OrderStatus.PENDENTE ? 'warning' :
+                      'info'
+                    } size="small" />
+                  </TableCell>
+                  <TableCell>
+                    {order.items.map(item => item.menu_item_name).join(', ')}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      component={Link}
+                      to={`/client/pedidos/${order.id}`}
+                    >
+                      Ver Detalhes
+                    </Button>
+                    {order.status === OrderStatus.PENDENTE && (
+                      <Button
+                        variant="text"
+                        color="error"
+                        size="small"
+                        onClick={() => { /* Lógica de cancelamento aqui */ }}
+                        sx={{ ml: 1 }}
+                      >
+                        Cancelar
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
-      <br />
-      <Link to="/client/dashboard">Voltar ao Dashboard</Link>
-    </div>
+    </Container>
   );
 };
 

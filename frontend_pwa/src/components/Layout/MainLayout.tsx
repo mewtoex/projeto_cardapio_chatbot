@@ -1,116 +1,111 @@
-// src/components/Layout/MainLayout.tsx
-import React, { useState, useEffect } from 'react'; // Importar useEffect
-import { 
-  AppBar, 
-  Toolbar, 
-  IconButton, 
-  Typography, 
-  Box, 
-  Badge, 
-  useMediaQuery, 
-  useTheme,
-  Container
-} from '@mui/material';
-import { 
-  Menu as MenuIcon,
-  ShoppingCart as ShoppingCartIcon
-} from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
-import { Sidebar } from './Sidebar';
-import { useAuth } from '../../modules/auth/contexts/AuthContext';
-import { useNotification } from '../../contexts/NotificationContext';
+// frontend_pwa/src/components/Layout/MainLayout.tsx
+import React from 'react';
+import { Outlet } from 'react-router-dom';
+import { Box, AppBar, Toolbar, IconButton, Typography, Drawer, useMediaQuery, useTheme } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import { useState } from 'react';
+import Sidebar from './Sidebar';
+import { useAuth } from '../../hooks/useAuth'; // Usando o novo hook de autenticação
 
-export const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+interface MainLayoutProps {
+  isAdmin?: boolean; // Propriedade para diferenciar layouts de admin/cliente
+}
+
+const drawerWidth = 240;
+
+const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
+  const [mobileOpen, setMobileOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const notification = useNotification();
-  
-  const [cartItemsCount, setCartItemsCount] = useState(0); // Estado para a contagem do carrinho
-  
-  useEffect(() => {
-    const calculateCartTotal = () => {
-      const savedCart = localStorage.getItem('cartItems');
-      if (savedCart) {
-        try {
-          const parsedCart = JSON.parse(savedCart);
-          const totalCount = Object.values(parsedCart).reduce((sum: number, item: any) => sum + item.quantity, 0);
-          setCartItemsCount(totalCount);
-        } catch (e) {
-          console.error('Erro ao calcular total do carrinho no localStorage:', e);
-          setCartItemsCount(0);
-        }
-      } else {
-        setCartItemsCount(0);
-      }
-    };
+  const { user } = useAuth(); // Obtém informações do usuário logado
 
-    calculateCartTotal();
-    window.addEventListener('storage', calculateCartTotal); // Escuta por mudanças no localStorage
-
-    // Cleanup do event listener
-    return () => {
-      window.removeEventListener('storage', calculateCartTotal);
-    };
-  }, []); // Dependências vazias para rodar apenas uma vez na montagem
-
-
-  const isAdmin = user?.role === 'admin';
-  const title = isAdmin ? 'Painel Administrativo' : 'Cardápio Online';
-  
-  const handleCartClick = () => {
-    navigate('/client/cart');
-    notification.showInfo('Acessando o carrinho');
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
   };
-  
+
+  const getTitle = () => {
+    if (isAdmin) return "Admin - Seu Restaurante";
+    if (user?.role === 'cliente') return "Cliente - Seu Restaurante";
+    return "Seu Restaurante"; // Título padrão
+  };
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <AppBar position="fixed">
+    <Box sx={{ display: 'flex' }}>
+      <AppBar
+        position="fixed"
+        sx={{
+          width: { md: `calc(100% - ${drawerWidth}px)` },
+          ml: { md: `${drawerWidth}px` },
+          zIndex: (theme) => theme.zIndex.drawer + 1, // Garante que o AppBar esteja acima do Drawer
+        }}
+      >
         <Toolbar>
           <IconButton
             color="inherit"
+            aria-label="open drawer"
             edge="start"
-            onClick={() => setSidebarOpen(true)}
-            sx={{ mr: 2 }}
+            onClick={handleDrawerToggle}
+            sx={{ mr: 2, display: { md: 'none' } }}
           >
             <MenuIcon />
           </IconButton>
-          
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            {title}
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+            {getTitle()}
           </Typography>
-          
-          {!isAdmin && (
-            <IconButton color="inherit" onClick={handleCartClick}>
-              <Badge badgeContent={cartItemsCount} color="error"> {/* Usando o estado cartItemsCount */}
-                <ShoppingCartIcon />
-              </Badge>
-            </IconButton>
-          )}
+          {/* Você pode adicionar outros elementos à AppBar aqui, como botões de logout */}
         </Toolbar>
       </AppBar>
-      
-      <Sidebar 
-        open={sidebarOpen} 
-        onClose={() => setSidebarOpen(false)} 
-        cartItemsCount={cartItemsCount} // Passando a contagem atualizada para o Sidebar
-      />
-      
+
+      <Box
+        component="nav"
+        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
+        aria-label="mailbox folders"
+      >
+        {/* Drawer para mobile */}
+        <Drawer
+          variant="temporary"
+          open={mobileOpen}
+          onClose={handleDrawerToggle}
+          ModalProps={{
+            keepMounted: true, // Better open performance on mobile.
+          }}
+          sx={{
+            display: { xs: 'block', md: 'none' },
+            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+          }}
+        >
+          <Sidebar onClose={handleDrawerToggle} isAdmin={isAdmin} />
+        </Drawer>
+        {/* Drawer para desktop */}
+        <Drawer
+          variant="permanent"
+          sx={{
+            display: { xs: 'none', md: 'block' },
+            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+          }}
+          open
+        >
+          <Sidebar onClose={handleDrawerToggle} isAdmin={isAdmin} />
+        </Drawer>
+      </Box>
+
       <Box
         component="main"
         sx={{
           flexGrow: 1,
           p: 3,
-          mt: 8,
-          width: '100%'
+          width: { md: `calc(100% - ${drawerWidth}px)` },
+          mt: `${theme.mixins.toolbar.minHeight}px`, // Ajusta o espaçamento para o AppBar fixo
+          [theme.breakpoints.up('sm')]: {
+            mt: `${theme.mixins.toolbar.minHeight}px`, // Ajusta para sm em diante se o AppBar tiver altura diferente
+          },
         }}
       >
-        <Container maxWidth="lg">
-          {children}
-        </Container>
+        {/* Conteúdo da rota atual será renderizado aqui */}
+        <Outlet />
       </Box>
     </Box>
   );
 };
+
+export default MainLayout;

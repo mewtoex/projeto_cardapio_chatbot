@@ -1,275 +1,267 @@
-// src/modules/client/pages/ClientCheckoutPage.tsx
-import React, { useState, useEffect } from "react";
-import { useAuth } from "../../auth/contexts/AuthContext";
-import { Link, useNavigate } from "react-router-dom";
-import ApiService from "../../shared/services/ApiService";
+// frontend_pwa/src/modules/client/pages/ClientCheckoutPage.tsx
+import React, { useState, useEffect } from 'react';
+import {
+  Box, Typography, Button, Container, Paper, Grid, Divider, CircularProgress,
+  TextField, FormControl, InputLabel, Select, MenuItem, FormLabel, RadioGroup, FormControlLabel, Radio,
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { useCart } from '../../../hooks/useCart';
+import { useAddresses } from '../../../hooks/useAddresses'; // Novo hook para endereços
+import { useAuth } from '../../auth/contexts/AuthContext';
+import { useLoading } from '../../../hooks/useLoading';
 import { useNotification } from '../../../contexts/NotificationContext';
-import { type Address, type AddonOption, type CartItemData as CartItemDetails,type OrderCreateItem } from '../../../types'; 
+import api from '../../../api/api';
+import AddressSelection from '../components/AddressSelection'; // Novo componente
+import PaymentMethodSelection from '../components/PaymentMethodSelection'; // Novo componente
+import { type Address, type OrderCreateItem } from '../../../types';
 
 const ClientCheckoutPage: React.FC = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
+  const { cartItems, getCartSubtotal, clearCart } = useCart();
+  const { user } = useAuth();
   const notification = useNotification();
-  const [userAddresses, setUserAddresses] = useState<Address[]>([]);
+  const { addresses, loading: loadingAddresses, error: addressesError } = useAddresses(); // Carrega endereços
+
+  const { loading: submittingOrder, error: orderError, execute: submitOrder } = useLoading();
+  const { loading: calculatingDelivery, error: deliveryError, execute: calculateDelivery } = useLoading<{ delivery_fee: number; message?: string }>();
+
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
-  const [cashAmount, setCashAmount] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [cartItems, setCartItems] = useState<CartItemDetails[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loadingCart, setLoadingCart] = useState(true);
-  const [loadingAddresses, setLoadingAddresses] = useState(true);
-  const [deliveryFee, setDeliveryFee] = useState(0.0); // Inicializa a taxa de entrega como 0
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
+  const [cashProvided, setCashProvided] = useState<number | null>(null);
+  const [deliveryFee, setDeliveryFee] = useState<number>(0);
 
-  const subtotal = cartItems.reduce((sum, item) => sum + item.totalItemPrice * item.quantity, 0);
-  const total = subtotal + deliveryFee; // O total agora inclui a taxa de entrega calculada
-
+  // Redireciona se o carrinho estiver vazio
   useEffect(() => {
-    const loadCheckoutData = async () => {
-      setLoadingAddresses(true);
-      setLoadingCart(true);
-      setError(null);
-      try {
-        const profileData = await ApiService.getUserAddress();
-        if (profileData) {
-          setUserAddresses(profileData);
-          const primaryAddress = profileData.find((addr: Address) => addr.is_primary); // Corrigido para is_primary
-          if (primaryAddress) {
-            setSelectedAddressId(primaryAddress.id || null); // ID pode ser opcional
-          } else if (profileData.length > 0) {
-            setSelectedAddressId(profileData[0].id || null);
-          }
-        } else {
-          setUserAddresses([]);
-          notification.showWarning("Nenhum endereço cadastrado. Por favor, adicione um endereço no seu perfil.");
-        }
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        setError("Falha ao buscar endereços: " + errorMessage);
-        notification.showError("Falha ao buscar endereços.");
-        console.error("Erro ao buscar endereços:", err);
-      } finally {
-        setLoadingAddresses(false);
-      }
+    if (Object.keys(cartItems).length === 0) {
+      notification.showWarning("Seu carrinho está vazio. Redirecionando para o cardápio.");
+      navigate('/cardapio');
+    }
+  }, [cartItems, navigate, notification]);
 
-      try {
-        const savedCart = localStorage.getItem("cartItems");
-        const parsedCart = savedCart ? JSON.parse(savedCart) : {};
-
-        const detailedCartItems: CartItemDetails[] = Object.values(parsedCart);
-
-        if (detailedCartItems.length === 0) {
-            notification.showWarning("Seu carrinho está vazio. Adicione itens antes de finalizar o pedido.");
-            navigate("/client/menu");
-            return;
-        }
-        setCartItems(detailedCartItems);
-
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        setError("Falha ao carregar itens do carrinho: " + errorMessage);
-        notification.showError("Falha ao carregar itens do carrinho.");
-        setCartItems([]);
-        localStorage.removeItem('cartItems');
-      } finally {
-        setLoadingCart(false);
-      }
-    };
-
-    loadCheckoutData();
-  }, [notification, navigate]);
-
-  // NOVO useEffect para calcular a taxa de entrega quando o endereço selecionado mudar
+  // Busca a taxa de entrega quando o endereço selecionado muda
   useEffect(() => {
-    const calculateFee = async () => {
+    const fetchFee = async () => {
       if (selectedAddressId) {
         try {
-          // AuthService.getToken() is used by ApiService internally
-          const response = await ApiService.calculateDeliveryFee(selectedAddressId); 
-          setDeliveryFee(response.delivery_fee);
-          // Opcional: exibir mensagem se não houver taxa específica para o bairro
-          if (response.message) {
-            notification.showInfo(response.message);
-          }
-        } catch (err) {
-          console.error("Erro ao calcular taxa de entrega:", err);
-          notification.showError("Erro ao calcular taxa de entrega.");
-          setDeliveryFee(0.0); 
+          const result = await calculateDelivery(
+            api.calculateDeliveryFee(selectedAddressId),
+            undefined, // Não mostra notificação de sucesso aqui
+            "Erro ao calcular taxa de entrega."
+          );
+          setDeliveryFee(result?.delivery_fee || 0);
+        } catch (e) {
+          setDeliveryFee(0); // Garante que a taxa é 0 em caso de erro
         }
       } else {
-        setDeliveryFee(0.0); 
+        setDeliveryFee(0);
       }
     };
+    fetchFee();
+  }, [selectedAddressId, calculateDelivery]);
 
-    calculateFee();
-  }, [selectedAddressId, notification]); 
+  const handleAddressSelect = (addressId: string) => {
+    setSelectedAddressId(addressId);
+  };
 
-  const handleConfirmOrder = async () => {
+  const handlePaymentMethodSelect = (method: string) => {
+    setSelectedPaymentMethod(method);
+  };
+
+  const handleCashProvidedChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(event.target.value);
+    setCashProvided(isNaN(value) ? null : value);
+  };
+
+  const handlePlaceOrder = async () => {
     if (!selectedAddressId) {
-      setError("Por favor, selecione um endereço de entrega.");
       notification.showError("Por favor, selecione um endereço de entrega.");
       return;
     }
-    if (!paymentMethod) {
-      setError("Por favor, selecione uma forma de pagamento.");
-      notification.showError("Por favor, selecione uma forma de pagamento.");
-      return;
-    }
-    if (cartItems.length === 0) {
-      setError("Seu carrinho está vazio. Por favor, adicione itens ao carrinho.");
-      notification.showError("Seu carrinho está vazio. Adicione itens antes de finalizar.");
-      navigate("/client/menu");
+    if (!selectedPaymentMethod) {
+      notification.showError("Por favor, selecione um método de pagamento.");
       return;
     }
 
-    let cashProvidedAmount: number | undefined = undefined;
-    if (paymentMethod === "DINHEIRO") {
-      const parsedCashAmount = parseFloat(cashAmount);
-      if (isNaN(parsedCashAmount) || parsedCashAmount < total) {
-        setError("Para pagamento em dinheiro, informe um valor igual ou superior ao total do pedido para o troco.");
-        notification.showError("Valor em dinheiro insuficiente para o troco.");
-        return;
-      }
-      cashProvidedAmount = parsedCashAmount;
-    }
+    const itemsToOrder: OrderCreateItem[] = Object.values(cartItems).map(item => ({
+      menu_item_id: item.id,
+      quantity: item.quantity,
+      observations: item.observations,
+      addon_options_ids: item.selectedAddons?.map(addon => addon.id) || [],
+    }));
 
-    setError(null);
-    setLoading(true);
-
-    const orderData = {
-      address_id: parseInt(selectedAddressId),
-      payment_method: paymentMethod,
-      items: cartItems.map(item => ({
-        menu_item_id: item.id,
-        quantity: item.quantity,
-        price_at_order_time: item.totalItemPrice,
-        observations: item.observations,
-        selected_addons: item.selectedAddons?.map(addon => ({
-            id: parseInt(addon.id),
-            name: addon.name,
-            price: addon.price
-        })) || [],
-      })) as OrderCreateItem[], // Casting para o tipo correto
-      cash_provided: cashProvidedAmount,
-      total_amount: total
+    const orderPayload = {
+      address_id: parseInt(selectedAddressId, 10), // Converte para number
+      payment_method: selectedPaymentMethod,
+      items: itemsToOrder,
+      cash_provided: selectedPaymentMethod === 'dinheiro' && cashProvided !== null ? cashProvided : undefined,
     };
-    
-    console.log("Dados do pedido a serem enviados:", orderData);
 
     try {
-      const response = await ApiService.createOrder(orderData);
-      notification.showSuccess(`Pedido #${response.id} confirmado com sucesso!`);
-      localStorage.removeItem("cartItems");
-      setCartItems([]);
-      navigate(`/client/orders`);
-    } catch (err: any) { // Adicionado 'any' para o tipo de erro
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      console.error("Erro ao confirmar pedido:", err);
-      setError("Falha ao confirmar o pedido: " + errorMessage);
-      notification.showError("Falha ao confirmar o pedido. Tente novamente.");
-    } finally {
-      setLoading(false);
+      await submitOrder(
+        api.createOrder(orderPayload),
+        "Pedido realizado com sucesso!",
+        "Erro ao finalizar pedido."
+      );
+      clearCart(); // Limpa o carrinho após o sucesso
+      navigate('/client/pedidos'); // Redireciona para a página de pedidos
+    } catch (err) {
+      console.error("Falha ao criar pedido:", err);
     }
   };
 
+  const subtotal = getCartSubtotal();
+  const totalAmount = subtotal + deliveryFee;
+  const changeDue = (selectedPaymentMethod === 'dinheiro' && cashProvided !== null && cashProvided > totalAmount)
+    ? cashProvided - totalAmount
+    : 0;
+
+  if (loadingAddresses || calculatingDelivery) {
+    return (
+      <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+        <Paper elevation={3} sx={{ p: 4, textAlign: 'center' }}>
+          <CircularProgress />
+          <Typography variant="h6" sx={{ mt: 2 }}>Carregando dados do checkout...</Typography>
+        </Paper>
+      </Container>
+    );
+  }
+
+  if (addressesError || orderError || deliveryError) {
+    return (
+      <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+        <Paper elevation={3} sx={{ p: 4, textAlign: 'center', color: 'error.main' }}>
+          <Typography variant="h6">Erro ao carregar dados do checkout:</Typography>
+          <Typography>{addressesError || orderError || deliveryError}</Typography>
+          <Button onClick={() => window.location.reload()} sx={{ mt: 2 }}>Tentar Novamente</Button>
+        </Paper>
+      </Container>
+    );
+  }
+
   return (
-    <div>
-      <h1>Finalizar Pedido</h1>
-      {user && <p>Quase lá, {user.name}!</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
+    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+      <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ mb: 3 }}>
+        Checkout
+      </Typography>
 
-      <div>
-        <h2>Endereço de Entrega</h2>
-        {loadingAddresses ? (
-          <p>Carregando endereços...</p>
-        ) : userAddresses.length > 0 ? (
-          userAddresses.map(addr => (
-            <div
-              key={addr.id}
-              style={{
-                border: selectedAddressId === addr.id ? "2px solid blue" : "1px solid #ccc",
-                padding: "10px",
-                margin: "5px",
-                cursor: "pointer"
-              }}
-              onClick={() => setSelectedAddressId(addr.id || null)} // Garante que é string ou null
-            >
-              <p>{addr.street}, {addr.number}{addr.complement ? ` - ${addr.complement}` : ""} - {addr.district}</p>
-              <p>{addr.city} - {addr.state}, CEP: {addr.cep}</p>
-              {addr.is_primary && <strong>(Principal)</strong>} {/* Corrigido para is_primary */}
-            </div>
-          ))
-        ) : (
-          <p>Nenhum endereço cadastrado. <Link to="/client/profile">Adicionar Endereço no Perfil</Link></p>
-        )}
-      </div>
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={7}>
+          <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              1. Endereço de Entrega
+            </Typography>
+            <AddressSelection
+              addresses={addresses || []}
+              selectedAddressId={selectedAddressId}
+              onSelectAddress={handleAddressSelect}
+            />
+            {addresses && addresses.length === 0 && (
+              <Box sx={{ mt: 2, textAlign: 'center' }}>
+                <Typography variant="body2" color="text.secondary">
+                  Você não tem endereços cadastrados. Por favor, adicione um em seu perfil.
+                </Typography>
+                <Button variant="outlined" sx={{ mt: 1 }} onClick={() => navigate('/client/perfil')}>
+                  Ir para Perfil
+                </Button>
+              </Box>
+            )}
+            {selectedAddressId && deliveryFee > 0 && (
+              <Typography variant="body2" color="success.main" sx={{ mt: 2 }}>
+                Taxa de Entrega para este endereço: R$ {deliveryFee.toFixed(2)}
+              </Typography>
+            )}
+            {selectedAddressId && deliveryFee === 0 && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                Entrega gratuita para este endereço.
+              </Typography>
+            )}
+          </Paper>
 
-      <div>
-        <h2>Forma de Pagamento</h2>
-        <div>
-          <label>
-            <input type="radio" name="paymentMethod" value="CARTAO_CREDITO" onChange={(e) => setPaymentMethod(e.target.value)} checked={paymentMethod === "CARTAO_CREDITO"} /> Cartão de Crédito
-          </label>
-        </div>
-        <div>
-          <label>
-            <input type="radio" name="paymentMethod" value="CARTAO_DEBITO" onChange={(e) => setPaymentMethod(e.target.value)} checked={paymentMethod === "CARTAO_DEBITO"} /> Cartão de Débito
-          </label>
-        </div>
-        <div>
-          <label>
-            <input type="radio" name="paymentMethod" value="PIX" onChange={(e) => setPaymentMethod(e.target.value)} checked={paymentMethod === "PIX"} /> PIX
-          </label>
-        </div>
-        <div>
-          <label>
-            <input type="radio" name="paymentMethod" value="DINHEIRO" onChange={(e) => setPaymentMethod(e.target.value)} checked={paymentMethod === "DINHEIRO"} /> Dinheiro
-          </label>
-          {paymentMethod === "DINHEIRO" && (
-            <div style={{ marginLeft: "20px" }}>
-              <label htmlFor="cashAmount">Troco para: R$</label>
-              <input
+          <Paper elevation={3} sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              2. Método de Pagamento
+            </Typography>
+            <PaymentMethodSelection
+              selectedMethod={selectedPaymentMethod}
+              onSelectMethod={handlePaymentMethodSelect}
+            />
+            {selectedPaymentMethod === 'dinheiro' && (
+              <TextField
+                fullWidth
+                label="Valor em dinheiro (para troco)"
                 type="number"
-                id="cashAmount"
-                value={cashAmount}
-                onChange={(e) => setCashAmount(e.target.value)}
-                placeholder={`Ex: ${total.toFixed(2)} ou mais`}
-                min={total.toString()}
-                step="0.01"
+                inputProps={{ min: totalAmount.toFixed(2), step: 0.01 }}
+                value={cashProvided === null ? '' : cashProvided}
+                onChange={handleCashProvidedChange}
+                margin="normal"
+                sx={{ mt: 2 }}
+                helperText={
+                  cashProvided !== null && cashProvided < totalAmount
+                    ? "Valor deve ser maior ou igual ao total do pedido."
+                    : changeDue > 0
+                    ? `Troco para: R$ ${changeDue.toFixed(2)}`
+                    : ""
+                }
+                error={cashProvided !== null && cashProvided < totalAmount}
               />
-            </div>
-          )}
-        </div>
-      </div>
+            )}
+          </Paper>
+        </Grid>
 
-      <div>
-        <h2>Resumo do Pedido</h2>
-        {loadingCart ? (
-          <p>Carregando itens do carrinho...</p>
-        ) : cartItems.length > 0 ? (
-          cartItems.map(item => (
-            <p key={`${item.id}-${item.observations}-${JSON.stringify(item.selectedAddons)}`}>
-              {item.name} (x{item.quantity}) - R$ {(item.totalItemPrice * item.quantity).toFixed(2)}
-              {item.selectedAddons && item.selectedAddons.length > 0 && (
-                ` (+ Adicionais: ${item.selectedAddons.map(addon => addon.name).join(', ')})`
-              )}
-              {item.observations && ` (Obs: ${item.observations})`}
-            </p>
-          ))
-        ) : (
-          <p>Seu carrinho está vazio.</p>
-        )}
-        <p>Subtotal: R$ {subtotal.toFixed(2)}</p>
-        <p>Taxa de Entrega: R$ {deliveryFee.toFixed(2)}</p> 
-        <p><strong>Total a Pagar: R$ {total.toFixed(2)}</strong></p>
-      </div>
-
-      <button onClick={handleConfirmOrder} disabled={loading || loadingAddresses || loadingCart || !selectedAddressId || !paymentMethod || cartItems.length === 0}>
-        {loading ? "Confirmando..." : "Confirmar Pedido"}
-      </button>
-      <br />
-      <Link to="/client/cart">Voltar ao Carrinho</Link>
-    </div>
+        <Grid item xs={12} md={5}>
+          <Paper elevation={3} sx={{ p: 3, position: 'sticky', top: 20 }}>
+            <Typography variant="h5" gutterBottom>
+              Resumo do Pedido
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            <List disablePadding>
+              {Object.values(cartItems).map((item, index) => (
+                <Box key={index} sx={{ mb: 1.5 }}>
+                  <Typography variant="body2" component="div" sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>{item.quantity}x {item.name}</span>
+                    <span>R$ {(item.totalItemPrice * item.quantity).toFixed(2)}</span>
+                  </Typography>
+                  {item.selectedAddons && item.selectedAddons.length > 0 && (
+                    <Typography variant="caption" color="text.secondary" sx={{ ml: 2, display: 'block' }}>
+                      Adicionais: {item.selectedAddons.map(addon => addon.name).join(', ')}
+                    </Typography>
+                  )}
+                  {item.observations && (
+                     <Typography variant="caption" color="text.secondary" sx={{ ml: 2, fontStyle: 'italic', display: 'block' }}>
+                       Obs: {item.observations}
+                     </Typography>
+                  )}
+                </Box>
+              ))}
+            </List>
+            <Divider sx={{ my: 2 }} />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="body1">Subtotal:</Typography>
+              <Typography variant="body1">R$ {subtotal.toFixed(2)}</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="body1">Taxa de Entrega:</Typography>
+              <Typography variant="body1">R$ {deliveryFee.toFixed(2)}</Typography>
+            </Box>
+            <Divider sx={{ my: 2 }} />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="h6">Total Geral:</Typography>
+              <Typography variant="h6">R$ {totalAmount.toFixed(2)}</Typography>
+            </Box>
+            <Button
+              variant="contained"
+              color="secondary"
+              fullWidth
+              onClick={handlePlaceOrder}
+              disabled={submittingOrder || !selectedAddressId || !selectedPaymentMethod || (selectedPaymentMethod === 'dinheiro' && (cashProvided === null || cashProvided < totalAmount))}
+              sx={{ py: 1.5 }}
+            >
+              {submittingOrder ? <CircularProgress size={24} /> : 'Finalizar Pedido'}
+            </Button>
+          </Paper>
+        </Grid>
+      </Grid>
+    </Container>
   );
 };
 

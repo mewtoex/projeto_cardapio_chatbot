@@ -1,52 +1,34 @@
 // frontend_pwa/src/modules/auth/pages/UnifiedLoginPage.tsx
 import React, { useState } from 'react';
-import { Box, Typography, Button, Tabs, Tab, Paper } from '@mui/material';
+import { Box, Container, Paper, Typography, Tabs, Tab } from '@mui/material';
 import ClientLoginForm from '../components/ClientLoginForm';
-import AdminLoginForm from '../../admin/auth/components/AdminLoginForm';
-import { Link } from 'react-router-dom';
+import AdminLoginForm from '../components/AdminLoginForm';
 
 const UnifiedLoginPage: React.FC = () => {
-  const [tabValue, setTabValue] = useState(0);
+  const [currentTab, setCurrentTab] = useState(0); // 0 for Client, 1 for Admin
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
+    setCurrentTab(newValue);
   };
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        bgcolor: 'background.default',
-        p: 3
-      }}
-    >
-      <Paper elevation={3} sx={{ p: 4, maxWidth: 400, width: '100%', borderRadius: 2 }}>
-        <Typography variant="h5" component="h1" gutterBottom align="center" sx={{ mb: 3 }}>
-          Bem-vindo! Faça Login
+    <Container maxWidth="xs" sx={{ mt: 8, mb: 4 }}>
+      <Paper elevation={3} sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <Typography component="h1" variant="h4" mb={2}>
+          Bem-vindo!
         </Typography>
 
-        <Tabs value={tabValue} onChange={handleTabChange} centered sx={{ mb: 3 }}>
-          <Tab label="Cliente" />
-          <Tab label="Administrador" />
-        </Tabs>
-
-        {tabValue === 0 && <ClientLoginForm />}
-        {tabValue === 1 && <AdminLoginForm />}
-
-        <Box sx={{ mt: 3, textAlign: 'center' }}>
-          <Typography variant="body2">
-            Ainda não tem uma conta de cliente? <Link to="/register">Cadastre-se aqui</Link>
-          </Typography>
-          <Typography variant="body2" sx={{ mt: 1 }}>
-            <Link to="/forgot-password">Esqueceu a senha?</Link> {/* NOVO LINK */}
-          </Typography>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', width: '100%', mb: 2 }}>
+          <Tabs value={currentTab} onChange={handleTabChange} aria-label="Login Tabs" centered>
+            <Tab label="Entrar como Cliente" />
+            <Tab label="Entrar como Admin" />
+          </Tabs>
         </Box>
+
+        {currentTab === 0 && <ClientLoginForm />}
+        {currentTab === 1 && <AdminLoginForm />}
       </Paper>
-    </Box>
+    </Container>
   );
 };
 

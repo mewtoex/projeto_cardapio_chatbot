@@ -1,29 +1,38 @@
-// src/router/ProtectedRoute.tsx
+// frontend_pwa/src/router/ProtectedRoute.tsx
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../modules/auth/contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth'; // Usando o novo hook de autenticação
+import { Box, Typography, CircularProgress } from '@mui/material';
 
 interface ProtectedRouteProps {
-  allowedRoles: Array<'client' | 'admin'>;
+  allowedRoles?: string[]; // Ex: ['admin', 'cliente']
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
-  const { isAuthenticated, user } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth(); // Obtém o usuário, status de autenticação e loading
+
+  if (loading) {
+    // Exibe um spinner de carregamento enquanto o estado de autenticação está sendo verificado
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
+        <CircularProgress />
+        <Typography variant="h6" sx={{ mt: 2 }}>Verificando autenticação...</Typography>
+      </Box>
+    );
+  }
 
   if (!isAuthenticated) {
-    // Redirect to login page if not authenticated
-    // You might want to redirect to a generic login or a specific one based on context
+    // Se não estiver autenticado, redireciona para a página de login
     return <Navigate to="/login" replace />;
   }
 
-  if (user && !allowedRoles.includes(user.role)) {
-    // Redirect if user role is not allowed for this route
-    // For example, redirect to a generic home page or an unauthorized page
-    return <Navigate to="/" replace />;
+  if (allowedRoles && !allowedRoles.includes(user?.role || '')) {
+    // Se o usuário não tiver um papel permitido, redireciona para uma página de acesso negado ou dashboard
+    return <Navigate to="/" replace />; // Ou para uma página 403 / acesso negado
   }
 
-  return <Outlet />; // Render the child route component if authenticated and authorized
+  // Se estiver autenticado e tiver o papel correto, renderiza as rotas filhas
+  return <Outlet />;
 };
 
 export default ProtectedRoute;
-

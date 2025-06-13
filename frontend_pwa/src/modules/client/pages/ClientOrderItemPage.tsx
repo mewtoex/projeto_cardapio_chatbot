@@ -1,77 +1,190 @@
+// frontend_pwa/src/modules/client/pages/ClientOrderItemPage.tsx
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '../../auth/contexts/AuthContext';
-import ApiService from '../../shared/services/ApiService';
-import { Link } from 'react-router-dom';
-import { type OrderItem } from '../../../types';
-interface ClientOrderItemPageProps {
-  order_id: string;
-}
+import {
+  Box, Typography, Paper, Grid, Divider, CircularProgress, Button,
+  List, ListItem, ListItemText, Chip, IconButton
+} from '@mui/material';
+import { useParams, useNavigate } from 'react-router-dom';
+import api from '../../../api/api';
+import { useLoading } from '../../../hooks/useLoading';
+import { useNotification } from '../../../contexts/NotificationContext';
+import ConfirmationDialog from '../../../components/ui/ConfirmationDialog';
+import { type Order, OrderStatus, OrderStatusMapping } from '../../../types';
+import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 
-const ClientOrderItemPage: React.FC<ClientOrderItemPageProps> = (prop) => {
-  const { user, token } = useAuth();
-  const [orders, setOrders] = useState<OrderItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+const ClientOrderItemPage: React.FC = () => {
+  const { orderId } = useParams<{ orderId: string }>();
+  const navigate = useNavigate();
+  const notification = useNotification();
+
+  const {
+    data: orderDetails,
+    loading,
+    error,
+    execute: fetchOrderDetails,
+    setData: setOrderDetailsManually,
+  } = useLoading<Order>();
+
+  const [isConfirmCancelOpen, setIsConfirmCancelOpen] = useState(false);
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      if (user && prop.order_id) {
-        try {
-          setLoading(true);
-          console.log(prop.order_id)
-          const fetchedOrders = await ApiService.getItemsOrder(prop.order_id);
-          setOrders(fetchedOrders as OrderItem[]);
-          setError(null);
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Falha ao buscar Items do pedidos.');
-        }
-        setLoading(false);
-      }
-    };
+    if (orderId) {
+      loadOrderDetails(orderId);
+    }
+  }, [orderId]); // Recarrega se o ID do pedido mudar
 
-    fetchOrders();
-  }, [user, token, prop.order_id]); // Adicionar prop.order_id como dependência
+  const loadOrderDetails = async (id: string) => {
+    await fetchOrderDetails(
+      api.getClientOrderDetails(id),
+      undefined,
+      "Erro ao carregar detalhes do pedido."
+    );
+  };
+
+  const handleCancelOrderRequest = () => {
+    setIsConfirmCancelOpen(true);
+  };
+
+  const confirmCancelOrder = async () => {
+    if (orderDetails && orderId) {
+      try {
+        const updatedOrder = await api.cancelClientOrder(orderId);
+        notification.showSuccess("Solicitação de cancelamento enviada com sucesso!");
+        setOrderDetailsManually(updatedOrder); // Atualiza o estado local do pedido
+      } catch (err: any) {
+        notification.showError(err.message || "Falha ao solicitar cancelamento do pedido.");
+      } finally {
+        setIsConfirmCancelOpen(false);
+      }
+    }
+  };
 
   if (loading) {
-    return <p>Carregando items do pedidos...</p>;
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
-  if (error) {
-    return <p style={{ color: 'red' }}>Erro: {error}</p>;
+  if (error || !orderDetails) {
+    return (
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Typography variant="h6" color="error" gutterBottom>
+          {error || "Pedido não encontrado ou erro ao carregar."}
+        </Typography>
+        <Button onClick={() => navigate('/client/pedidos')} sx={{ mt: 2 }}>Voltar para Meus Pedidos</Button>
+      </Box>
+    );
   }
 
   return (
-    <div>
-      <h1>Itens do Pedido #{prop.order_id}</h1> {/* Exibir o ID do pedido */}
-      {orders.length === 0 ? (
-        <p>Nenhum item encontrado para este pedido.</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>ID do Item</th>
-              <th>Produto</th>
-              <th>Quantidade</th>
-              <th>Observação</th>
-              <th>Valor Unitário (no pedido)</th>
-            </tr>
-          </thead> 
-          <tbody>
-            {orders?.map((item) => (
-              <tr key={item.id}>
-                <td>{item.id}</td>
-                <td>{item.menu_item_name}</td>
-                <td>{item.quantity}</td>
-                <td>{item.observations || '-'}</td> {/* Usar observations */}
-                <td>R$ {item.price_at_order_time.toFixed(2)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-      <br />
-      <Link to="/client/orders">Voltar para Meus Pedidos</Link>
-    </div>
+    <Box sx={{ p: 3 }}>
+      <IconButton onClick={() => navigate('/client/pedidos')} sx={{ mb: 2 }}>
+        <ArrowBackIcon />
+        <Typography variant="button" sx={{ ml: 1 }}>Voltar para Meus Pedidos</Typography>
+      </IconButton>
+
+      <Paper elevation={3} sx={{ p: 4, mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h5" component="h2">
+            Detalhes do Pedido #{orderDetails.id}
+          </Typography>
+          <Chip label={OrderStatusMapping[orderDetails.status] || orderDetails.status} color={
+            orderDetails.status === OrderStatus.CONCLUIDO ? 'success' :
+            orderDetails.status === OrderStatus.CANCELADO ? 'error' :
+            orderDetails.status === OrderStatus.PENDENTE ? 'warning' :
+            'info'
+          } />
+        </Box>
+
+        <Grid container spacing={3}>
+          <Grid item xs={12} sm={6}>
+            <Typography variant="subtitle1" gutterBottom>
+              **Informações do Pedido**
+            </Typography>
+            <Typography variant="body2">**Data do Pedido:** {new Date(orderDetails.order_date).toLocaleString('pt-BR')}</Typography>
+            <Typography variant="body2">**Total:** R$ {orderDetails.total_amount.toFixed(2)}</Typography>
+            <Typography variant="body2">**Método de Pagamento:** {orderDetails.payment_method}</Typography>
+            {orderDetails.payment_method === 'dinheiro' && orderDetails.cash_provided && (
+                <Typography variant="body2">**Valor pago em dinheiro:** R$ {orderDetails.cash_provided.toFixed(2)}</Typography>
+            )}
+            {orderDetails.payment_method === 'dinheiro' && orderDetails.cash_provided && orderDetails.cash_provided > orderDetails.total_amount && (
+                <Typography variant="body2">**Troco:** R$ {(orderDetails.cash_provided - orderDetails.total_amount).toFixed(2)}</Typography>
+            )}
+
+            <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
+              **Endereço de Entrega**
+            </Typography>
+            {orderDetails.delivery_address ? (
+              <>
+                <Typography variant="body2">{orderDetails.delivery_address.street}, {orderDetails.delivery_address.number}</Typography>
+                <Typography variant="body2">{orderDetails.delivery_address.district_name}, {orderDetails.delivery_address.city}</Typography>
+                <Typography variant="body2">CEP: {orderDetails.delivery_address.zip_code}</Typography>
+                <Typography variant="body2">Complemento: {orderDetails.delivery_address.complement || '-'}</Typography>
+              </>
+            ) : (
+              <Typography variant="body2">Nenhum endereço de entrega associado.</Typography>
+            )}
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <Typography variant="subtitle1" gutterBottom>
+              **Itens do Pedido**
+            </Typography>
+            <List dense>
+              {orderDetails.items.map((item) => (
+                <ListItem key={item.id} disablePadding sx={{ mb: 1 }}>
+                  <ListItemText
+                    primary={`${item.quantity}x ${item.menu_item_name} - R$ ${(item.price * item.quantity).toFixed(2)}`}
+                    secondary={
+                      <>
+                        {item.addon_options && item.addon_options.length > 0 && (
+                          <Typography component="span" variant="body2" color="text.secondary" sx={{ display: 'block' }}>
+                            Adicionais: {item.addon_options.map(addon => addon.name).join(', ')}
+                          </Typography>
+                        )}
+                        {item.observations && (
+                          <Typography component="span" variant="body2" color="text.secondary" sx={{ display: 'block', fontStyle: 'italic' }}>
+                            Obs: {item.observations}
+                          </Typography>
+                        )}
+                      </>
+                    }
+                  />
+                </ListItem>
+              ))}
+            </List>
+          </Grid>
+        </Grid>
+      </Paper>
+
+      <Box sx={{ textAlign: 'center', mt: 3 }}>
+        {orderDetails.status === OrderStatus.PENDENTE || orderDetails.status === OrderStatus.EM_PREPARO ? (
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleCancelOrderRequest}
+            disabled={loading}
+          >
+            Solicitar Cancelamento do Pedido
+          </Button>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            Este pedido não pode mais ser cancelado.
+          </Typography>
+        )}
+      </Box>
+
+      <ConfirmationDialog
+        open={isConfirmCancelOpen}
+        onClose={() => setIsConfirmCancelOpen(false)}
+        onConfirm={confirmCancelOrder}
+        title="Confirmar Cancelamento"
+        message="Tem certeza que deseja solicitar o cancelamento deste pedido? Esta ação será enviada para a administração para aprovação."
+        confirmButtonText="Sim, Cancelar"
+        confirmButtonColor="error"
+      />
+    </Box>
   );
 };
 

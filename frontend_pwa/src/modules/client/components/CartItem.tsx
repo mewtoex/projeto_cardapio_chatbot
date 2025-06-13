@@ -1,38 +1,94 @@
-// src/modules/client/components/CartItem.tsx
+// frontend_pwa/src/modules/client/components/CartItem.tsx
 import React from 'react';
+import { Box, Typography, IconButton, Card, CardContent, CardMedia, Grid, Chip } from '@mui/material';
+import { Add as AddIcon, Remove as RemoveIcon, Delete as DeleteIcon, Image as ImageIcon } from '@mui/icons-material';
+import { type CartItemData } from '../../../types';
+import { useCart } from '../../../hooks/useCart'; // Usando o hook useCart
 
 interface CartItemProps {
-  item: {
-    id: number;
-    name: string;
-    quantity: number;
-    price: number;
-  };
-  onUpdateQuantity: (itemId: number, newQuantity: number) => void;
-  onRemoveItem: (itemId: number) => void;
+  item: CartItemData;
+  itemKey: string; // A chave única do item no objeto cartItems
 }
 
-const CartItem: React.FC<CartItemProps> = ({ item, onUpdateQuantity, onRemoveItem }) => {
+const CartItem: React.FC<CartItemProps> = ({ item, itemKey }) => {
+  const { updateCartItemQuantity, removeCartItem } = useCart();
+
+  const handleIncreaseQuantity = () => {
+    updateCartItemQuantity(itemKey, item.quantity + 1);
+  };
+
+  const handleDecreaseQuantity = () => {
+    updateCartItemQuantity(itemKey, item.quantity - 1);
+  };
+
+  const handleRemoveItem = () => {
+    removeCartItem(itemKey);
+  };
+
   return (
-    <div style={{ border: '1px solid #eee', padding: '10px', marginBottom: '10px' }}>
-      <h4>{item.name}</h4>
-      <p>Preço Unitário: R$ {item.price.toFixed(2)}</p>
-      <div>
-        <label htmlFor={`quantity-${item.id}`}>Quantidade: </label>
-        <input 
-          type="number" 
-          id={`quantity-${item.id}`} 
-          value={item.quantity} 
-          min="1" 
-          onChange={(e) => onUpdateQuantity(item.id, parseInt(e.target.value, 10))}
-          style={{width: "50px", marginRight: "10px"}}
+    <Card sx={{ display: 'flex', mb: 2, boxShadow: 1 }}>
+      {item.image_url ? (
+        <CardMedia
+          component="img"
+          sx={{ width: 100, height: 100, objectFit: 'cover' }}
+          image={item.image_url}
+          alt={item.name}
         />
-      </div>
-      <p>Subtotal: R$ {(item.price * item.quantity).toFixed(2)}</p>
-      <button onClick={() => onRemoveItem(item.id)}>Remover</button>
-    </div>
+      ) : (
+        <Box sx={{ width: 100, height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.100' }}>
+          <ImageIcon color="action" sx={{ fontSize: 50 }} />
+        </Box>
+      )}
+      <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+        <CardContent sx={{ flex: '1 0 auto' }}>
+          <Typography component="div" variant="h6">
+            {item.name}
+          </Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            R$ {(item.totalItemPrice).toFixed(2)} / un.
+          </Typography>
+          {item.selectedAddons && item.selectedAddons.length > 0 && (
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                Adicionais:
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                {item.selectedAddons.map(addon => (
+                  <Chip key={addon.id} label={`${addon.name} (R$ ${addon.price.toFixed(2)})`} size="small" variant="outlined" />
+                ))}
+              </Box>
+            </Box>
+          )}
+          {item.observations && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Obs: {item.observations}
+            </Typography>
+          )}
+        </CardContent>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <IconButton onClick={handleDecreaseQuantity} disabled={item.quantity <= 1}>
+              <RemoveIcon />
+            </IconButton>
+            <Typography variant="subtitle1" sx={{ mx: 1 }}>
+              {item.quantity}
+            </Typography>
+            <IconButton onClick={handleIncreaseQuantity}>
+              <AddIcon />
+            </IconButton>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Typography variant="h6" color="primary" sx={{ mr: 2 }}>
+              R$ {(item.totalItemPrice * item.quantity).toFixed(2)}
+            </Typography>
+            <IconButton color="error" onClick={handleRemoveItem}>
+              <DeleteIcon />
+            </IconButton>
+          </Box>
+        </Box>
+      </Box>
+    </Card>
   );
 };
 
 export default CartItem;
-

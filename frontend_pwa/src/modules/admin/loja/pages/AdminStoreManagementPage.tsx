@@ -1,321 +1,134 @@
-import React, { useEffect, useState } from "react";
+// frontend_pwa/src/modules/admin/loja/pages/AdminStoreManagementPage.tsx
+import React, { useState, useEffect } from 'react';
 import {
-  Typography,
-  Box,
-  Button,
-  TextField,
-  Paper,
-  CircularProgress,
-  Alert,
-  Grid
-} from "@mui/material";
-import ApiService from "../../../shared/services/ApiService";
-import { useNotification } from "../../../../contexts/NotificationContext";
-import { useIMask } from 'react-imask'; 
-import { type Store, type Address } from '../../../../types';
+  Box, Typography, Button, Paper, CircularProgress, Alert, Card, CardContent,
+  Dialog, DialogTitle, DialogContent,
+} from '@mui/material';
+import { Store as StoreIcon, Save as SaveIcon } from '@mui/icons-material';
+import api from '../../../../api/api';
+import { useLoading } from '../../../../hooks/useLoading';
+import { useNotification } from '../../../../contexts/NotificationContext';
+import StoreForm from '../components/StoreForm'; // Novo componente de formulário
+import { type Store } from '../../../../types';
 
 const AdminStoreManagementPage: React.FC = () => {
-  const [store, setStore] = useState<Store | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const notification = useNotification();
+  const {
+    data: storeData,
+    loading,
+    error,
+    execute: fetchStoreData,
+    setData: setStoreDataManually,
+  } = useLoading<Store | null>(); // Pode retornar null se a loja ainda não estiver configurada
 
-  const notification = useNotification(); 
-
-  const { ref: storeCepInputRef, setValue: setStoreCepMaskedValue } = useIMask<HTMLInputElement>({
-    mask: '00000-000',
-    onAccept: (value: string) => {
-      setStore(prev => ({
-        ...prev!,
-        address: {
-          ...prev!.address!,
-          cep: value
-        }
-      }));
-    },
-  });
-
-  const fetchStoreData = async () => {
-    try {
-      setLoading(true);
-      const data = await ApiService.getMyStore();
-      setStore(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao buscar dados da loja.");
-      notification.showError('Erro ao carregar dados da loja.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
 
   useEffect(() => {
-    fetchStoreData();
+    loadStoreData();
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    if (name.startsWith("address.")) {
-      setStore(prev => ({
-        ...prev!,
-        address: {
-          ...prev!.address!,
-          [name.split(".")[1]]: value
-        }
-      }));
-    } else {
-      setStore(prev => ({
-        ...prev!,
-        [name]: value
-      }));
-    }
+  const loadStoreData = async () => {
+    await fetchStoreData(
+      api.getMyStore(), // API para buscar dados da loja do admin
+      undefined,
+      "Erro ao carregar dados da loja."
+    );
   };
 
-  const handleStoreCepBlur = async () => {
-    if (!store?.address?.cep) return;
-    const cleanCep = store.address.cep.replace(/\D/g, '');
-
-    if (cleanCep.length === 8) {
-      setLoading(true);
-      try {
-        const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
-        const data = await response.json();
-
-        if (data.erro) {
-          notification.showError('CEP não encontrado ou inválido.'); //
-          setStore(prev => ({
-            ...prev!,
-            address: {
-              ...prev!.address!,
-              street: '',
-              complement: '',
-              district: '',
-              city: '',
-              state: '',
-            }
-          }));
-        } else {
-          setStore(prev => ({
-            ...prev!,
-            address: {
-              ...prev!.address!,
-              street: data.logradouro || '',
-              complement: data.complemento || '',
-              district: data.bairro || '',
-              city: data.localidade || '',
-              state: data.uf || '',
-            }
-          }));
-          notification.showSuccess('Endereço preenchido automaticamente!'); //
-        }
-      } catch (err) {
-        notification.showError('Erro ao buscar CEP. Tente novamente mais tarde.'); //
-        console.error('Erro ao buscar CEP para a loja:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
+  const handleOpenForm = () => {
+    setIsFormModalOpen(true);
   };
 
-  const handleSubmit = async () => {
-    if (!store) return;
-
-    // Basic validation
-    if (!store.name || !store.phone || !store.email || !store.address?.street || !store.address?.number || !store.address?.district || !store.address?.city || !store.address?.state || !store.address?.cep) {
-      notification.showError("Por favor, preencha todos os campos obrigatórios da loja e do endereço.");
-      return;
-    }
-
-    setIsSaving(true);
+  const handleSaveStore = async (data: Store) => {
     try {
-      if (store.id) {
-        // Update existing store
-        await ApiService.updateMyStore(store); //
-        notification.showSuccess("Dados da loja atualizados com sucesso!"); //
+      let savedStore: Store;
+      if (storeData) {
+        // Se já existe, atualiza
+        savedStore = await api.updateMyStore(data);
+        notification.showSuccess("Informações da loja atualizadas com sucesso!");
       } else {
-        // Create new store
-        await ApiService.createMyStore(store); //
-        notification.showSuccess("Loja cadastrada com sucesso!");
+        // Se não existe, cria
+        savedStore = await api.createMyStore(data);
+        notification.showSuccess("Loja configurada com sucesso!");
       }
-      fetchStoreData(); // Re-fetch to get updated IDs if created
-    } catch (err) {
-      notification.showError(err instanceof Error ? err.message : "Erro ao salvar dados da loja."); 
-    } finally {
-      setIsSaving(false);
+      setStoreDataManually(savedStore);
+      setIsFormModalOpen(false);
+    } catch (err: any) {
+      notification.showError(err.message || "Falha ao salvar informações da loja.");
     }
   };
-
-  if (loading) {
-    return (
-      <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <CircularProgress />
-        <Typography variant="h6" sx={{ ml: 2 }}>Carregando dados da loja...</Typography>
-      </Box>
-    );
-  }
-
-  if (error && !store) { // Show error only if no store data exists
-    return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error" sx={{ mb: 2 }}>
-          Erro: {error}. Por favor, verifique sua conexão ou se a loja já foi cadastrada.
-        </Alert>
-        <Button variant="contained" onClick={fetchStoreData}>
-          Tentar novamente
-        </Button>
-      </Box>
-    );
-  }
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        Gerenciar Minha Loja
+      <Typography variant="h4" component="h1" gutterBottom>
+        Configurações da Loja
+      </Typography>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+        Defina os detalhes e o horário de funcionamento do seu restaurante.
       </Typography>
 
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Informações da Loja
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Nome da Loja"
-              name="name"
-              value={store?.name || ''}
-              onChange={handleInputChange}
-              margin="normal"
-              required
-            />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Telefone"
-              name="phone"
-              value={store?.phone || ''}
-              onChange={handleInputChange}
-              margin="normal"
-              required
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Email"
-              name="email"
-              value={store?.email || ''}
-              onChange={handleInputChange}
-              margin="normal"
-              type="email"
-              required
-            />
-          </Grid>
-        </Grid>
-      </Paper>
+      {loading && <CircularProgress sx={{ display: 'block', margin: '20px auto' }} />}
+      {error && (
+        <Alert severity="error" sx={{ mt: 3 }}>
+          <Typography variant="h6">Erro ao carregar dados da loja:</Typography>
+          <Typography>{error}</Typography>
+          <Button onClick={loadStoreData} sx={{ mt: 1 }}>Tentar novamente</Button>
+        </Alert>
+      )}
 
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Endereço da Loja
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              fullWidth
-              label="CEP"
-              name="address.cep"
-              value={store?.address?.cep || ''}
-              onChange={(e) => setStoreCepMaskedValue(e.target.value)} // Use o setter mascarado
-              onBlur={handleStoreCepBlur} // Adicione o evento onBlur
-              inputRef={storeCepInputRef} // Passe o ref
-              required
-              disabled={isSaving || loading}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              fullWidth
-              label="Rua/Avenida"
-              name="address.street"
-              value={store?.address?.street || ''}
-              onChange={handleInputChange}
-              margin="normal"
-              required
-              disabled={isSaving || loading}
-            />
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <TextField
-              fullWidth
-              label="Número"
-              name="address.number"
-              value={store?.address?.number || ''}
-              onChange={handleInputChange}
-              margin="normal"
-              required
-              disabled={isSaving || loading}
-            />
-          </Grid>
-          <Grid item xs={12} sm={8}>
-            <TextField
-              fullWidth
-              label="Complemento"
-              name="address.complement"
-              value={store?.address?.complement || ''}
-              onChange={handleInputChange}
-              margin="normal"
-              disabled={isSaving || loading}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              fullWidth
-              label="Bairro"
-              name="address.district"
-              value={store?.address?.district || ''}
-              onChange={handleInputChange}
-              margin="normal"
-              required
-              disabled={isSaving || loading}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              fullWidth
-              label="Cidade"
-              name="address.city"
-              value={store?.address?.city || ''}
-              onChange={handleInputChange}
-              margin="normal"
-              required
-              disabled={isSaving || loading}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Estado"
-              name="address.state"
-              value={store?.address?.state || ''}
-              onChange={handleInputChange}
-              margin="normal"
-              required
-              disabled={isSaving || loading}
-            />
-          </Grid>
-        </Grid>
-      </Paper>
+      {!loading && !error && (
+        storeData ? (
+          <Card elevation={3} sx={{ p: 3 }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h5" component="h2">
+                  Dados Atuais da Loja
+                </Typography>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<SaveIcon />}
+                  onClick={handleOpenForm}
+                >
+                  Editar Dados
+                </Button>
+              </Box>
+              <Typography variant="body1"><strong>Nome:</strong> {storeData.name}</Typography>
+              <Typography variant="body1"><strong>Endereço:</strong> {storeData.address}</Typography>
+              <Typography variant="body1"><strong>Telefone:</strong> {storeData.phone}</Typography>
+              <Typography variant="body1"><strong>Status:</strong> {storeData.is_open ? 'Aberta' : 'Fechada'}</Typography>
+              <Typography variant="body1"><strong>Horário de Funcionamento:</strong> {storeData.opening_hours}</Typography>
+              <Typography variant="body1"><strong>Tempo Médio de Preparo:</strong> {storeData.avg_preparation_time_minutes} min</Typography>
+            </CardContent>
+          </Card>
+        ) : (
+          <Box sx={{ textAlign: 'center', py: 5 }}>
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              Nenhum dado da loja configurado ainda.
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={handleOpenForm}
+            >
+              Configurar Loja
+            </Button>
+          </Box>
+        )
+      )}
 
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={handleSubmit}
-        disabled={isSaving}
-        sx={{ mt: 2 }}
-      >
-        {isSaving ? "Salvando..." : (store?.id ? "Atualizar Loja" : "Cadastrar Loja")}
-      </Button>
+      <Dialog open={isFormModalOpen} onClose={() => setIsFormModalOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{storeData ? "Editar Configurações da Loja" : "Configurar Nova Loja"}</DialogTitle>
+        <DialogContent dividers>
+          <StoreForm
+            initialData={storeData}
+            onSubmit={handleSaveStore}
+            onCancel={() => setIsFormModalOpen(false)}
+            isSaving={loading}
+          />
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 };

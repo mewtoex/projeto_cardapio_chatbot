@@ -1,183 +1,307 @@
-// src/modules/admin/pedidos/pages/AdminOrderManagementPage.tsx
-import React, { useEffect, useState } from "react";
-import ApiService from "../../../shared/services/ApiService";
-import { Link, useSearchParams } from "react-router-dom";
-import { Button } from '@mui/material';
-import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
-import ClientOrderItemPage from '../../../client/pages/ClientOrderItemPage';
-import { styled } from '@mui/material/styles';
-import { useNotification } from '../../../../contexts/NotificationContext'; 
-import { type Order } from '../../../../types'; 
+// frontend_pwa/src/modules/admin/pedidos/pages/AdminOrderManagementPage.tsx
+import React, { useState, useEffect } from 'react';
+import {
+  Box, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer,
+  TableHead, TableRow, IconButton, CircularProgress, Chip, Menu, MenuItem,
+  Dialog, DialogTitle, DialogContent, DialogActions, TextField, Tabs, Tab
+} from '@mui/material';
+import {
+  Edit as EditIcon, Delete as DeleteIcon, MoreVert as MoreVertIcon,
+  Print as PrintIcon, CheckCircleOutline as CheckCircleOutlineIcon,
+  Cancel as CancelIcon
+} from '@mui/icons-material';
+import api from '../../../../api/api';
+import { useLoading } from '../../../../hooks/useLoading';
+import { useNotification } from '../../../../contexts/NotificationContext';
+import ConfirmationDialog from '../../../../components/ui/ConfirmationDialog';
+import { type Order, OrderStatus, OrderStatusMapping } from '../../../../types'; // Assumindo OrderStatusMapping
 
 const AdminOrderManagementPage: React.FC = () => {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [open, setOpen] = useState(false);
-  const [orderId, setOrderId] = useState('0');
-  const notification = useNotification(); 
+  const notification = useNotification();
+  const {
+    data: orders,
+    loading,
+    error,
+    execute: fetchOrders,
+    setData: setOrdersManually,
+  } = useLoading<Order[]>();
 
-  const statusFilter = searchParams.get("status");
-  const BootstrapDialog = styled(Dialog)(({ theme }) => ({
-    '& .MuiDialogContent-root': {
-      padding: theme.spacing(2),
-    },
-    '& .MuiDialogActions-root': {
-      padding: theme.spacing(1),
-    },
-  }));
+  const [filterStatus, setFilterStatus] = useState<string>('todos'); // 'todos', 'pendente', 'em_preparo', 'a_caminho', 'concluido', 'cancelado'
+  const [filterStartDate, setFilterStartDate] = useState<string>('');
+  const [filterEndDate, setFilterEndDate] = useState<string>('');
+
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedOrderForMenu, setSelectedOrderForMenu] = useState<Order | null>(null);
+
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [confirmationAction, setConfirmationAction] = useState<'cancel' | 'approveCancellation' | 'rejectCancellation' | null>(null);
+
   useEffect(() => {
-    const fetchOrders = async () => {
+    loadOrders();
+  }, [filterStatus, filterStartDate, filterEndDate]);
+
+  const loadOrders = async () => {
+    const filters: { status?: string; data_inicio?: string; data_fim?: string } = {};
+    if (filterStatus !== 'todos') {
+      filters.status = filterStatus;
+    }
+    if (filterStartDate) {
+      filters.data_inicio = filterStartDate;
+    }
+    if (filterEndDate) {
+      filters.data_fim = filterEndDate;
+    }
+
+    await fetchOrders(
+      api.getAdminOrders(filters),
+      undefined,
+      "Erro ao carregar pedidos."
+    );
+  };
+
+  const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>, order: Order) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedOrderForMenu(order);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedOrderForMenu(null);
+  };
+
+  const handleUpdateStatus = async (newStatus: OrderStatus) => {
+    if (selectedOrderForMenu) {
       try {
-        setLoading(true);
-        const filters: any = {};
-        if (statusFilter) {
-          filters.status = statusFilter;
-        }
-        const fetchedOrders = await ApiService.getAdminOrders(filters);
-        setOrders(fetchedOrders as Order[]);
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Falha ao buscar pedidos.");
-        notification.showError('Erro ao carregar pedidos.'); 
+        const updatedOrder = await api.updateOrderStatus(selectedOrderForMenu.id.toString(), newStatus);
+        notification.showSuccess(`Status do pedido ${selectedOrderForMenu.id} atualizado para "${OrderStatusMapping[newStatus]}".`);
+        setOrdersManually(prev => prev ? prev.map(order => (order.id === updatedOrder.id ? updatedOrder : order)) : []);
+      } catch (err: any) {
+        notification.showError(err.message || "Falha ao atualizar status do pedido.");
+      } finally {
+        handleMenuClose();
       }
-      setLoading(false);
-    };
-
-    fetchOrders();
-  }, [statusFilter, notification]); 
-
-  const handleOpenItemsOrder = (id: string) => { 
-    console.log(id)
-    setOrderId(id)
-    setOpen(true);
-  }
-
-  const handleClose = () => {
-    setOpen(false);
-  };
-
-  const handleUpdateStatus = async (orderId: string, newStatus: string) => {
-    try {
-      await ApiService.updateOrderStatus(orderId, newStatus);
-      const updatedOrders = await ApiService.getAdminOrders(statusFilter ? { status: statusFilter } : {});
-      setOrders(updatedOrders as Order[]);
-      notification.showSuccess(`Status do pedido ${orderId} atualizado para ${newStatus}`); 
-    } catch (err) {
-      notification.showError(`Falha ao atualizar status do pedido ${orderId}: ${err instanceof Error ? err.message : "Erro desconhecido"}`); 
     }
   };
 
-  // NOVO: Função para imprimir o pedido
-  const handlePrintOrder = async (orderId: string) => {
-    try {
-      const pdfBlob = await ApiService.printOrder(orderId); 
-      const url = window.URL.createObjectURL(pdfBlob);
-      window.open(url, '_blank'); 
-      notification.showInfo('Gerando PDF para impressão...');
-    } catch (error) {
-      notification.showError('Erro ao gerar PDF do pedido.');
-      console.error('Erro ao imprimir pedido:', error);
+  const handlePrintOrder = async () => {
+    if (selectedOrderForMenu) {
+      try {
+        const blob = await api.printOrder(selectedOrderForMenu.id.toString());
+        const url = window.URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        notification.showSuccess("PDF do pedido gerado com sucesso!");
+      } catch (err: any) {
+        notification.showError(err.message || "Falha ao gerar PDF do pedido.");
+      } finally {
+        handleMenuClose();
+      }
     }
   };
 
+  const handleRequestCancellation = (order: Order) => {
+    setSelectedOrderForMenu(order);
+    setConfirmationAction('cancel');
+    setIsConfirmModalOpen(true);
+  };
 
-  if (loading) {
-    return <p>Carregando pedidos...</p>;
-  }
+  const handleApproveCancellation = (order: Order) => {
+    setSelectedOrderForMenu(order);
+    setConfirmationAction('approveCancellation');
+    setIsConfirmModalOpen(true);
+  };
 
-  if (error) {
-    return <p style={{ color: "red" }}>Erro: {error}</p>;
-  }
+  const handleRejectCancellation = (order: Order) => {
+    setSelectedOrderForMenu(order);
+    setConfirmationAction('rejectCancellation');
+    setIsConfirmModalOpen(true);
+  };
+
+  const confirmAction = async () => {
+    if (!selectedOrderForMenu || !confirmationAction) return;
+
+    try {
+      let updatedOrder: Order;
+      switch (confirmationAction) {
+        case 'cancel':
+          updatedOrder = await api.cancelClientOrder(selectedOrderForMenu.id.toString());
+          notification.showSuccess("Solicitação de cancelamento enviada com sucesso!");
+          break;
+        case 'approveCancellation':
+          updatedOrder = await api.approveOrderCancellationAdmin(selectedOrderForMenu.id.toString());
+          notification.showSuccess("Cancelamento do pedido aprovado!");
+          break;
+        case 'rejectCancellation':
+          updatedOrder = await api.rejectOrderCancellationAdmin(selectedOrderForMenu.id.toString());
+          notification.showInfo("Cancelamento do pedido rejeitado.");
+          break;
+        default:
+          break;
+      }
+      // Atualiza o estado da lista de pedidos
+      setOrdersManually(prev => prev ? prev.map(order => (order.id === updatedOrder.id ? updatedOrder : order)) : []);
+    } catch (err: any) {
+      notification.showError(err.message || "Falha na operação.");
+    } finally {
+      setIsConfirmModalOpen(false);
+      setConfirmationAction(null);
+      setSelectedOrderForMenu(null);
+      handleMenuClose(); // Garante que o menu é fechado
+    }
+  };
+
+  const getConfirmationMessage = () => {
+    if (!selectedOrderForMenu) return "";
+    switch (confirmationAction) {
+      case 'cancel':
+        return `Tem certeza que deseja solicitar o cancelamento do pedido #${selectedOrderForMenu.id}?`;
+      case 'approveCancellation':
+        return `Tem certeza que deseja aprovar o cancelamento do pedido #${selectedOrderForMenu.id}? Esta ação não pode ser desfeita.`;
+      case 'rejectCancellation':
+        return `Tem certeza que deseja rejeitar o pedido de cancelamento do pedido #${selectedOrderForMenu.id}?`;
+      default:
+        return "";
+    }
+  };
 
   return (
-    <div>
-      <h1>Gerenciamento de Pedidos</h1>
-      <div>
-        <strong>Filtrar por Status: </strong>
-        <button onClick={() => setSearchParams({})}>Todos</button>
-        <button onClick={() => setSearchParams({ status: "Novo" })}>Novos</button>
-        <button onClick={() => setSearchParams({ status: "Recebido" })}>Recebidos</button> 
-        <button onClick={() => setSearchParams({ status: "Em Preparo" })}>Em Preparo</button>
-        <button onClick={() => setSearchParams({ status: "Saiu para Entrega" })}>Saiu para Entrega</button>
-        <button onClick={() => setSearchParams({ status: "Concluído" })}>Concluídos</button>
-        <button onClick={() => setSearchParams({ status: "Cancelado" })}>Cancelados</button>
-        <button onClick={() => setSearchParams({ status: "Cancelamento Solicitado" })}>Cancelamento Solicitado</button> 
-      </div>
+    <Box>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Gerenciamento de Pedidos
+      </Typography>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+        Visualize e gerencie todos os pedidos do restaurante.
+      </Typography>
 
-      {orders.length === 0 ? (
-        <p>Nenhum pedido encontrado{statusFilter ? ` com status "${statusFilter}"` : ""}.</p>
-      ) : (
-        <table style={{ width: "100%", marginTop: "20px" }}>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Cliente</th>
-              <th>Data</th>
-              <th>Status Atual</th>
-              <th>Total</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((order) => (
-              <tr key={order.id}>
-                <td>{order.id}</td>
-                <td>{order.user_name}</td>
-                <td>{new Date(order.order_date).toLocaleString()}</td>
-                <td>{order.status}</td>
-                <td>R$ {order.total_amount.toFixed(2)}</td>
-                <td>
-                  <select
-                    value={order.status}
-                    onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
-                    style={{ marginRight: "10px" }}
-                  >
-                    <option value="Novo">Novo</option>
-                    <option value="Recebido">Recebido</option>
-                    <option value="Em Preparo">Em Preparo</option>
-                    <option value="Saiu para Entrega">Saiu para Entrega</option>
-                    <option value="Concluído">Concluído</option>
-                    <option value="Cancelado">Cancelado</option>
-                    <option value="Cancelamento Solicitado">Cancelamento Solicitado</option>
-                  </select>
-                  <Button
-                    variant="contained"
-                    onClick={() => handleOpenItemsOrder(order.id)}
-                    sx={{ mr: 1 }}
-                  >
-                    Ver Detalhes
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    onClick={() => handlePrintOrder(order.id)}
-                  >
-                    Imprimir
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+        <Tabs value={filterStatus} onChange={(_e, newValue) => setFilterStatus(newValue)} aria-label="Filtro de Status">
+          {Object.entries(OrderStatusMapping).map(([key, value]) => (
+            <Tab key={key} label={value} value={key} />
+          ))}
+          <Tab label="Todos" value="todos" />
+        </Tabs>
+        <TextField
+          label="Data Início"
+          type="date"
+          value={filterStartDate}
+          onChange={(e) => setFilterStartDate(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+        />
+        <TextField
+          label="Data Fim"
+          type="date"
+          value={filterEndDate}
+          onChange={(e) => setFilterEndDate(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+        />
+        <Button variant="contained" onClick={loadOrders} startIcon={<CheckCircleOutlineIcon />}>
+          Aplicar Filtros
+        </Button>
+      </Box>
+
+      {loading && <CircularProgress sx={{ display: 'block', margin: '20px auto' }} />}
+      {error && (
+        <Typography color="error" sx={{ mt: 2 }}>
+          {error}
+        </Typography>
       )}
-      <br /> <>
-        <BootstrapDialog
-          onClose={handleClose}
-          aria-labelledby="customized-dialog-title"
-          open={open}
-        >
-          <DialogContent dividers>
-            <ClientOrderItemPage
-              order_id={orderId}
-            />
-          </DialogContent>
-        </BootstrapDialog>
 
-      </>
-      <Link to="/admin/dashboard">Voltar ao Dashboard</Link>
-    </div>
+      {!loading && !error && (orders?.length === 0 ? (
+        <Typography variant="h6" color="text.secondary" sx={{ mt: 4, textAlign: 'center' }}>
+          Nenhum pedido encontrado com os filtros selecionados.
+        </Typography>
+      ) : (
+        <TableContainer component={Paper} elevation={3}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>ID</TableCell>
+                <TableCell>Cliente</TableCell>
+                <TableCell>Data</TableCell>
+                <TableCell>Total</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Endereço de Entrega</TableCell>
+                <TableCell>Ações</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {orders?.map((order) => (
+                <TableRow key={order.id}>
+                  <TableCell>{order.id}</TableCell>
+                  <TableCell>{order.client_name}</TableCell>
+                  <TableCell>{new Date(order.order_date).toLocaleString('pt-BR')}</TableCell>
+                  <TableCell>R$ {order.total_amount.toFixed(2)}</TableCell>
+                  <TableCell>
+                    <Chip label={OrderStatusMapping[order.status] || order.status} color={
+                      order.status === OrderStatus.CONCLUIDO ? 'success' :
+                      order.status === OrderStatus.CANCELADO ? 'error' :
+                      order.status === OrderStatus.PENDENTE ? 'warning' :
+                      'info'
+                    } size="small" />
+                  </TableCell>
+                  <TableCell>{order.delivery_address?.street}, {order.delivery_address?.number}</TableCell>
+                  <TableCell>
+                    <IconButton
+                      aria-label="mais ações"
+                      aria-controls="order-menu"
+                      aria-haspopup="true"
+                      onClick={(e) => handleMenuClick(e, order)}
+                    >
+                      <MoreVertIcon />
+                    </IconButton>
+                    <Menu
+                      id="order-menu"
+                      anchorEl={anchorEl}
+                      open={Boolean(anchorEl) && selectedOrderForMenu?.id === order.id}
+                      onClose={handleMenuClose}
+                    >
+                      <MenuItem onClick={() => handleUpdateStatus(OrderStatus.EM_PREPARO)} disabled={order.status !== OrderStatus.PENDENTE}>
+                        Em Preparo
+                      </MenuItem>
+                      <MenuItem onClick={() => handleUpdateStatus(OrderStatus.A_CAMINHO)} disabled={order.status !== OrderStatus.EM_PREPARO}>
+                        A Caminho
+                      </MenuItem>
+                      <MenuItem onClick={() => handleUpdateStatus(OrderStatus.CONCLUIDO)} disabled={order.status !== OrderStatus.A_CAMINHO}>
+                        Concluído
+                      </MenuItem>
+                      {order.status === OrderStatus.SOLICITADO_CANCELAMENTO && (
+                        <MenuItem onClick={() => handleApproveCancellation(order)}>
+                          Aprovar Cancelamento
+                        </MenuItem>
+                      )}
+                      {order.status === OrderStatus.SOLICITADO_CANCELAMENTO && (
+                        <MenuItem onClick={() => handleRejectCancellation(order)}>
+                          Rejeitar Cancelamento
+                        </MenuItem>
+                      )}
+                      {order.status !== OrderStatus.CANCELADO && order.status !== OrderStatus.CONCLUIDO && (
+                        <MenuItem onClick={() => handleRequestCancellation(order)}>
+                          Solicitar Cancelamento (Cliente)
+                        </MenuItem>
+                      )}
+                      <MenuItem onClick={handlePrintOrder}>
+                        <PrintIcon sx={{ mr: 1 }} /> Imprimir Pedido
+                      </MenuItem>
+                      {/* Você pode adicionar um link para ver detalhes do pedido */}
+                      {/* <MenuItem onClick={() => navigate(`/admin/pedidos/${order.id}`)}>Ver Detalhes</MenuItem> */}
+                    </Menu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      ))}
+
+      <ConfirmationDialog
+        open={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        onConfirm={confirmAction}
+        title="Confirmar Ação"
+        message={getConfirmationMessage()}
+        confirmButtonText={confirmationAction === 'cancel' ? 'Sim, Cancelar' : confirmationAction === 'approveCancellation' ? 'Sim, Aprovar' : 'Sim, Rejeitar'}
+        confirmButtonColor={confirmationAction === 'cancel' || confirmationAction === 'approveCancellation' ? 'error' : 'primary'}
+      />
+    </Box>
   );
 };
 

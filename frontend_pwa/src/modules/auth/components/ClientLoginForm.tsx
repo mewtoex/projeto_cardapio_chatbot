@@ -1,84 +1,95 @@
 // frontend_pwa/src/modules/auth/components/ClientLoginForm.tsx
-import React, { useState } from 'react';
-import AuthService from '../../shared/services/AuthService';
-import { useAuth } from '../contexts/AuthContext';
+import React from 'react';
+import { TextField, Button, Box, Typography, CircularProgress, Link } from '@mui/material';
+import { useAuth } from '../../../hooks/useAuth';
+import { useForm } from '../../../hooks/useForm';
 import { useNavigate } from 'react-router-dom';
-import { TextField, Button, Box, Typography } from '@mui/material';
 
-interface ClientLoginFormProps {
-  onLoginSuccess?: () => void; // Nova prop
+interface ClientLoginFormData {
+  email: string;
+  password: string;
 }
 
-const ClientLoginForm: React.FC<ClientLoginFormProps> = ({ onLoginSuccess }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+const initialFormState: ClientLoginFormData = {
+  email: '',
+  password: '',
+};
+
+const ClientLoginForm: React.FC = () => {
+  const { login, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setError(null);
-    setLoading(true);
-    try {
-      const response = await AuthService.clientLogin(email, password);
-      login(response.user, response.access_token); // Use access_token from response
-      
-      if (onLoginSuccess) {
-        onLoginSuccess(); // Notifica o componente pai (CheckoutPage)
-      } else {
-        navigate('/client/dashboard'); // Redireciona para o dashboard se não houver callback
-      }
-    } catch (err) {
-      setError(typeof err === 'string' ? err : 'Ocorreu um erro no login.');
+  const { values, handleChange, handleSubmit, errors, isSubmitting } = useForm<ClientLoginFormData>(
+    initialFormState,
+    validateForm
+  );
+
+  function validateForm(formData: ClientLoginFormData): { [key: string]: string } {
+    const newErrors: { [key: string]: string } = {};
+    if (!formData.email) {
+      newErrors.email = "Email é obrigatório.";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Email inválido.";
     }
-    setLoading(false);
+    if (!formData.password) {
+      newErrors.password = "Senha é obrigatória.";
+    }
+    return newErrors;
+  }
+
+  const handleClientLogin = async () => {
+    try {
+      await login(values, false); // O segundo parâmetro indica que é login de cliente
+      navigate('/cardapio'); // Redireciona para o cardápio após login
+    } catch (error) {
+      // Erro já tratado e notificado pelo useAuth/useLoading
+      console.error("Erro no login do cliente (tratado pelo hook):", error);
+    }
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-      {error && (
-        <Typography color="error" variant="body2" sx={{ mb: 2 }}>
-          {error}
-        </Typography>
-      )}
+    <Box component="form" onSubmit={handleSubmit(handleClientLogin)} sx={{ mt: 3 }}>
+      <Typography variant="h5" component="h2" gutterBottom align="center">
+        Login do Cliente
+      </Typography>
       <TextField
-        margin="normal"
-        required
         fullWidth
-        id="email"
         label="Email"
         name="email"
-        autoComplete="email"
-        autoFocus
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        disabled={loading}
+        type="email"
+        value={values.email}
+        onChange={handleChange}
+        margin="normal"
+        error={!!errors.email}
+        helperText={errors.email}
+        required
       />
       <TextField
-        margin="normal"
-        required
         fullWidth
-        name="password"
         label="Senha"
+        name="password"
         type="password"
-        id="password"
-        autoComplete="current-password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        disabled={loading}
+        value={values.password}
+        onChange={handleChange}
+        margin="normal"
+        error={!!errors.password}
+        helperText={errors.password}
+        required
       />
       <Button
         type="submit"
         fullWidth
         variant="contained"
         sx={{ mt: 3, mb: 2 }}
-        disabled={loading}
+        disabled={isSubmitting || authLoading}
       >
-        {loading ? 'Entrando...' : 'Entrar'}
+        {isSubmitting || authLoading ? <CircularProgress size={24} /> : 'Entrar'}
       </Button>
-      {/* TODO: Adicionar link para recuperação de senha */}
+      <Box sx={{ textAlign: 'center' }}>
+        <Link href="/forgot-password" variant="body2">
+          Esqueceu sua senha?
+        </Link>
+      </Box>
     </Box>
   );
 };

@@ -1,243 +1,137 @@
-import React, { useState } from 'react';
-import AuthService from '../../shared/services/AuthService';
-import { useAuth } from '../contexts/AuthContext';
+// frontend_pwa/src/modules/auth/components/ClientRegisterForm.tsx
+import React from 'react';
+import { TextField, Button, Box, Typography, CircularProgress, Link } from '@mui/material';
+import { useAuth } from '../../../hooks/useAuth';
+import { useForm } from '../../../hooks/useForm';
 import { useNavigate } from 'react-router-dom';
-import { TextField, Button, Box, Typography, Checkbox, FormControlLabel, Grid, Link } from '@mui/material';
-import { useNotification } from '../../../contexts/NotificationContext';
-import { useIMask } from 'react-imask'; 
-import { type UserRegisterData } from '../../../types'; 
+import { type UserRegisterData } from '../../../types';
 
-interface ClientRegisterFormProps {
-  onRegisterSuccess?: () => void;
-}
+const initialFormState: UserRegisterData = {
+  name: '',
+  email: '',
+  password: '',
+  phone: '',
+  address: '', // Campo de endereço adicionado aqui
+};
 
-const ClientRegisterForm: React.FC<ClientRegisterFormProps> = ({ onRegisterSuccess }) => {
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [addressCep, setAddressCep] = useState('');
-  const [addressStreet, setAddressStreet] = useState('');
-  const [addressNumber, setAddressNumber] = useState('');
-  const [addressComplement, setAddressComplement] = useState('');
-  const [addressDistrict, setAddressDistrict] = useState('');
-  const [addressCity, setAddressCity] = useState('');
-  const [addressState, setAddressState] = useState('');
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const { login } = useAuth(); 
+const ClientRegisterForm: React.FC = () => {
+  const { register, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const notification = useNotification();
 
-  // IMask para CEP
-  const { ref: cepInputRef, setValue: setCepMaskedValue } = useIMask<HTMLInputElement>({ // Adicionado <HTMLInputElement>
-    mask: '00000-000',
-    onAccept: (value: string) => setAddressCep(value),
-  });
+  const { values, handleChange, handleSubmit, errors, isSubmitting } = useForm<UserRegisterData>(
+    initialFormState,
+    validateForm
+  );
 
-  const handleCepBlur = async () => {
-    const cleanCep = addressCep.replace(/\D/g, '');
-
-    if (cleanCep.length === 8) { 
-      setLoading(true); 
-      try {
-        const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
-        const data = await response.json();
-
-        if (data.erro) {
-          notification.showError('CEP não encontrado ou inválido.');
-          setAddressStreet('');
-          setAddressComplement('');
-          setAddressDistrict('');
-          setAddressCity('');
-          setAddressState('');
-        } else {
-          setAddressStreet(data.logradouro || '');
-          setAddressComplement(data.complemento || '');
-          setAddressDistrict(data.bairro || '');
-          setAddressCity(data.localidade || '');
-          setAddressState(data.uf || '');
-          notification.showSuccess('Endereço preenchido automaticamente!');
-        }
-      } catch (err) {
-        notification.showError('Erro ao buscar CEP. Tente novamente mais tarde.');
-        console.error('Erro ao buscar CEP:', err);
-      } finally {
-        setLoading(false); 
-      }
+  function validateForm(formData: UserRegisterData): { [key: string]: string } {
+    const newErrors: { [key: string]: string } = {};
+    if (!formData.name.trim()) {
+      newErrors.name = "Nome é obrigatório.";
     }
-  };
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setError(null);
-
-    if (password !== confirmPassword) {
-      setError("As senhas não conferem!");
-      notification.showError("As senhas não conferem!");
-      return;
+    if (!formData.email) {
+      newErrors.email = "Email é obrigatório.";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Email inválido.";
     }
-    if (!termsAccepted) {
-      setError("Você precisa aceitar os Termos de Uso e Política de Privacidade.");
-      notification.showError("Você precisa aceitar os Termos de Uso e Política de Privacidade.");
-      return;
+    if (!formData.password || formData.password.length < 6) {
+      newErrors.password = "A senha deve ter no mínimo 6 caracteres.";
     }
-    setLoading(true);
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Telefone é obrigatório.";
+    }
+    if (!formData.address.trim()) {
+      newErrors.address = "Endereço é obrigatório.";
+    }
+    return newErrors;
+  }
+
+  const handleClientRegister = async () => {
     try {
-      const userData: UserRegisterData = { // Usando o tipo importado
-        name,
-        phone,
-        email,
-        password,
-        address: {
-          cep: addressCep,
-          street: addressStreet,
-          number: addressNumber,
-          complement: addressComplement,
-          district: addressDistrict,
-          city: addressCity,
-          state: addressState,
-        }
-      };
-      const response = await AuthService.clientRegister(userData); 
-
-      login(response.user, response.access_token); 
-
-      notification.showSuccess("Conta criada e login realizado com sucesso!");
-      if (onRegisterSuccess) {
-        onRegisterSuccess();
-      } else {
-        navigate('/client/dashboard');
-      }
-    } catch (err: any) { // Adicionado 'any' para o tipo de erro
-      const errorMessage = err instanceof Error ? err.message : 'Ocorreu um erro no registro.';
-      setError(errorMessage);
-      notification.showError(errorMessage);
+      await register(values);
+      // Redireciona para o cardápio ou dashboard do cliente após o registro e login automático
+      navigate('/cardapio'); 
+    } catch (error) {
+      // Erro já tratado e notificado pelo useAuth/useLoading
+      console.error("Erro no registro do cliente (tratado pelo hook):", error);
     }
-    setLoading(false);
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-      {error && <Typography color="error" variant="body2" sx={{ mb: 2 }}>{error}</Typography>}
-      <Grid container spacing={2}>
-        <Grid item xs={12}>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            label="Nome Completo"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            disabled={loading}
-          />
-        </Grid>
-        <Grid item xs={12}>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            label="Telefone"
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            disabled={loading}
-          />
-        </Grid>
-        <Grid item xs={12}>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={loading}
-          />
-        </Grid>
-        <Grid item xs={12}>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            label="Senha"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            disabled={loading}
-          />
-        </Grid>
-        <Grid item xs={12}>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            label="Confirmar Senha"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            disabled={loading}
-          />
-        </Grid>
-      </Grid>
-
-      <Typography variant="h6" sx={{ mt: 3, mb: 1 }}>Endereço Principal</Typography>
-      <Grid container spacing={2}>
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            label="CEP"
-            value={addressCep}
-            onChange={(e) => setCepMaskedValue(e.target.value)}
-            onBlur={handleCepBlur} 
-            inputRef={cepInputRef}
-            required
-            disabled={loading}
-            helperText="Digite o CEP e tecle TAB ou clique fora para preencher o endereço."
-          />
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <TextField fullWidth label="Rua/Avenida" value={addressStreet} onChange={(e) => setAddressStreet(e.target.value)} required disabled={loading} />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <TextField fullWidth label="Número" value={addressNumber} onChange={(e) => setAddressNumber(e.target.value)} required disabled={loading} />
-        </Grid>
-        <Grid item xs={12} sm={8}>
-          <TextField fullWidth label="Complemento" value={addressComplement} onChange={(e) => setAddressComplement(e.target.value)} disabled={loading} />
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <TextField fullWidth label="Bairro" value={addressDistrict} onChange={(e) => setAddressDistrict(e.target.value)} required disabled={loading} />
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <TextField fullWidth label="Cidade" value={addressCity} onChange={(e) => setAddressCity(e.target.value)} required disabled={loading} />
-        </Grid>
-        <Grid item xs={12}>
-          <TextField fullWidth label="Estado" value={addressState} onChange={(e) => setAddressState(e.target.value)} required disabled={loading} />
-        </Grid>
-      </Grid>
-
-      <FormControlLabel
-        control={<Checkbox checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} disabled={loading} />}
-        label={
-          <Typography variant="body2">
-            Li e aceito os <Link to="/terms" style={{ textDecoration: 'none' }}>Termos de Uso</Link> e <Link to="/privacy" style={{ textDecoration: 'none' }}>Política de Privacidade</Link>.
-          </Typography>
-        }
-        sx={{ mt: 2, mb: 2 }}
+    <Box component="form" onSubmit={handleSubmit(handleClientRegister)} sx={{ mt: 3 }}>
+      <Typography variant="h5" component="h2" gutterBottom align="center">
+        Cadastro de Cliente
+      </Typography>
+      <TextField
+        fullWidth
+        label="Nome Completo"
+        name="name"
+        value={values.name}
+        onChange={handleChange}
+        margin="normal"
+        error={!!errors.name}
+        helperText={errors.name}
+        required
       />
-
+      <TextField
+        fullWidth
+        label="Email"
+        name="email"
+        type="email"
+        value={values.email}
+        onChange={handleChange}
+        margin="normal"
+        error={!!errors.email}
+        helperText={errors.email}
+        required
+      />
+      <TextField
+        fullWidth
+        label="Telefone"
+        name="phone"
+        value={values.phone}
+        onChange={handleChange}
+        margin="normal"
+        error={!!errors.phone}
+        helperText={errors.phone}
+        required
+      />
+      <TextField
+        fullWidth
+        label="Endereço (Rua, Número, Bairro, Cidade)"
+        name="address"
+        value={values.address}
+        onChange={handleChange}
+        margin="normal"
+        multiline
+        rows={2}
+        error={!!errors.address}
+        helperText={errors.address}
+        required
+      />
+      <TextField
+        fullWidth
+        label="Senha"
+        name="password"
+        type="password"
+        value={values.password}
+        onChange={handleChange}
+        margin="normal"
+        error={!!errors.password}
+        helperText={errors.password}
+        required
+      />
       <Button
         type="submit"
         fullWidth
         variant="contained"
         sx={{ mt: 3, mb: 2 }}
-        disabled={loading}
+        disabled={isSubmitting || authLoading}
       >
-        {loading ? 'Registrando...' : 'Criar Conta'}
+        {isSubmitting || authLoading ? <CircularProgress size={24} /> : 'Cadastrar'}
       </Button>
+      <Box sx={{ textAlign: 'center' }}>
+        Já tem uma conta? <Link href="/login" variant="body2">Faça Login</Link>
+      </Box>
     </Box>
   );
 };

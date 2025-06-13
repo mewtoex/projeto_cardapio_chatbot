@@ -1,67 +1,33 @@
-// src/modules/auth/pages/ResetPasswordPage.tsx
-import React, { useState, useEffect } from 'react';
-import { Box, Typography, TextField, Button, Paper } from '@mui/material';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import AuthService from '../../shared/services/AuthService';
+// frontend_pwa/src/modules/auth/pages/ResetPasswordPage.tsx
+import React, { useEffect } from 'react';
+import { Box, Typography, Paper, Link } from '@mui/material';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useNotification } from '../../../contexts/NotificationContext';
+import ResetPasswordForm from '../components/ResetPasswordForm'; // Importa o novo componente de formulário
 
 const ResetPasswordPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
+  const { token } = useParams<{ token: string }>(); // Obtém o token da URL
   const navigate = useNavigate();
   const notification = useNotification();
-  const [token, setToken] = useState<string | null>(null);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
-    const tokenFromUrl = searchParams.get('token');
-    if (tokenFromUrl) {
-      setToken(tokenFromUrl);
-    } else {
+    if (!token) {
       notification.showError('Token de redefinição de senha ausente.');
       navigate('/login'); // Redireciona se não houver token
     }
-  }, [searchParams, navigate, notification]);
+  }, [token, navigate, notification]);
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setValidationError(null);
-
-    if (newPassword !== confirmPassword) {
-      setValidationError('As senhas não conferem.');
-      return;
-    }
-    // Adicione validações de senha mais robustas aqui (tamanho mínimo, caracteres especiais etc.)
-    if (newPassword.length < 6) {
-      setValidationError('A nova senha deve ter pelo menos 6 caracteres.');
-      return;
-    }
-
-    if (!token) {
-      notification.showError('Token de redefinição de senha inválido ou ausente.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // AuthService precisa de um método para resetPassword
-      // Vamos adicionar isso ao ApiService mais tarde
-      // Por enquanto, simulamos uma chamada.
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simula requisição
-      // O ideal seria que o AuthService fizesse a chamada real para a API:
-      // await AuthService.resetPassword(token, newPassword);
-
-      notification.showSuccess('Senha redefinida com sucesso! Faça login com sua nova senha.');
-      navigate('/login');
-    } catch (error) {
-      notification.showError('Erro ao redefinir senha. O token pode ser inválido ou expirado.');
-      console.error('Erro ao redefinir senha:', error);
-    } finally {
-      setLoading(false);
-    }
+  const handleSuccess = () => {
+    navigate('/login'); // Redireciona para o login após a redefinição bem-sucedida
   };
+
+  const handleCancel = () => {
+    navigate('/login');
+  };
+
+  if (!token) {
+    return null; // Não renderiza nada se o token não estiver presente (o useEffect já redireciona)
+  }
 
   return (
     <Box
@@ -79,41 +45,12 @@ const ResetPasswordPage: React.FC = () => {
         <Typography variant="h5" component="h1" gutterBottom align="center" sx={{ mb: 3 }}>
           Redefinir Senha
         </Typography>
-        {validationError && (
-          <Typography color="error" variant="body2" sx={{ mb: 2 }}>
-            {validationError}
-          </Typography>
-        )}
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            label="Nova Senha"
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            disabled={loading}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            label="Confirmar Nova Senha"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            disabled={loading}
-          />
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-            disabled={loading || !token} // Desabilita se não houver token
-          >
-            {loading ? 'Redefinindo...' : 'Redefinir Senha'}
-          </Button>
+        <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
+          Insira sua nova senha.
+        </Typography>
+        <ResetPasswordForm token={token} onSuccess={handleSuccess} onCancel={handleCancel} />
+        <Box sx={{ mt: 2, textAlign: 'center' }}>
+          <Link to="/login">Voltar ao Login</Link>
         </Box>
       </Paper>
     </Box>

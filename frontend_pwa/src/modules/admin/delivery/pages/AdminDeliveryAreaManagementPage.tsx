@@ -1,275 +1,173 @@
-// src/modules/admin/delivery/pages/AdminDeliveryAreaManagementPage.tsx
-import React, { useEffect, useState } from 'react';
+// frontend_pwa/src/modules/admin/delivery/pages/AdminDeliveryAreaManagementPage.tsx
+import React, { useState, useEffect } from 'react';
 import {
-  Typography,
-  Box,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  CircularProgress,
-  Alert
+  Box, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer,
+  TableHead, TableRow, IconButton, CircularProgress, Dialog, DialogTitle, DialogContent,
 } from '@mui/material';
-import {
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Add as AddIcon,
-  Close as CloseIcon,
-} from '@mui/icons-material';
-import ApiService from '../../../shared/services/ApiService';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import api from '../../../../api/api';
+import { useLoading } from '../../../../hooks/useLoading';
 import { useNotification } from '../../../../contexts/NotificationContext';
-import {type DeliveryArea } from '../../../../types'; // Importar DeliveryArea do novo caminho
-
-interface DeliveryAreaFormData {
-  district_name: string;
-  delivery_fee: string; 
-}
+import DeliveryAreaForm from '../components/DeliveryAreaForm'; // Novo componente de formulário
+import ConfirmationDialog from '../../../../components/ui/ConfirmationDialog'; // Novo componente de diálogo
+import { type DeliveryArea } from '../../../../types';
 
 const AdminDeliveryAreaManagementPage: React.FC = () => {
-  const [deliveryAreas, setDeliveryAreas] = useState<DeliveryArea[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [currentArea, setCurrentArea] = useState<DeliveryArea | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-
-  const [formData, setFormData] = useState<DeliveryAreaFormData>({
-    district_name: '',
-    delivery_fee: '',
-  });
-
   const notification = useNotification();
+  const { 
+    data: deliveryAreas, 
+    loading, 
+    error, 
+    execute: fetchDeliveryAreas,
+    setData: setDeliveryAreasManually,
+  } = useLoading<DeliveryArea[]>();
 
-  const fetchDeliveryAreas = async () => {
-    try {
-      setLoading(true);
-      const data = await ApiService.getDeliveryAreas();
-      setDeliveryAreas(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao buscar áreas de entrega.');
-      notification.showError('Erro ao carregar áreas de entrega.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [selectedDeliveryArea, setSelectedDeliveryArea] = useState<DeliveryArea | null>(null);
+  const [isConfirmDeleteModalOpen, setIsConfirmDeleteModalOpen] = useState(false);
+  const [areaToDeleteId, setAreaToDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchDeliveryAreas();
+    loadDeliveryAreas();
   }, []);
 
-  const handleOpenDialog = (area?: DeliveryArea) => {
-    if (area) {
-      setCurrentArea(area);
-      setFormData({
-        district_name: area.district_name,
-        delivery_fee: area.delivery_fee.toFixed(2),
-      });
-    } else {
-      setCurrentArea(null);
-      setFormData({
-        district_name: '',
-        delivery_fee: '',
-      });
-    }
-    setOpenDialog(true);
+  const loadDeliveryAreas = async () => {
+    await fetchDeliveryAreas(
+      api.getDeliveryAreas(),
+      undefined,
+      "Erro ao carregar áreas de entrega."
+    );
   };
 
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
+  const handleAddArea = () => {
+    setSelectedDeliveryArea(null);
+    setIsFormModalOpen(true);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const handleEditArea = (area: DeliveryArea) => {
+    setSelectedDeliveryArea(area);
+    setIsFormModalOpen(true);
   };
 
-  const handleSubmit = async () => {
-    try {
-      setIsSaving(true);
-      if (!formData.district_name || formData.delivery_fee === '') {
-        notification.showError('Nome do bairro e taxa de entrega são obrigatórios.');
-        setIsSaving(false);
-        return;
-      }
-
-      const fee = parseFloat(formData.delivery_fee);
-      if (isNaN(fee) || fee < 0) {
-        notification.showError('Taxa de entrega inválida. Deve ser um número não negativo.');
-        setIsSaving(false);
-        return;
-      }
-
-      if (currentArea) {
-        await ApiService.updateDeliveryArea(currentArea.id, { district_name: formData.district_name, delivery_fee: fee });
-        notification.showSuccess('Área de entrega atualizada com sucesso!');
-      } else {
-        await ApiService.createDeliveryArea({ district_name: formData.district_name, delivery_fee: fee });
-        notification.showSuccess('Área de entrega adicionada com sucesso!');
-      }
-      fetchDeliveryAreas();
-      handleCloseDialog();
-    } catch (err) {
-      notification.showError(err instanceof Error ? err.message : 'Erro ao salvar área de entrega.');
-    } finally {
-      setIsSaving(false);
-    }
+  const handleDeleteArea = (id: string) => {
+    setAreaToDeleteId(id);
+    setIsConfirmDeleteModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir esta área de entrega?')) {
+  const confirmDelete = async () => {
+    if (areaToDeleteId) {
       try {
-        await ApiService.deleteDeliveryArea(id);
-        setDeliveryAreas(prev => prev.filter(area => area.id !== id));
-        notification.showSuccess('Área de entrega excluída com sucesso!');
-      } catch (err) {
-        notification.showError(err instanceof Error ? err.message : 'Erro ao excluir área de entrega.');
+        await api.deleteDeliveryArea(areaToDeleteId);
+        notification.showSuccess("Área de entrega removida com sucesso!");
+        setDeliveryAreasManually(prev => prev ? prev.filter(area => area.id !== areaToDeleteId) : []);
+      } catch (err: any) {
+        notification.showError(err.message || "Falha ao remover área de entrega.");
+      } finally {
+        setIsConfirmDeleteModalOpen(false);
+        setAreaToDeleteId(null);
       }
     }
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <CircularProgress />
-        <Typography variant="h6" sx={{ ml: 2 }}>Carregando áreas de entrega...</Typography>
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error" sx={{ mb: 2 }}>
-          Erro: {error}
-        </Alert>
-        <Button variant="contained" onClick={fetchDeliveryAreas}>
-          Tentar novamente
-        </Button>
-      </Box>
-    );
-  }
+  const handleSaveDeliveryArea = async (data: { district_name: string; delivery_fee: number }) => {
+    try {
+      let savedArea: DeliveryArea;
+      if (selectedDeliveryArea) {
+        savedArea = await api.updateDeliveryArea(selectedDeliveryArea.id.toString(), data);
+        notification.showSuccess("Área de entrega atualizada com sucesso!");
+        setDeliveryAreasManually(prev => prev ? prev.map(area => (area.id === savedArea.id ? savedArea : area)) : []);
+      } else {
+        savedArea = await api.createDeliveryArea(data);
+        notification.showSuccess("Área de entrega adicionada com sucesso!");
+        setDeliveryAreasManually(prev => prev ? [...prev, savedArea] : []);
+      }
+      setIsFormModalOpen(false);
+    } catch (err: any) {
+      notification.showError(err.message || "Falha ao salvar área de entrega.");
+    }
+  };
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Gerenciamento de Áreas de Entrega</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog()}
-        >
-          Adicionar Nova Área
-        </Button>
-      </Box>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Gerenciar Áreas de Entrega
+      </Typography>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+        Defina as áreas onde seu restaurante faz entregas e suas respectivas taxas.
+      </Typography>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Bairro</TableCell>
-              <TableCell>Taxa de Entrega</TableCell>
-              <TableCell>Ações</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {deliveryAreas.length === 0 ? (
+      <Button
+        variant="contained"
+        color="primary"
+        startIcon={<AddIcon />}
+        onClick={handleAddArea}
+        sx={{ mb: 3 }}
+      >
+        Adicionar Nova Área
+      </Button>
+
+      {loading && <CircularProgress sx={{ display: 'block', margin: '20px auto' }} />}
+      {error && (
+        <Typography color="error" sx={{ mt: 2 }}>
+          {error}
+        </Typography>
+      )}
+
+      {!loading && !error && (deliveryAreas?.length === 0 ? (
+        <Typography variant="h6" color="text.secondary" sx={{ mt: 4, textAlign: 'center' }}>
+          Nenhuma área de entrega cadastrada.
+        </Typography>
+      ) : (
+        <TableContainer component={Paper} elevation={3}>
+          <Table>
+            <TableHead>
               <TableRow>
-                <TableCell colSpan={4} align="center">
-                  <Typography variant="body1">Nenhuma área de entrega cadastrada.</Typography>
-                </TableCell>
+                <TableCell>Bairro</TableCell>
+                <TableCell>Taxa de Entrega</TableCell>
+                <TableCell>Ações</TableCell>
               </TableRow>
-            ) : (
-              deliveryAreas.map((area) => (
+            </TableHead>
+            <TableBody>
+              {deliveryAreas?.map((area) => (
                 <TableRow key={area.id}>
-                  <TableCell>{area.id}</TableCell>
                   <TableCell>{area.district_name}</TableCell>
                   <TableCell>R$ {area.delivery_fee.toFixed(2)}</TableCell>
                   <TableCell>
-                    <IconButton
-                      color="primary"
-                      onClick={() => handleOpenDialog(area)}
-                      size="small"
-                    >
+                    <IconButton color="primary" onClick={() => handleEditArea(area)}>
                       <EditIcon />
                     </IconButton>
-                    <IconButton
-                      color="error"
-                      onClick={() => handleDelete(area.id)}
-                      size="small"
-                    >
+                    <IconButton color="error" onClick={() => handleDeleteArea(area.id.toString())}>
                       <DeleteIcon />
                     </IconButton>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      ))}
 
-      <Dialog
-        open={openDialog}
-        onClose={handleCloseDialog}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {currentArea ? 'Editar Área de Entrega' : 'Adicionar Nova Área de Entrega'}
-          <IconButton onClick={handleCloseDialog} size="small">
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
+      <Dialog open={isFormModalOpen} onClose={() => setIsFormModalOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{selectedDeliveryArea ? "Editar Área de Entrega" : "Adicionar Nova Área de Entrega"}</DialogTitle>
         <DialogContent dividers>
-          <TextField
-            fullWidth
-            label="Nome do Bairro"
-            name="district_name"
-            value={formData.district_name}
-            onChange={handleInputChange}
-            margin="normal"
-            required
-          />
-          <TextField
-            fullWidth
-            label="Taxa de Entrega (R$)"
-            name="delivery_fee"
-            value={formData.delivery_fee}
-            onChange={handleInputChange}
-            margin="normal"
-            type="number"
-            inputProps={{ step: "0.01", min: "0" }}
-            required
+          <DeliveryAreaForm
+            initialData={selectedDeliveryArea}
+            onSubmit={handleSaveDeliveryArea}
+            onCancel={() => setIsFormModalOpen(false)}
+            isSaving={loading}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog} color="inherit">
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            color="primary"
-            disabled={isSaving}
-          >
-            {isSaving ? 'Salvando...' : 'Salvar'}
-          </Button>
-        </DialogActions>
       </Dialog>
+
+      <ConfirmationDialog
+        open={isConfirmDeleteModalOpen}
+        onClose={() => setIsConfirmDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Confirmar Exclusão"
+        message="Tem certeza que deseja remover esta área de entrega? Esta ação não pode ser desfeita."
+        confirmButtonText="Remover"
+        confirmButtonColor="error"
+      />
     </Box>
   );
 };

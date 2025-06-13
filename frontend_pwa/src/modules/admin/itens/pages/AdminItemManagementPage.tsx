@@ -1,1191 +1,556 @@
-// src/modules/admin/itens/pages/AdminItemManagementPage.tsx
-import React, { useEffect, useState } from "react";
+// frontend_pwa/src/modules/admin/itens/pages/AdminItemManagementPage.tsx
+import React, { useState, useEffect } from 'react';
 import {
-  Typography,
-  Box,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Switch,
-  FormControlLabel,
-  Grid,
-  Chip,
-  Tabs,
-  Tab,
-  Divider,
-  CircularProgress,
-  Alert,
-  Checkbox,
-  FormGroup,
-} from "@mui/material";
-import {
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Add as AddIcon,
-  Close as CloseIcon,
-} from "@mui/icons-material";
-import ApiService from "../../../shared/services/ApiService";
-import { useNotification } from "../../../../contexts/NotificationContext";
-import { ImageUpload } from "../../../../components/UI/ImageUpload";
-// Importar todos os tipos do novo caminho centralizado
-import { 
-  type MenuItem as MenuItemC, 
-  type Category, 
-  type AddonCategory, 
-  type AddonOption, 
-  type MenuItemFormData, 
-  type CategoryFormData, 
-  type AddonCategoryFormData, 
-  type AddonOptionFormData 
-} from '../../../../types'; 
+  Box, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer,
+  TableHead, TableRow, IconButton, CircularProgress, Dialog, DialogTitle, DialogContent,
+  Chip, Tabs, Tab, TextField, InputAdornment
+} from '@mui/material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Search as SearchIcon } from '@mui/icons-material';
+import api from '../../../../api/api';
+import { useLoading } from '../../../../hooks/useLoading';
+import { useNotification } from '../../../../contexts/NotificationContext';
+import MenuItemForm from '../components/MenuItemForm';
+import CategoryForm from '../components/CategoryForm'; // Novo componente de formulário de categoria
+import AddonCategoryForm from '../components/AddonCategoryForm'; // Novo componente de formulário de categoria de adicional
+import AddonOptionForm from '../components/AddonOptionForm'; // Novo componente de formulário de opção de adicional
+import ConfirmationDialog from '../../../../components/ui/ConfirmationDialog';
+import { type MenuItem, type Category, type AddonCategory, type AddonOption } from '../../../../types';
 
 const AdminItemManagementPage: React.FC = () => {
-  const [menuItems, setMenuItems] = useState<MenuItemC[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [openItemDialog, setOpenItemDialog] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [currentItem, setCurrentItem] = useState<MenuItemC | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-
-  const [openCategoryDialog, setOpenCategoryDialog] = useState(false);
-  const [currentCategory, setCurrentCategory] = useState<Category | null>(null);
-  const [isSavingCategory, setIsSavingCategory] = useState(false);
-
-  const [addonCategories, setAddonCategories] = useState<AddonCategory[]>([]);
-  const [openAddonCategoryDialog, setOpenAddonCategoryDialog] = useState(false);
-  const [currentAddonCategory, setCurrentAddonCategory] = useState<AddonCategory | null>(null);
-  const [isSavingAddonCategory, setIsSavingAddonCategory] = useState(false);
-  const [openAddonOptionDialog, setOpenAddonOptionDialog] = useState(false);
-  const [currentAddonOption, setCurrentAddonOption] = useState<AddonOption | null>(null);
-  const [isSavingAddonOption, setIsSavingAddonOption] = useState(false);
-  const [selectedAddonCategoryIdForOption, setSelectedAddonCategoryIdForOption] = useState<string | null>(null);
-
-
-  // Estado para controle de abas
-  const [tabValue, setTabValue] = useState(0);
-
   const notification = useNotification();
 
-  // Form states
-  const [itemFormData, setItemFormData] = useState<MenuItemFormData>({
-    name: "",
-    category_id: "",
-    price: "",
-    description: "",
-    available: true,
-    image_url: "",
-    has_addons: false,
-    addon_category_ids: [],
-  });
+  // Hooks para carregar dados
+  const { data: menuItems, loading: loadingItems, error: itemsError, execute: fetchMenuItems, setData: setMenuItemsManually } = useLoading<MenuItem[]>();
+  const { data: categories, loading: loadingCategories, error: categoriesError, execute: fetchCategories, setData: setCategoriesManually } = useLoading<Category[]>();
+  const { data: addonCategories, loading: loadingAddons, error: addonsError, execute: fetchAddonCategories, setData: setAddonCategoriesManually } = useLoading<AddonCategory[]>();
 
-  const [categoryFormData, setCategoryFormData] = useState<CategoryFormData>({
-    name: "",
-    description: ""
-  });
+  // Estados para modais e formulários
+  const [currentTab, setCurrentTab] = useState(0); // 0: Itens, 1: Categorias, 2: Adicionais
+  const [isMenuItemFormModalOpen, setIsMenuItemFormModalOpen] = useState(false);
+  const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItem | null>(null);
+  const [isCategoryFormModalOpen, setIsCategoryFormModalOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [isAddonCategoryFormModalOpen, setIsAddonCategoryFormModalOpen] = useState(false);
+  const [selectedAddonCategory, setSelectedAddonCategory] = useState<AddonCategory | null>(null);
+  const [isAddonOptionFormModalOpen, setIsAddonOptionFormModalOpen] = useState(false);
+  const [selectedAddonOption, setSelectedAddonOption] = useState<AddonOption | null>(null);
+  const [currentAddonCategoryForOption, setCurrentAddonCategoryForOption] = useState<AddonCategory | null>(null); // Para gerenciar opções
+  
+  const [isConfirmDeleteModalOpen, setIsConfirmDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ type: 'menuItem' | 'category' | 'addonCategory' | 'addonOption', id: string } | null>(null);
 
-  const [addonCategoryFormData, setAddonCategoryFormData] = useState<AddonCategoryFormData>({
-    name: "",
-    min_selections: 0,
-    max_selections: 0,
-    is_required: false,
-  });
-
-  const [addonOptionFormData, setAddonOptionFormData] = useState<AddonOptionFormData>({
-    name: "",
-    price: ""
-  });
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-
-      const categoriesData = await ApiService.getCategories();
-      setCategories(categoriesData.map((cat: any) => ({ ...cat, id: String(cat.id) })));
-
-      const addonCategoriesData = await ApiService.getAddonCategories();
-      setAddonCategories(addonCategoriesData.map((cat: any) => ({
-        ...cat,
-        id: String(cat.id),
-        options: cat.options.map((opt: any) => ({ ...opt, id: String(opt.id), addon_category_id: String(opt.addon_category_id) }))
-      })));
-
-      const itemsData = await ApiService.getMenuItems();
-      setMenuItems(itemsData.map((item: any) => ({
-        ...item,
-        id: String(item.id),
-        category_id: String(item.category_id), 
-        addon_categories: item.addon_categories ? item.addon_categories.map((ac: any) => ({ ...ac, id: String(ac.id) })) : []
-      })));
-
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao buscar dados.");
-      notification.showError("Erro ao carregar dados do cardápio");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   useEffect(() => {
-    fetchData();
+    loadAllData();
   }, []);
 
-  const handleToggleAvailability = async (itemId: number, currentAvailability: boolean) => {
+  const loadAllData = async () => {
+    await fetchMenuItems(api.getMenuItems(), undefined, "Erro ao carregar itens do menu.");
+    await fetchCategories(api.getCategories(), undefined, "Erro ao carregar categorias.");
+    await fetchAddonCategories(api.getAddonCategories(), undefined, "Erro ao carregar categorias de adicionais.");
+  };
+
+  // Funções de Gerenciamento de Itens do Menu
+  const handleAddMenuItem = () => {
+    setSelectedMenuItem(null);
+    setIsMenuItemFormModalOpen(true);
+  };
+
+  const handleEditMenuItem = (item: MenuItem) => {
+    setSelectedMenuItem(item);
+    setIsMenuItemFormModalOpen(true);
+  };
+
+  const handleDeleteMenuItem = (id: string) => {
+    setItemToDelete({ type: 'menuItem', id });
+    setIsConfirmDeleteModalOpen(true);
+  };
+
+  const handleSaveMenuItem = async (formData: FormData) => {
     try {
-      await ApiService.updateMenuItemAvailability(String(itemId), !currentAvailability);
-
-      setMenuItems(prevItems =>
-        prevItems.map(item =>
-          item.id === itemId ? { ...item, available: !currentAvailability } : item
-        )
-      );
-
-      notification.showSuccess(`Item ${!currentAvailability ? 'disponibilizado' : 'indisponibilizado'} com sucesso`);
-    } catch (error) {
-      notification.showError("Erro ao atualizar disponibilidade do item");
-    }
-  };
-
-  const handleOpenItemDialog = (item?: MenuItemC) => {
-    if (item) {
-      setCurrentItem(item);
-      setItemFormData({
-        name: item.name,
-        category_id: item.category_id,
-        price: item.price.toString(),
-        description: item.description,
-        available: item.available,
-        image_url: item.image_url || "",
-        has_addons: item.has_addons,
-        addon_category_ids: item.addon_categories?.map(ac => String(ac.id)) || [],
-      });
-    } else {
-      setCurrentItem(null);
-      setItemFormData({
-        name: "",
-        category_id: categories.length > 0 ? String(categories[0].id) : "",
-        price: "",
-        description: "",
-        available: true,
-        image_url: "",
-        has_addons: false,
-        addon_category_ids: [],
-      });
-    }
-    setOpenItemDialog(true);
-  };
-
-  const handleCloseItemDialog = () => {
-    setOpenItemDialog(false);
-    setImageFile(null);
-  };
-
-  const handleItemInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | { name?: string; value: unknown }>) => {
-    const { name, value } = e.target;
-    if (name) {
-      setItemFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
-  };
-
-  const handleItemSwitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setItemFormData(prev => ({
-      ...prev,
-      available: e.target.checked
-    }));
-  };
-
-  const handleHasAddonsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setItemFormData(prev => ({
-      ...prev,
-      has_addons: e.target.checked,
-      addon_category_ids: e.target.checked ? prev.addon_category_ids : []
-    }));
-  };
-
-  const handleAddonCategorySelectionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value, checked } = e.target;
-    const categoryIdAsString = String(value); // Garante que o ID do checkbox é uma string
-
-    setItemFormData(prev => {
-      let newAddonCategoryIds: string[];
-
-      if (checked) {
-        if (!prev.addon_category_ids.includes(categoryIdAsString)) {
-          newAddonCategoryIds = [...prev.addon_category_ids, categoryIdAsString];
-        } else {
-          newAddonCategoryIds = [...prev.addon_category_ids]; // Já existe, não faz nada
-        }
+      let savedItem: MenuItem;
+      if (selectedMenuItem) {
+        savedItem = await api.updateMenuItem(selectedMenuItem.id.toString(), formData);
+        notification.showSuccess("Item do menu atualizado com sucesso!");
+        setMenuItemsManually(prev => prev ? prev.map(item => (item.id === savedItem.id ? savedItem : item)) : [savedItem]);
       } else {
-        newAddonCategoryIds = prev.addon_category_ids.filter(id => id !== categoryIdAsString);
+        savedItem = await api.createMenuItem(formData);
+        notification.showSuccess("Item do menu adicionado com sucesso!");
+        setMenuItemsManually(prev => prev ? [...prev, savedItem] : [savedItem]);
       }
-
-      console.log("Checkbox clicado:", { value, checked, currentIds: prev.addon_category_ids, newIds: newAddonCategoryIds });
-      return {
-        ...prev,
-        addon_category_ids: newAddonCategoryIds
-      };
-    });
+      setIsMenuItemFormModalOpen(false);
+    } catch (err: any) {
+      notification.showError(err.message || "Falha ao salvar item do menu.");
+    }
   };
 
-  const handleImageUpload = (file: File) => {
-    setImageFile(file);
-  };
-
-  const handleImageRemove = () => {
-    setImageFile(null);
-    setItemFormData(prev => ({
-      ...prev,
-      image_url: ""
-    }));
-  };
-
-  const handleSubmitItem = async () => {
+  const handleUpdateItemAvailability = async (itemId: string, available: boolean) => {
     try {
-      setIsUploading(true);
+      const updatedItem = await api.updateMenuItemAvailability(itemId, available);
+      notification.showSuccess(`Item "${updatedItem.name}" ${available ? 'disponibilizado' : 'indisponibilizado'} com sucesso!`);
+      setMenuItemsManually(prev => prev ? prev.map(item => (item.id === updatedItem.id ? updatedItem : item)) : []);
+    } catch (err: any) {
+      notification.showError(err.message || "Erro ao atualizar disponibilidade do item.");
+    }
+  };
 
-      if (!itemFormData.name || !itemFormData.category_id || !itemFormData.price) {
-        notification.showError("Preencha todos os campos obrigatórios");
-        setIsUploading(false);
-        return;
-      }
-      if (itemFormData.has_addons && itemFormData.addon_category_ids.length === 0) {
-        notification.showError("Se o item possui adicionais, selecione ao menos uma categoria de adicional.");
-        setIsUploading(false);
-        return;
-      }
+  // Funções de Gerenciamento de Categorias
+  const handleAddCategory = () => {
+    setSelectedCategory(null);
+    setIsCategoryFormModalOpen(true);
+  };
 
+  const handleEditCategory = (category: Category) => {
+    setSelectedCategory(category);
+    setIsCategoryFormModalOpen(true);
+  };
 
-      const formData = new FormData();
-      formData.append("name", itemFormData.name);
-      formData.append("category_id", itemFormData.category_id); // Já é string
-      formData.append("price", itemFormData.price);
-      formData.append("description", itemFormData.description);
-      formData.append("available", itemFormData.available.toString());
-      formData.append("has_addons", itemFormData.has_addons.toString());
+  const handleDeleteCategory = (id: string) => {
+    setItemToDelete({ type: 'category', id });
+    setIsConfirmDeleteModalOpen(true);
+  };
 
-      if (itemFormData.has_addons) {
-        itemFormData.addon_category_ids.forEach(id => {
-          formData.append("addon_category_ids[]", id); // IDs já são strings
-        });
-      }
-
-      if (imageFile) {
-        formData.append("image", imageFile);
-      }
-
-      let response;
-      if (currentItem) {
-        await ApiService.updateMenuItem(String(currentItem.id), formData); 
-        notification.showSuccess("Item atualizado com sucesso");
+  const handleSaveCategory = async (data: { name: string; description?: string }) => {
+    try {
+      let savedCategory: Category;
+      if (selectedCategory) {
+        savedCategory = await api.updateCategory(selectedCategory.id.toString(), data);
+        notification.showSuccess("Categoria atualizada com sucesso!");
+        setCategoriesManually(prev => prev ? prev.map(cat => (cat.id === savedCategory.id ? savedCategory : cat)) : [savedCategory]);
       } else {
-        await ApiService.createMenuItem(formData);
-        notification.showSuccess("Item adicionado com sucesso");
+        savedCategory = await api.createCategory(data);
+        notification.showSuccess("Categoria adicionada com sucesso!");
+        setCategoriesManually(prev => prev ? [...prev, savedCategory] : [savedCategory]);
       }
-
-      fetchData();
-
-      handleCloseItemDialog();
-    } catch (error) {
-      notification.showError("Erro ao salvar item");
-    } finally {
-      setIsUploading(false);
+      setIsCategoryFormModalOpen(false);
+    } catch (err: any) {
+      notification.showError(err.message || "Falha ao salvar categoria.");
     }
   };
 
-  const handleDeleteItem = async (itemId: number) => {
-    if (window.confirm("Tem certeza que deseja excluir este item?")) {
-      try {
-        await ApiService.deleteMenuItem(String(itemId)); 
-        setMenuItems(prevItems => prevItems.filter(item => item.id !== itemId));
-        notification.showSuccess("Item removido com sucesso");
-      } catch (error) {
-        notification.showError("Erro ao remover item");
-      }
-    }
+  // Funções de Gerenciamento de Categorias de Adicionais
+  const handleAddAddonCategory = () => {
+    setSelectedAddonCategory(null);
+    setIsAddonCategoryFormModalOpen(true);
   };
 
-  const handleOpenCategoryDialog = (category?: Category) => {
-    if (category) {
-      setCurrentCategory(category);
-      setCategoryFormData({
-        name: category.name,
-        description: category.description || ""
-      });
-    } else {
-      setCurrentCategory(null);
-      setCategoryFormData({
-        name: "",
-        description: ""
-      });
-    }
-    setOpenCategoryDialog(true);
+  const handleEditAddonCategory = (cat: AddonCategory) => {
+    setSelectedAddonCategory(cat);
+    setIsAddonCategoryFormModalOpen(true);
   };
 
-  const handleCloseCategoryDialog = () => {
-    setOpenCategoryDialog(false);
+  const handleDeleteAddonCategory = (id: string) => {
+    setItemToDelete({ type: 'addonCategory', id });
+    setIsConfirmDeleteModalOpen(true);
   };
 
-  const handleCategoryInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | { name?: string; value: unknown }>) => {
-    const { name, value } = e.target;
-    if (name) {
-      setCategoryFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
-  };
-
-  const handleSubmitCategory = async () => {
+  const handleSaveAddonCategory = async (data: { name: string; min_selections?: number; max_selections?: number; is_required?: boolean }) => {
     try {
-      setIsSavingCategory(true);
-
-      // Validação básica
-      if (!categoryFormData.name) {
-        notification.showError("O nome da categoria é obrigatório");
-        setIsSavingCategory(false);
-        return;
-      }
-
-      if (currentCategory) {
-        await ApiService.updateCategory(String(currentCategory.id), { // Garante que ID é string
-          name: categoryFormData.name,
-          description: categoryFormData.description
-        });
-        notification.showSuccess("Categoria atualizada com sucesso");
-      } else {
-        await ApiService.createCategory({
-          name: categoryFormData.name,
-          description: categoryFormData.description
-        });
-        notification.showSuccess("Categoria adicionada com sucesso");
-      }
-
-      fetchData();
-
-      handleCloseCategoryDialog();
-    } catch (error) {
-      notification.showError("Erro ao salvar categoria");
-    } finally {
-      setIsSavingCategory(false);
-    }
-  };
-
-  const handleDeleteCategory = async (categoryId: string) => {
-    const itemsUsingCategory = menuItems.filter(item => item.category_id === categoryId);
-
-    if (itemsUsingCategory.length > 0) {
-      notification.showError(`Não é possível excluir esta categoria. Existem ${itemsUsingCategory.length} itens associados a ela.`);
-      return;
-    }
-
-    if (window.confirm("Tem certeza que deseja excluir esta categoria?")) {
-      try {
-        await ApiService.deleteCategory(String(categoryId)); // Garante que categoryId é string
-        setCategories(prevCategories => prevCategories.filter(cat => cat.id !== categoryId));
-        notification.showSuccess("Categoria removida com sucesso");
-      } catch (error) {
-        notification.showError("Erro ao remover categoria");
-      }
-    }
-  };
-
-  const handleOpenAddonCategoryDialog = (cat?: AddonCategory) => {
-    if (cat) {
-      setCurrentAddonCategory(cat);
-      setAddonCategoryFormData({
-        name: cat.name,
-        min_selections: cat.min_selections,
-        max_selections: cat.max_selections,
-        is_required: cat.is_required,
-      });
-    } else {
-      setCurrentAddonCategory(null);
-      setAddonCategoryFormData({
-        name: "",
-        min_selections: 0,
-        max_selections: 0,
-        is_required: false,
-      });
-    }
-    setOpenAddonCategoryDialog(true);
-  };
-
-  const handleCloseAddonCategoryDialog = () => {
-    setOpenAddonCategoryDialog(false);
-  };
-
-  const handleAddonCategoryInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | { name?: string; value: unknown }>) => {
-    const { name, value } = e.target;
-    if (name) {
-      setAddonCategoryFormData(prev => ({
-        ...prev,
-        [name]: name === "min_selections" || name === "max_selections" ? parseInt(value as string) : value
-      }));
-    }
-  };
-
-  const handleAddonCategorySwitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAddonCategoryFormData(prev => ({
-      ...prev,
-      is_required: e.target.checked
-    }));
-  };
-
-  const handleSubmitAddonCategory = async () => {
-    try {
-      setIsSavingAddonCategory(true);
-      if (!addonCategoryFormData.name) {
-        notification.showError("O nome da categoria de adicional é obrigatório.");
-        setIsSavingAddonCategory(false);
-        return;
-      }
-
-      if (currentAddonCategory) {
-        await ApiService.updateAddonCategory(String(currentAddonCategory.id), addonCategoryFormData); // Garante que ID é string
+      let savedAddonCategory: AddonCategory;
+      if (selectedAddonCategory) {
+        savedAddonCategory = await api.updateAddonCategory(selectedAddonCategory.id.toString(), data);
         notification.showSuccess("Categoria de adicional atualizada com sucesso!");
+        setAddonCategoriesManually(prev => prev ? prev.map(cat => (cat.id === savedAddonCategory.id ? savedAddonCategory : cat)) : [savedAddonCategory]);
       } else {
-        await ApiService.createAddonCategory(addonCategoryFormData);
+        savedAddonCategory = await api.createAddonCategory(data);
         notification.showSuccess("Categoria de adicional adicionada com sucesso!");
+        setAddonCategoriesManually(prev => prev ? [...prev, savedAddonCategory] : [savedAddonCategory]);
       }
-      fetchData(); 
-      handleCloseAddonCategoryDialog();
-    } catch (error) {
-      notification.showError("Erro ao salvar categoria de adicional.");
-    } finally {
-      setIsSavingAddonCategory(false);
+      setIsAddonCategoryFormModalOpen(false);
+    } catch (err: any) {
+      notification.showError(err.message || "Falha ao salvar categoria de adicional.");
     }
   };
 
-  const handleDeleteAddonCategory = async (id: string) => {
-    if (window.confirm("Tem certeza que deseja excluir esta categoria de adicional? Isso também a removerá de quaisquer itens associados.")) {
-      try {
-        await ApiService.deleteAddonCategory(String(id)); 
-        fetchData();
-        notification.showSuccess("Categoria de adicional removida com sucesso!");
-      } catch (error) {
-        notification.showError("Erro ao remover categoria de adicional. Verifique se não há itens associados a ela ou opções de adicional.");
-      }
-    }
+  // Funções de Gerenciamento de Opções de Adicionais
+  const handleAddAddonOption = (addonCategory: AddonCategory) => {
+    setCurrentAddonCategoryForOption(addonCategory);
+    setSelectedAddonOption(null);
+    setIsAddonOptionFormModalOpen(true);
   };
 
-  const handleOpenAddonOptionDialog = (addonCategoryId: string, option?: AddonOption) => {
-    setSelectedAddonCategoryIdForOption(String(addonCategoryId)); 
-    if (option) {
-      setCurrentAddonOption(option);
-      setAddonOptionFormData({
-        name: option.name,
-        price: option.price.toString()
-      });
-    } else {
-      setCurrentAddonOption(null);
-      setAddonOptionFormData({
-        name: "",
-        price: ""
-      });
-    }
-    setOpenAddonOptionDialog(true);
+  const handleEditAddonOption = (option: AddonOption, addonCategory: AddonCategory) => {
+    setCurrentAddonCategoryForOption(addonCategory);
+    setSelectedAddonOption(option);
+    setIsAddonOptionFormModalOpen(true);
   };
 
-  const handleCloseAddonOptionDialog = () => {
-    setOpenAddonOptionDialog(false);
-    setSelectedAddonCategoryIdForOption(null);
+  const handleDeleteAddonOption = (id: string) => {
+    setItemToDelete({ type: 'addonOption', id });
+    setIsConfirmDeleteModalOpen(true);
   };
 
-  const handleAddonOptionInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | { name?: string; value: unknown }>) => {
-    const { name, value } = e.target;
-    if (name) {
-      setAddonOptionFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
-  };
+  const handleSaveAddonOption = async (data: { name: string; price: number }) => {
+    if (!currentAddonCategoryForOption) return; // Não deve acontecer se o fluxo estiver correto
 
-  const handleSubmitAddonOption = async () => {
-    if (!selectedAddonCategoryIdForOption) {
-      notification.showError("ID da categoria de adicional não especificado.");
-      return;
-    }
     try {
-      setIsSavingAddonOption(true);
-      if (!addonOptionFormData.name || !addonOptionFormData.price) {
-        notification.showError("Preencha todos os campos da opção de adicional.");
-        setIsSavingAddonOption(false);
-        return;
-      }
-      const price = parseFloat(addonOptionFormData.price);
-      if (isNaN(price) || price < 0) {
-        notification.showError("Preço inválido para a opção de adicional.");
-        setIsSavingAddonOption(false);
-        return;
-      }
-
-      if (currentAddonOption) {
-        await ApiService.updateAddonOption(String(currentAddonOption.id), { // Garante que ID é string
-          name: addonOptionFormData.name,
-          price: price
-        });
+      let savedOption: AddonOption;
+      if (selectedAddonOption) {
+        savedOption = await api.updateAddonOption(selectedAddonOption.id.toString(), data);
         notification.showSuccess("Opção de adicional atualizada com sucesso!");
       } else {
-        await ApiService.createAddonOption(selectedAddonCategoryIdForOption, {
-          name: addonOptionFormData.name,
-          price: price
-        });
+        savedOption = await api.createAddonOption(currentAddonCategoryForOption.id.toString(), data);
         notification.showSuccess("Opção de adicional adicionada com sucesso!");
       }
-      fetchData(); 
-      handleCloseAddonOptionDialog();
-    } catch (error) {
-      notification.showError("Erro ao salvar opção de adicional.");
-    } finally {
-      setIsSavingAddonOption(false);
+      // Re-fetch all addon categories to ensure data consistency
+      await fetchAddonCategories(api.getAddonCategories(), undefined, "Erro ao recarregar categorias de adicionais após alteração.");
+      setIsAddonOptionFormModalOpen(false);
+    } catch (err: any) {
+      notification.showError(err.message || "Falha ao salvar opção de adicional.");
     }
   };
 
-  const handleDeleteAddonOption = async (id: string) => {
-    if (window.confirm("Tem certeza que deseja excluir esta opção de adicional?")) {
-      try {
-        await ApiService.deleteAddonOption(String(id)); // Garante que ID é string
-        fetchData();
-        notification.showSuccess("Opção de adicional removida com sucesso!");
-      } catch (error) {
-        notification.showError("Erro ao remover opção de adicional.");
+
+  // Confirmação de exclusão genérica
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    try {
+      switch (itemToDelete.type) {
+        case 'menuItem':
+          await api.deleteMenuItem(itemToDelete.id);
+          notification.showSuccess("Item do menu removido com sucesso!");
+          setMenuItemsManually(prev => prev ? prev.filter(item => item.id !== itemToDelete.id) : []);
+          break;
+        case 'category':
+          await api.deleteCategory(itemToDelete.id);
+          notification.showSuccess("Categoria removida com sucesso!");
+          setCategoriesManually(prev => prev ? prev.filter(cat => cat.id !== itemToDelete.id) : []);
+          break;
+        case 'addonCategory':
+          await api.deleteAddonCategory(itemToDelete.id);
+          notification.showSuccess("Categoria de adicional removida com sucesso!");
+          setAddonCategoriesManually(prev => prev ? prev.filter(cat => cat.id !== itemToDelete.id) : []);
+          break;
+        case 'addonOption':
+          await api.deleteAddonOption(itemToDelete.id);
+          notification.showSuccess("Opção de adicional removida com sucesso!");
+          // Após deletar uma opção, você precisa recarregar a categoria de adicionais para atualizar a lista de opções
+          await fetchAddonCategories(api.getAddonCategories(), undefined, "Erro ao recarregar categorias de adicionais após exclusão.");
+          break;
       }
+    } catch (err: any) {
+      notification.showError(err.message || `Falha ao remover ${itemToDelete.type}.`);
+    } finally {
+      setIsConfirmDeleteModalOpen(false);
+      setItemToDelete(null);
     }
   };
 
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
+  const getLoadingMessage = () => {
+    if (loadingItems) return "Carregando itens do menu...";
+    if (loadingCategories) return "Carregando categorias...";
+    if (loadingAddons) return "Carregando adicionais...";
+    return "Carregando...";
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <CircularProgress />
-        <Typography variant="h6" sx={{ ml: 2 }}>Carregando dados...</Typography>
-      </Box>
-    );
-  }
+  const getErrorMessage = () => {
+    if (itemsError) return `Erro ao carregar itens: ${itemsError}`;
+    if (categoriesError) return `Erro ao carregar categorias: ${categoriesError}`;
+    if (addonsError) return `Erro ao carregar adicionais: ${addonsError}`;
+    return null;
+  };
 
-  if (error) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error" sx={{ mb: 2 }}>
-          Erro: {error}
-        </Alert>
-        <Button variant="contained" onClick={fetchData}>
-          Tentar novamente
-        </Button>
-      </Box>
-    );
-  }
+  const loading = loadingItems || loadingCategories || loadingAddons;
+  const error = getErrorMessage();
+
+  const filteredItems = menuItems?.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.category_name.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Gerenciamento do Cardápio</Typography>
-      </Box>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Gerenciamento de Cardápio
+      </Typography>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+        Gerencie itens do menu, categorias e adicionais do seu restaurante.
+      </Typography>
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={tabValue} onChange={handleTabChange} aria-label="gerenciamento de cardápio">
-          <Tab label="Itens" id="tab-0" />
-          <Tab label="Categorias" id="tab-1" />
-          <Tab label="Adicionais" id="tab-2" /> 
+        <Tabs value={currentTab} onChange={(_e, newValue) => setCurrentTab(newValue)} aria-label="Gerenciamento de Cardápio">
+          <Tab label="Itens do Menu" />
+          <Tab label="Categorias" />
+          <Tab label="Adicionais" />
         </Tabs>
       </Box>
 
-      <div role="tabpanel" hidden={tabValue !== 0}>
-        {tabValue === 0 && (
-          <>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => handleOpenItemDialog()}
-              >
-                Adicionar Novo Item
-              </Button>
-            </Box>
+      {loading && <CircularProgress sx={{ display: 'block', margin: '20px auto' }} />}
+      {error && (
+        <Typography color="error" sx={{ mt: 2 }}>
+          {error}
+        </Typography>
+      )}
 
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Nome</TableCell>
-                    <TableCell>Categoria</TableCell>
-                    <TableCell>Preço</TableCell>
-                    <TableCell>Disponível</TableCell>
-                    <TableCell>Adicionais</TableCell>
-                    <TableCell>Ações</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {menuItems.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} align="center">
-                        <Typography variant="body1">Nenhum item cadastrado.</Typography>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    menuItems.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>{item.id}</TableCell>
-                        <TableCell>{item.name}</TableCell>
-                        <TableCell>
-                          <Chip label={item.category_name} size="small" />
-                        </TableCell>
-                        <TableCell>R$ {item.price.toFixed(2)}</TableCell>
-                        <TableCell>
-                          <Switch
-                            checked={item.available}
-                            onChange={() => handleToggleAvailability(item.id, item.available)}
-                            color="primary"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={item.has_addons ? "Sim" : "Não"}
-                            color={item.has_addons ? "info" : "default"}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <IconButton
-                            color="primary"
-                            onClick={() => handleOpenItemDialog(item)}
-                            size="small"
-                          >
-                            <EditIcon />
-                          </IconButton>
-                          <IconButton
-                            color="error"
-                            onClick={() => handleDeleteItem(item.id)}
-                            size="small"
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </TableCell>
+      {!loading && !error && (
+        <>
+          {currentTab === 0 && ( // Itens do Menu
+            <Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<AddIcon />}
+                  onClick={handleAddMenuItem}
+                >
+                  Adicionar Novo Item
+                </Button>
+                <TextField
+                  label="Buscar itens"
+                  variant="outlined"
+                  size="small"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Box>
+
+              {filteredItems.length === 0 ? (
+                <Typography variant="h6" color="text.secondary" sx={{ mt: 4, textAlign: 'center' }}>
+                  Nenhum item encontrado.
+                </Typography>
+              ) : (
+                <TableContainer component={Paper} elevation={3}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Imagem</TableCell>
+                        <TableCell>Nome</TableCell>
+                        <TableCell>Categoria</TableCell>
+                        <TableCell>Preço</TableCell>
+                        <TableCell>Disponível</TableCell>
+                        <TableCell>Adicionais</TableCell>
+                        <TableCell>Ações</TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </>
-        )}
-      </div>
-
-      <div role="tabpanel" hidden={tabValue !== 1}>
-        {tabValue === 1 && (
-          <>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => handleOpenCategoryDialog()}
-              >
-                Adicionar Nova Categoria
-              </Button>
-            </Box>
-
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Nome</TableCell>
-                    <TableCell>Descrição</TableCell>
-                    <TableCell>Itens</TableCell>
-                    <TableCell>Ações</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {categories.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} align="center">
-                        <Typography variant="body1">Nenhuma categoria cadastrada.</Typography>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    categories.map((category) => {
-                      const itemCount = menuItems.filter(item => item.category_id === category.id).length;
-
-                      return (
-                        <TableRow key={category.id}>
-                          <TableCell>{category.id}</TableCell>
-                          <TableCell>{category.name}</TableCell>
-                          <TableCell>{category.description || "-"}</TableCell>
+                    </TableHead>
+                    <TableBody>
+                      {filteredItems.map((item) => (
+                        <TableRow key={item.id}>
                           <TableCell>
-                            <Chip
-                              label={`${itemCount} ${itemCount === 1 ? 'item' : 'itens'}`}
-                              size="small"
-                              color={itemCount > 0 ? "primary" : "default"}
-                              variant={itemCount > 0 ? "filled" : "outlined"}
+                            {item.image_url ? (
+                              <img src={item.image_url} alt={item.name} style={{ width: 50, height: 50, borderRadius: '4px', objectFit: 'cover' }} />
+                            ) : (
+                              <ImageIcon color="action" sx={{ fontSize: 50 }} />
+                            )}
+                          </TableCell>
+                          <TableCell>{item.name}</TableCell>
+                          <TableCell>{item.category_name}</TableCell>
+                          <TableCell>R$ {item.price.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <Switch
+                              checked={item.available}
+                              onChange={() => handleUpdateItemAvailability(item.id.toString(), !item.available)}
+                              color="primary"
+                              inputProps={{ 'aria-label': 'toggle availability' }}
                             />
                           </TableCell>
                           <TableCell>
-                            <IconButton
-                              color="primary"
-                              onClick={() => handleOpenCategoryDialog(category)}
-                              size="small"
-                            >
+                            {item.has_addons ? <Chip label="Sim" color="info" size="small" /> : <Chip label="Não" size="small" />}
+                          </TableCell>
+                          <TableCell>
+                            <IconButton color="primary" onClick={() => handleEditMenuItem(item)}>
                               <EditIcon />
                             </IconButton>
-                            <IconButton
-                              color="error"
-                              onClick={() => handleDeleteCategory(category.id)}
-                              size="small"
-                              disabled={itemCount > 0}
-                              title={itemCount > 0 ? "Não é possível excluir categorias com itens associados" : "Excluir categoria"}
-                            >
+                            <IconButton color="error" onClick={() => handleDeleteMenuItem(item.id.toString())}>
                               <DeleteIcon />
                             </IconButton>
                           </TableCell>
                         </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </>
-        )}
-      </div>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </Box>
+          )}
 
-      <div role="tabpanel" hidden={tabValue !== 2}>
-        {tabValue === 2 && (
-          <>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+          {currentTab === 1 && ( // Categorias
+            <Box>
               <Button
                 variant="contained"
+                color="primary"
                 startIcon={<AddIcon />}
-                onClick={() => handleOpenAddonCategoryDialog()}
+                onClick={handleAddCategory}
+                sx={{ mb: 3 }}
+              >
+                Adicionar Nova Categoria
+              </Button>
+              {categories?.length === 0 ? (
+                <Typography variant="h6" color="text.secondary" sx={{ mt: 4, textAlign: 'center' }}>
+                  Nenhuma categoria cadastrada.
+                </Typography>
+              ) : (
+                <TableContainer component={Paper} elevation={3}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Nome</TableCell>
+                        <TableCell>Descrição</TableCell>
+                        <TableCell>Ações</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {categories?.map((category) => (
+                        <TableRow key={category.id}>
+                          <TableCell>{category.name}</TableCell>
+                          <TableCell>{category.description || '-'}</TableCell>
+                          <TableCell>
+                            <IconButton color="primary" onClick={() => handleEditCategory(category)}>
+                              <EditIcon />
+                            </IconButton>
+                            <IconButton color="error" onClick={() => handleDeleteCategory(category.id.toString())}>
+                              <DeleteIcon />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </Box>
+          )}
+
+          {currentTab === 2 && ( // Adicionais
+            <Box>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<AddIcon />}
+                onClick={handleAddAddonCategory}
+                sx={{ mb: 3 }}
               >
                 Adicionar Nova Categoria de Adicional
               </Button>
-            </Box>
 
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Nome da Categoria</TableCell>
-                    <TableCell>Mín. Seleções</TableCell>
-                    <TableCell>Máx. Seleções</TableCell>
-                    <TableCell>Obrigatório</TableCell>
-                    <TableCell>Opções</TableCell>
-                    <TableCell>Ações</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {addonCategories.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} align="center">
-                        <Typography variant="body1">Nenhuma categoria de adicional cadastrada.</Typography>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    addonCategories.map((cat) => (
-                      <TableRow key={cat.id}>
-                        <TableCell>{cat.id}</TableCell>
-                        <TableCell>{cat.name}</TableCell>
-                        <TableCell>{cat.min_selections}</TableCell>
-                        <TableCell>{cat.max_selections}</TableCell>
-                        <TableCell>
-                          <Chip label={cat.is_required ? "Sim" : "Não"} color={cat.is_required ? "secondary" : "default"} size="small" />
-                        </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                            {cat.options.length > 0 ? (
-                              cat.options.map(opt => (
-                                <Box key={opt.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #eee', borderRadius: '4px', p: 0.5 }}>
-                                  <Typography variant="body2">{opt.name} (R$ {opt.price.toFixed(2)})</Typography>
-                                  <IconButton size="small" color="error" onClick={() => handleDeleteAddonOption(opt.id)}>
-                                    <DeleteIcon fontSize="small" />
-                                  </IconButton>
-                                </Box>
-                              ))
-                            ) : (
-                              <Typography variant="body2" color="text.secondary">Nenhuma opção</Typography>
-                            )}
-                            <Button size="small" startIcon={<AddIcon />} onClick={() => handleOpenAddonOptionDialog(cat.id)}>
-                              Adicionar Opção
-                            </Button>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <IconButton
-                            color="primary"
-                            onClick={() => handleOpenAddonCategoryDialog(cat)}
-                            size="small"
-                          >
-                            <EditIcon />
-                          </IconButton>
-                          <IconButton
-                            color="error"
-                            onClick={() => handleDeleteAddonCategory(cat.id)}
-                            size="small"
-                            disabled={cat.options.length > 0 || menuItems.some(item => item.addon_categories?.some(ac => ac.id === cat.id))}
-                            title={cat.options.length > 0 || menuItems.some(item => item.addon_categories?.some(ac => ac.id === cat.id)) ? "Não é possível excluir categorias de adicional com opções ou itens associados" : "Excluir categoria de adicional"}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </>
-        )}
-      </div>
-
-
-      <Dialog
-        open={openItemDialog}
-        onClose={handleCloseItemDialog}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {currentItem ? "Editar Item" : "Adicionar Novo Item"}
-          <IconButton onClick={handleCloseItemDialog} size="small">
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Nome do Item"
-                name="name"
-                value={itemFormData.name}
-                onChange={handleItemInputChange}
-                margin="normal"
-                required
-              />
-              <FormControl fullWidth margin="normal" required>
-                <InputLabel>Categoria</InputLabel>
-                <Select
-                  name="category_id"
-                  value={itemFormData.category_id}
-                  onChange={handleItemInputChange}
-                  label="Categoria"
-                >
-                  {categories.length === 0 ? (
-                    <MenuItem value="" disabled>
-                      Nenhuma categoria disponível
-                    </MenuItem>
-                  ) : (
-                    categories.map((category) => (
-                      <MenuItem key={category.id} value={category.id}>
-                        {category.name}
-                      </MenuItem>
-                    ))
-                  )}
-                </Select>
-              </FormControl>
-              <TextField
-                fullWidth
-                label="Preço (R$)"
-                name="price"
-                value={itemFormData.price}
-                onChange={handleItemInputChange}
-                margin="normal"
-                type="number"
-                inputProps={{ min: 0, step: 0.01 }}
-                required
-              />
-              <TextField
-                fullWidth
-                label="Descrição"
-                name="description"
-                value={itemFormData.description}
-                onChange={handleItemInputChange}
-                margin="normal"
-                multiline
-                rows={4}
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={itemFormData.available}
-                    onChange={handleItemSwitchChange}
-                    color="primary"
-                  />
-                }
-                label="Disponível"
-                sx={{ mt: 2 }}
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={itemFormData.has_addons}
-                    onChange={handleHasAddonsChange}
-                    color="primary"
-                  />
-                }
-                label="Possui Adicionais"
-                sx={{ mt: 2 }}
-              />
-
-              {itemFormData.has_addons && (
-                <Box sx={{ mt: 2, border: '1px solid #ccc', borderRadius: 1, p: 2 }}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    Categorias de Adicionais para este Item:
-                  </Typography>
-                  <FormGroup>
-                    {addonCategories.length === 0 ? (
+              {addonCategories?.length === 0 ? (
+                <Typography variant="h6" color="text.secondary" sx={{ mt: 4, textAlign: 'center' }}>
+                  Nenhuma categoria de adicional cadastrada.
+                </Typography>
+              ) : (
+                addonCategories?.map(addonCat => (
+                  <Paper key={addonCat.id} elevation={3} sx={{ p: 2, mb: 3 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                      <Typography variant="h6">{addonCat.name} (Min: {addonCat.min_selections}, Max: {addonCat.max_selections}, {addonCat.is_required ? 'Obrigatório' : 'Opcional'})</Typography>
+                      <Box>
+                        <IconButton color="primary" onClick={() => handleAddAddonOption(addonCat)}>
+                          <AddIcon />
+                        </IconButton>
+                        <IconButton color="primary" onClick={() => handleEditAddonCategory(addonCat)}>
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton color="error" onClick={() => handleDeleteAddonCategory(addonCat.id.toString())}>
+                          <DeleteIcon />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>Opções:</Typography>
+                    {addonCat.options.length === 0 ? (
                       <Typography variant="body2" color="text.secondary">
-                        Nenhuma categoria de adicional cadastrada. Crie uma na aba "Adicionais".
+                        Nenhuma opção cadastrada para esta categoria.
                       </Typography>
                     ) : (
-                      addonCategories.map(cat => (
-                        <FormControlLabel
-                          key={cat.id} // Certifique-se que cat.id é único e estável
-                          control={
-                            <Checkbox
-                              // Force a comparação de strings para garantir que .includes funcione
-                              checked={itemFormData.addon_category_ids.includes(String(cat.id))}
-                              onChange={handleAddonCategorySelectionChange}
-                              // Garanta que o valor do checkbox é uma string
-                              value={String(cat.id)}
-                            />
-                          }
-                          label={cat.name}
-                        />
-                      ))
+                      <List dense sx={{ width: '100%' }}>
+                        {addonCat.options.map(option => (
+                          <ListItem
+                            key={option.id}
+                            secondaryAction={
+                              <Box>
+                                <IconButton edge="end" aria-label="edit" onClick={() => handleEditAddonOption(option, addonCat)}>
+                                  <EditIcon color="primary" fontSize="small" />
+                                </IconButton>
+                                <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteAddonOption(option.id.toString())}>
+                                  <DeleteIcon color="error" fontSize="small" />
+                                </IconButton>
+                              </Box>
+                            }
+                          >
+                            <ListItemText primary={`${option.name} (R$ ${option.price.toFixed(2)})`} />
+                          </ListItem>
+                        ))}
+                      </List>
                     )}
-                  </FormGroup>
-                </Box>
+                  </Paper>
+                ))
               )}
+            </Box>
+          )}
+        </>
+      )}
 
-
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Typography variant="subtitle1" gutterBottom>
-                Imagem do Item
-              </Typography>
-              <ImageUpload
-                onImageUpload={handleImageUpload}
-                onImageRemove={handleImageRemove}
-                previewUrl={itemFormData.image_url}
-                isUploading={isUploading}
-              />
-              <Typography variant="body2" color="text.secondary">
-                Adicione uma imagem atraente do seu produto para melhorar as vendas.
-                Recomendamos imagens com fundo claro e boa iluminação.
-              </Typography>
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseItemDialog} color="inherit">
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleSubmitItem}
-            variant="contained"
-            color="primary"
-            disabled={isUploading}
-          >
-            {isUploading ? "Salvando..." : "Salvar"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Dialog para adicionar/editar categoria */}
-      <Dialog
-        open={openCategoryDialog}
-        onClose={handleCloseCategoryDialog}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {currentCategory ? "Editar Categoria" : "Adicionar Nova Categoria"}
-          <IconButton onClick={handleCloseCategoryDialog} size="small">
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
+      {/* Modais de Formulário */}
+      <Dialog open={isMenuItemFormModalOpen} onClose={() => setIsMenuItemFormModalOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>{selectedMenuItem ? "Editar Item do Menu" : "Adicionar Novo Item do Menu"}</DialogTitle>
         <DialogContent dividers>
-          <TextField
-            fullWidth
-            label="Nome da Categoria"
-            name="name"
-            value={categoryFormData.name}
-            onChange={handleCategoryInputChange}
-            margin="normal"
-            required
-          />
-          <TextField
-            fullWidth
-            label="Descrição (opcional)"
-            name="description"
-            value={categoryFormData.description}
-            onChange={handleCategoryInputChange}
-            margin="normal"
-            multiline
-            rows={3}
+          <MenuItemForm
+            initialData={selectedMenuItem}
+            categories={categories || []}
+            addonCategories={addonCategories || []}
+            onSubmit={handleSaveMenuItem}
+            onCancel={() => setIsMenuItemFormModalOpen(false)}
+            isSaving={loadingItems}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseCategoryDialog} color="inherit">
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleSubmitCategory}
-            variant="contained"
-            color="primary"
-            disabled={isSavingCategory}
-          >
-            {isSavingCategory ? "Salvando..." : "Salvar"}
-          </Button>
-        </DialogActions>
       </Dialog>
 
-      {/* Dialog para adicionar/editar Categoria de Adicional (NOVO) */}
-      <Dialog
-        open={openAddonCategoryDialog}
-        onClose={handleCloseAddonCategoryDialog}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {currentAddonCategory ? "Editar Categoria de Adicional" : "Adicionar Nova Categoria de Adicional"}
-          <IconButton onClick={handleCloseAddonCategoryDialog} size="small">
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
+      <Dialog open={isCategoryFormModalOpen} onClose={() => setIsCategoryFormModalOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{selectedCategory ? "Editar Categoria" : "Adicionar Nova Categoria"}</DialogTitle>
         <DialogContent dividers>
-          <TextField
-            fullWidth
-            label="Nome da Categoria de Adicional"
-            name="name"
-            value={addonCategoryFormData.name}
-            onChange={handleAddonCategoryInputChange}
-            margin="normal"
-            required
-          />
-          <TextField
-            fullWidth
-            label="Mínimo de Seleções"
-            name="min_selections"
-            value={addonCategoryFormData.min_selections}
-            onChange={handleAddonCategoryInputChange}
-            margin="normal"
-            type="number"
-            inputProps={{ min: 0 }}
-          />
-          <TextField
-            fullWidth
-            label="Máximo de Seleções"
-            name="max_selections"
-            value={addonCategoryFormData.max_selections}
-            onChange={handleAddonCategoryInputChange}
-            margin="normal"
-            type="number"
-            inputProps={{ min: 0 }}
-          />
-          <FormControlLabel
-            control={
-              <Switch
-                checked={addonCategoryFormData.is_required}
-                onChange={handleAddonCategorySwitchChange}
-                color="primary"
-              />
-            }
-            label="Seleção Obrigatória"
-            sx={{ mt: 2 }}
+          <CategoryForm
+            initialData={selectedCategory}
+            onSubmit={handleSaveCategory}
+            onCancel={() => setIsCategoryFormModalOpen(false)}
+            isSaving={loadingCategories}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseAddonCategoryDialog} color="inherit">
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleSubmitAddonCategory}
-            variant="contained"
-            color="primary"
-            disabled={isSavingAddonCategory}
-          >
-            {isSavingAddonCategory ? "Salvando..." : "Salvar"}
-          </Button>
-        </DialogActions>
       </Dialog>
 
-      <Dialog
-        open={openAddonOptionDialog}
-        onClose={handleCloseAddonOptionDialog}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {currentAddonOption ? "Editar Opção de Adicional" : "Adicionar Nova Opção de Adicional"}
-          <IconButton onClick={handleCloseAddonOptionDialog} size="small">
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
+      <Dialog open={isAddonCategoryFormModalOpen} onClose={() => setIsAddonCategoryFormModalOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{selectedAddonCategory ? "Editar Categoria de Adicional" : "Adicionar Nova Categoria de Adicional"}</DialogTitle>
         <DialogContent dividers>
-          <TextField
-            fullWidth
-            label="Nome da Opção"
-            name="name"
-            value={addonOptionFormData.name}
-            onChange={handleAddonOptionInputChange}
-            margin="normal"
-            required
-          />
-          <TextField
-            fullWidth
-            label="Preço (R$)"
-            name="price"
-            value={addonOptionFormData.price}
-            onChange={handleAddonOptionInputChange}
-            margin="normal"
-            type="number"
-            inputProps={{ min: 0, step: 0.01 }}
-            required
+          <AddonCategoryForm
+            initialData={selectedAddonCategory}
+            onSubmit={handleSaveAddonCategory}
+            onCancel={() => setIsAddonCategoryFormModalOpen(false)}
+            isSaving={loadingAddons}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseAddonOptionDialog} color="inherit">
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleSubmitAddonOption}
-            variant="contained"
-            color="primary"
-            disabled={isSavingAddonOption}
-          >
-            {isSavingAddonOption ? "Salvando..." : "Salvar"}
-          </Button>
-        </DialogActions>
       </Dialog>
+
+      <Dialog open={isAddonOptionFormModalOpen} onClose={() => setIsAddonOptionFormModalOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>{selectedAddonOption ? "Editar Opção de Adicional" : `Adicionar Opção para ${currentAddonCategoryForOption?.name}`}</DialogTitle>
+        <DialogContent dividers>
+          {currentAddonCategoryForOption && (
+            <AddonOptionForm
+              initialData={selectedAddonOption}
+              onSubmit={handleSaveAddonOption}
+              onCancel={() => setIsAddonOptionFormModalOpen(false)}
+              isSaving={loadingAddons}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de Confirmação de Exclusão */}
+      <ConfirmationDialog
+        open={isConfirmDeleteModalOpen}
+        onClose={() => setIsConfirmDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Confirmar Exclusão"
+        message={`Tem certeza que deseja remover este ${itemToDelete?.type === 'menuItem' ? 'item' : itemToDelete?.type === 'category' ? 'categoria' : itemToDelete?.type === 'addonCategory' ? 'categoria de adicional' : 'opção de adicional'}? Esta ação não pode ser desfeita.`}
+        confirmButtonText="Remover"
+        confirmButtonColor="error"
+      />
     </Box>
   );
 };

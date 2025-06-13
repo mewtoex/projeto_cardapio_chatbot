@@ -1,81 +1,89 @@
-// src/modules/admin/auth/components/AdminLoginForm.tsx
-import React, { useState } from "react";
-import AuthService from "../../../shared/services/AuthService";
-import { useAuth } from "../../../auth/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
-import { TextField, Button, Box, Typography, Paper } from '@mui/material'; // Importar Paper para o estilo
+// frontend_pwa/src/modules/admin/auth/components/AdminLoginForm.tsx
+import React from 'react';
+import { TextField, Button, Box, Typography, CircularProgress } from '@mui/material';
+import { useAuth } from '../../../../hooks/useAuth'; // Usando o novo hook de autenticação
+import { useForm } from '../../../../hooks/useForm'; // Usando o hook useForm
+import { useNavigate } from 'react-router-dom';
+
+interface AdminLoginFormData {
+  email: string;
+  password: string;
+}
+
+const initialFormState: AdminLoginFormData = {
+  email: '',
+  password: '',
+};
 
 const AdminLoginForm: React.FC = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setError(null);
-    setLoading(true);
-    try {
-      const response = await AuthService.adminLogin(email, password);
-      login(response.user, response.access_token); // Corrigido para access_token, como em AuthService
-      navigate("/admin/dashboard");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Ocorreu um erro no login.");
+  const { values, handleChange, handleSubmit, errors, isSubmitting } = useForm<AdminLoginFormData>(
+    initialFormState,
+    validateForm
+  );
+
+  function validateForm(formData: AdminLoginFormData): { [key: string]: string } {
+    const newErrors: { [key: string]: string } = {};
+    if (!formData.email) {
+      newErrors.email = "Email é obrigatório.";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Email inválido.";
     }
-    setLoading(false);
+    if (!formData.password) {
+      newErrors.password = "Senha é obrigatória.";
+    }
+    return newErrors;
+  }
+
+  const handleAdminLogin = async () => {
+    try {
+      await login(values, true); // O segundo parâmetro indica que é login de admin
+      navigate('/admin/dashboard'); // Redireciona para o dashboard do admin
+    } catch (error) {
+      // Erro já tratado e notificado pelo useAuth/useLoading
+      console.error("Erro no login do admin (tratado pelo hook):", error);
+    }
   };
 
   return (
-    <Box 
-      component="form" 
-      onSubmit={handleSubmit} 
-      sx={{ 
-        mt: 1, 
-        p: 3, // Adiciona padding dentro do formulário
-        borderRadius: 2, // Borda arredondada
-      }}
-    >
-      {error && (
-        <Typography color="error" variant="body2" sx={{ mb: 2 }}>
-          {error}
-        </Typography>
-      )}
+    <Box component="form" onSubmit={handleSubmit(handleAdminLogin)} sx={{ mt: 3 }}>
+      <Typography variant="h5" component="h2" gutterBottom align="center">
+        Login do Administrador
+      </Typography>
       <TextField
-        margin="normal"
-        required
         fullWidth
-        id="admin-email"
-        label="Email do Administrador"
+        label="Email"
         name="email"
-        autoComplete="email"
-        autoFocus
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        disabled={loading}
+        type="email"
+        value={values.email}
+        onChange={handleChange}
+        margin="normal"
+        error={!!errors.email}
+        helperText={errors.email}
+        required
       />
       <TextField
-        margin="normal"
-        required
         fullWidth
+        label="Senha"
         name="password"
-        label="Senha do Administrador"
         type="password"
-        id="admin-password"
-        autoComplete="current-password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        disabled={loading}
+        value={values.password}
+        onChange={handleChange}
+        margin="normal"
+        error={!!errors.password}
+        helperText={errors.password}
+        required
       />
       <Button
         type="submit"
         fullWidth
         variant="contained"
         sx={{ mt: 3, mb: 2 }}
-        disabled={loading}
+        disabled={isSubmitting || authLoading}
       >
-        {loading ? "Entrando..." : "Entrar como Administrador"}
+        {isSubmitting || authLoading ? <CircularProgress size={24} /> : 'Entrar'}
       </Button>
     </Box>
   );
