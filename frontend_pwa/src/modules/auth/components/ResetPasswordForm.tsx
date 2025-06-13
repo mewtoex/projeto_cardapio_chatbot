@@ -1,4 +1,3 @@
-// frontend_pwa/src/modules/auth/components/ResetPasswordForm.tsx
 import React from 'react';
 import { TextField, Button, Box, CircularProgress, Typography } from '@mui/material';
 import { useForm } from '../../../hooks/useForm';
@@ -16,16 +15,13 @@ const initialFormState: ResetPasswordFormData = {
 };
 
 interface ResetPasswordFormProps {
-  token: string; // Token deve ser passado como prop
+  token: string;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
 const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ token, onSuccess, onCancel }) => {
-  const { values, handleChange, handleSubmit, errors, isSubmitting } = useForm<ResetPasswordFormData>(
-    initialFormState,
-    validateForm
-  );
+  const { values, handleChange, setErrors, isDirty } = useForm<ResetPasswordFormData>(initialFormState);
   const { loading, error, execute } = useLoading();
 
   function validateForm(formData: ResetPasswordFormData): { [key: string]: string } {
@@ -39,7 +35,15 @@ const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ token, onSuccess,
     return newErrors;
   }
 
-  const handleResetPassword = async () => {
+  const handleFormSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    
+    const validationErrors = validateForm(values);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
     try {
       await execute(
         api.resetPassword(token, values.new_password),
@@ -48,12 +52,12 @@ const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ token, onSuccess,
       );
       onSuccess?.();
     } catch (err) {
-      console.error("Falha ao redefinir senha (tratado por hook):", err);
+      console.error("Falha ao redefinir senha:", err);
     }
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit(handleResetPassword)} sx={{ width: '100%' }}>
+    <Box component="form" onSubmit={handleFormSubmit} sx={{ width: '100%' }}>
       <TextField
         fullWidth
         label="Nova Senha"
@@ -63,8 +67,8 @@ const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ token, onSuccess,
         onChange={handleChange}
         margin="normal"
         required
-        error={!!errors.new_password}
-        helperText={errors.new_password}
+        error={!!error}
+        helperText={error}
       />
       <TextField
         fullWidth
@@ -75,12 +79,12 @@ const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ token, onSuccess,
         onChange={handleChange}
         margin="normal"
         required
-        error={!!errors.confirm_password}
-        helperText={errors.confirm_password}
+        error={!!error}
+        helperText={error}
       />
       {error && (
         <Typography color="error" variant="body2" sx={{ mt: 1 }}>
-          {error}
+          {typeof error === 'string' ? error : 'Ocorreu um erro ao redefinir a senha'}
         </Typography>
       )}
       <Button
@@ -88,16 +92,16 @@ const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ token, onSuccess,
         fullWidth
         variant="contained"
         sx={{ mt: 3, mb: 2 }}
-        disabled={isSubmitting || loading}
+        disabled={loading || !isDirty}
       >
-        {isSubmitting || loading ? <CircularProgress size={24} /> : 'Redefinir Senha'}
+        {loading ? <CircularProgress size={24} /> : 'Redefinir Senha'}
       </Button>
       {onCancel && (
         <Button
           fullWidth
           variant="text"
           onClick={onCancel}
-          disabled={isSubmitting || loading}
+          disabled={loading}
         >
           Cancelar
         </Button>

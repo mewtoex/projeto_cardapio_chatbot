@@ -1,4 +1,3 @@
-// frontend_pwa/src/modules/client/pages/ClientOrderHistoryPage.tsx
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, Container, Paper, Table, TableBody, TableCell, TableContainer,
@@ -28,7 +27,7 @@ const ClientOrderHistoryPage: React.FC = () => {
 
   useEffect(() => {
     loadOrders();
-  }, [filterStatus, filterStartDate, filterEndDate]); // Recarrega quando filtros mudam
+  }, [filterStatus, filterStartDate, filterEndDate]); 
 
   const loadOrders = async () => {
     const filters: { status?: string; data_inicio?: string; data_fim?: string } = {};
@@ -199,7 +198,7 @@ const ClientOrderHistoryPage: React.FC = () => {
                         variant="text"
                         color="error"
                         size="small"
-                        onClick={() => { /* Lógica de cancelamento aqui */ }}
+                        onClick={() => {  }}
                         sx={{ ml: 1 }}
                       >
                         Cancelar

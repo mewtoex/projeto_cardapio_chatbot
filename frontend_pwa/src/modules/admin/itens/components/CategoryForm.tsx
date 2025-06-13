@@ -1,4 +1,3 @@
-// frontend_pwa/src/modules/admin/itens/components/CategoryForm.tsx
 import React, { useEffect } from 'react';
 import { TextField, Button, Box, CircularProgress, Typography } from '@mui/material';
 import { useForm } from '../../../../hooks/useForm';
@@ -24,7 +23,7 @@ const initialFormState: CategoryFormData = {
 const CategoryForm: React.FC<CategoryFormProps> = ({
   initialData, onSubmit, onCancel, isSaving
 }) => {
-  const { values, handleChange, handleSubmit, setAllValues, isDirty, errors, setErrors } = useForm<CategoryFormData>(initialFormState, validateForm);
+  const { values, handleChange, setAllValues, isDirty, errors, setErrors } = useForm<CategoryFormData>(initialFormState, validateForm);
 
   useEffect(() => {
     if (initialData) {
@@ -45,12 +44,27 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
     return newErrors;
   }
 
-  const submitForm = async () => {
-    await onSubmit(values);
+  const handleFormSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    
+    const validationErrors = validateForm(values);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    try {
+      await onSubmit({
+        name: values.name,
+        description: values.description || undefined
+      });
+    } catch (error) {
+      console.error("Erro ao salvar categoria:", error);
+    }
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit(submitForm)} sx={{ p: 2 }}>
+    <Box component="form" onSubmit={handleFormSubmit} sx={{ p: 2 }}>
       <TextField
         fullWidth
         label="Nome da Categoria"

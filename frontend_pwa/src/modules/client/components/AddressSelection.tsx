@@ -1,4 +1,3 @@
-// frontend_pwa/src/modules/client/components/AddressSelection.tsx
 import React from 'react';
 import {
   FormControl, FormLabel, RadioGroup, FormControlLabel, Radio,
@@ -46,7 +45,7 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({ addresses, selected
                     )}
                   </Box>
                   <Typography variant="body2" color="text.secondary">
-                    {address.district_name}, {address.city} - {address.state}
+                    {address.district}, {address.city} - {address.state}
                     {address.complement && `, ${address.complement}`}
                   </Typography>
                 </Box>

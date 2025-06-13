@@ -8,7 +8,6 @@ import {
   type AddonCategory, type AddonOption, type MenuItemFormData, 
   type UserProfile, type AuthResponse, type UserLoginData, type UserRegisterData,
   type BotMessage, type BotMessageFormData, type CartItemData, type CartUpdateItem,
-  type StoreSettings
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';

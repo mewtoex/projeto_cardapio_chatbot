@@ -1,4 +1,3 @@
-// frontend_pwa/src/modules/client/pages/ClientOrderItemPage.tsx
 import React, { useEffect, useState } from 'react';
 import {
   Box, Typography, Paper, Grid, Divider, CircularProgress, Button,
@@ -8,7 +7,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../../api/api';
 import { useLoading } from '../../../hooks/useLoading';
 import { useNotification } from '../../../contexts/NotificationContext';
-import ConfirmationDialog from '../../../components/ui/ConfirmationDialog';
+import ConfirmationDialog from '../../../components/UI/ConfirmationDialog';
 import { type Order, OrderStatus, OrderStatusMapping } from '../../../types';
 import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 
@@ -31,7 +30,7 @@ const ClientOrderItemPage: React.FC = () => {
     if (orderId) {
       loadOrderDetails(orderId);
     }
-  }, [orderId]); // Recarrega se o ID do pedido mudar
+  }, [orderId]); 
 
   const loadOrderDetails = async (id: string) => {
     await fetchOrderDetails(
@@ -50,7 +49,7 @@ const ClientOrderItemPage: React.FC = () => {
       try {
         const updatedOrder = await api.cancelClientOrder(orderId);
         notification.showSuccess("Solicitação de cancelamento enviada com sucesso!");
-        setOrderDetailsManually(updatedOrder); // Atualiza o estado local do pedido
+        setOrderDetailsManually(updatedOrder); 
       } catch (err: any) {
         notification.showError(err.message || "Falha ao solicitar cancelamento do pedido.");
       } finally {
@@ -99,7 +98,7 @@ const ClientOrderItemPage: React.FC = () => {
         </Box>
 
         <Grid container spacing={3}>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}> 
             <Typography variant="subtitle1" gutterBottom>
               **Informações do Pedido**
             </Typography>
@@ -127,7 +126,7 @@ const ClientOrderItemPage: React.FC = () => {
               <Typography variant="body2">Nenhum endereço de entrega associado.</Typography>
             )}
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }} >
             <Typography variant="subtitle1" gutterBottom>
               **Itens do Pedido**
             </Typography>

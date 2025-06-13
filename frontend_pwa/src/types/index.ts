@@ -27,7 +27,7 @@ export interface AuthResponse {
     user: User;
 }
 
-export interface Address {
+export interface Address_ {
     id: number;
     user_id: number;
     street: string;
@@ -166,7 +166,7 @@ export interface Order {
     total_amount: number;
     payment_method: string;
     cash_provided?: number; 
-    delivery_address: Address | null; 
+    delivery_address: Address_ | null; 
     items: OrderItem[];
     delivery_fee?: number;
 }
@@ -178,7 +178,7 @@ export interface OrderFilters {
     cliente_id?: string; 
 }
 
-export interface Store {
+export interface Store_ {
     id?: number; 
     name: string;
     address: string;

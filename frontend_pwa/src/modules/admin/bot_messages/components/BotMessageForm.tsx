@@ -1,4 +1,3 @@
-// frontend_pwa/src/modules/admin/bot_messages/components/BotMessageForm.tsx
 import React, { useEffect } from 'react';
 import { TextField, Button, Box, CircularProgress, Typography } from '@mui/material';
 import { useForm } from '../../../../hooks/useForm';
@@ -19,7 +18,7 @@ const initialFormState: BotMessageFormData = {
 const BotMessageForm: React.FC<BotMessageFormProps> = ({
   initialData, onSubmit, onCancel, isSaving
 }) => {
-  const { values, handleChange, handleSubmit, setAllValues, isDirty, errors, setErrors } = useForm<BotMessageFormData>(initialFormState, validateForm);
+  const { values, handleChange, setAllValues, isDirty, errors, setErrors } = useForm<BotMessageFormData>(initialFormState, validateForm);
 
   useEffect(() => {
     if (initialData) {
@@ -28,7 +27,7 @@ const BotMessageForm: React.FC<BotMessageFormProps> = ({
         response_text: initialData.response_text,
       });
     } else {
-      setAllValues(initialFormState); // Reseta para o estado inicial para "nova mensagem"
+      setAllValues(initialFormState);
     }
   }, [initialData, setAllValues]);
 
@@ -43,12 +42,24 @@ const BotMessageForm: React.FC<BotMessageFormProps> = ({
     return newErrors;
   }
 
-  const submitForm = async () => {
-    await onSubmit(values);
+  const handleFormSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    
+    const validationErrors = validateForm(values);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    try {
+      await onSubmit(values);
+    } catch (error) {
+      console.error("Erro ao salvar mensagem do bot:", error);
+    }
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit(submitForm)} sx={{ p: 2 }}>
+    <Box component="form" onSubmit={handleFormSubmit} sx={{ p: 2 }}>
       <TextField
         fullWidth
         label="Comando / Palavra-chave"

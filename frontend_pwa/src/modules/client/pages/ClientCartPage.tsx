@@ -1,11 +1,10 @@
-// frontend_pwa/src/modules/client/pages/ClientCartPage.tsx
 import React from 'react';
 import {
   Box, Typography, Button, Container, Paper, Grid, Divider, CircularProgress,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { useCart } from '../../../hooks/useCart'; // Usando o hook useCart
-import CartItem from '../components/CartItem'; // Novo componente CartItem
+import { useCart } from '../../../hooks/useCart'; 
+import CartItem from '../components/CartItem'; 
 import { useNotification } from '../../../contexts/NotificationContext';
 
 const ClientCartPage: React.FC = () => {
@@ -45,7 +44,7 @@ const ClientCartPage: React.FC = () => {
         </Paper>
       ) : (
         <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
+          <Grid size={{ xs: 12, sm: 8 }}>
             <Paper elevation={3} sx={{ p: 3 }}>
               {cartItemsArray.map(([key, item]) => (
                 <CartItem key={key} item={item} itemKey={key} />
@@ -57,7 +56,7 @@ const ClientCartPage: React.FC = () => {
               </Box>
             </Paper>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, sm: 4 }}>
             <Paper elevation={3} sx={{ p: 3 }}>
               <Typography variant="h5" gutterBottom>
                 Resumo do Pedido
@@ -67,7 +66,7 @@ const ClientCartPage: React.FC = () => {
                 <Typography variant="body1">Itens ({getTotalCartItems()}):</Typography>
                 <Typography variant="body1">R$ {getCartSubtotal().toFixed(2)}</Typography>
               </Box>
-              {/* Adicione taxas de entrega, descontos, etc., aqui se aplicável */}
+
               <Divider sx={{ my: 2 }} />
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                 <Typography variant="h6">Total:</Typography>

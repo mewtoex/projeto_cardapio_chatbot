@@ -8,8 +8,8 @@ import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/ico
 import api from '../../../../api/api';
 import { useLoading } from '../../../../hooks/useLoading';
 import { useNotification } from '../../../../contexts/NotificationContext';
-import DeliveryAreaForm from '../components/DeliveryAreaForm'; // Novo componente de formulário
-import ConfirmationDialog from '../../../../components/ui/ConfirmationDialog'; // Novo componente de diálogo
+import DeliveryAreaForm from '../components/DeliveryAreaForm'; 
+import ConfirmationDialog from '../../../../components/UI/ConfirmationDialog'; 
 import { type DeliveryArea } from '../../../../types';
 
 const AdminDeliveryAreaManagementPage: React.FC = () => {
@@ -59,7 +59,7 @@ const AdminDeliveryAreaManagementPage: React.FC = () => {
       try {
         await api.deleteDeliveryArea(areaToDeleteId);
         notification.showSuccess("Área de entrega removida com sucesso!");
-        setDeliveryAreasManually(prev => prev ? prev.filter(area => area.id !== areaToDeleteId) : []);
+        setDeliveryAreasManually(prev => prev ? prev.filter(area => area.id.toString() !== areaToDeleteId) : []);
       } catch (err: any) {
         notification.showError(err.message || "Falha ao remover área de entrega.");
       } finally {

@@ -1,4 +1,3 @@
-// frontend_pwa/src/modules/admin/delivery/components/DeliveryAreaForm.tsx
 import React, { useEffect } from 'react';
 import { TextField, Button, Box, CircularProgress, Typography } from '@mui/material';
 import { useForm } from '../../../../hooks/useForm';
@@ -13,7 +12,7 @@ interface DeliveryAreaFormProps {
 
 interface DeliveryAreaFormData {
   district_name: string;
-  delivery_fee: string; // Para TextField, manter como string inicialmente
+  delivery_fee: string; 
 }
 
 const initialFormState: DeliveryAreaFormData = {
@@ -24,7 +23,7 @@ const initialFormState: DeliveryAreaFormData = {
 const DeliveryAreaForm: React.FC<DeliveryAreaFormProps> = ({
   initialData, onSubmit, onCancel, isSaving
 }) => {
-  const { values, handleChange, handleSubmit, setAllValues, isDirty, errors, setErrors } = useForm<DeliveryAreaFormData>(initialFormState, validateForm);
+  const { values, handleChange, setAllValues, isDirty, errors, setErrors } = useForm<DeliveryAreaFormData>(initialFormState, validateForm);
 
   useEffect(() => {
     if (initialData) {
@@ -43,21 +42,36 @@ const DeliveryAreaForm: React.FC<DeliveryAreaFormProps> = ({
       newErrors.district_name = "Nome do bairro é obrigatório.";
     }
     const parsedFee = parseFloat(formData.delivery_fee);
-    if (isNaN(parsedFee) || parsedFee < 0) {
-      newErrors.delivery_fee = "Taxa de entrega deve ser um número não negativo.";
+    if (isNaN(parsedFee)) {
+      newErrors.delivery_fee = "Taxa de entrega deve ser um número válido.";
+    } else if (parsedFee < 0) {
+      newErrors.delivery_fee = "Taxa de entrega não pode ser negativa.";
     }
     return newErrors;
   }
 
-  const submitForm = async () => {
-    await onSubmit({
-      district_name: values.district_name,
-      delivery_fee: parseFloat(values.delivery_fee),
-    });
+  const handleFormSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    
+    // Validação manual
+    const validationErrors = validateForm(values);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    try {
+      await onSubmit({
+        district_name: values.district_name,
+        delivery_fee: parseFloat(values.delivery_fee),
+      });
+    } catch (error) {
+      console.error("Erro ao salvar área de entrega:", error);
+    }
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit(submitForm)} sx={{ p: 2 }}>
+    <Box component="form" onSubmit={handleFormSubmit} sx={{ p: 2 }}>
       <TextField
         fullWidth
         label="Nome do Bairro"
@@ -74,7 +88,11 @@ const DeliveryAreaForm: React.FC<DeliveryAreaFormProps> = ({
         label="Taxa de Entrega (R$)"
         name="delivery_fee"
         type="number"
-        inputProps={{ min: 0, step: 0.01 }}
+        inputProps={{ 
+          min: 0, 
+          step: 0.01,
+          inputMode: 'decimal'
+        }}
         value={values.delivery_fee}
         onChange={handleChange}
         margin="normal"
@@ -83,10 +101,20 @@ const DeliveryAreaForm: React.FC<DeliveryAreaFormProps> = ({
         helperText={errors.delivery_fee}
       />
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-        <Button onClick={onCancel} color="inherit" sx={{ mr: 1 }} disabled={isSaving}>
+        <Button 
+          onClick={onCancel} 
+          color="inherit" 
+          sx={{ mr: 1 }} 
+          disabled={isSaving}
+        >
           Cancelar
         </Button>
-        <Button type="submit" variant="contained" color="primary" disabled={isSaving || !isDirty}>
+        <Button 
+          type="submit" 
+          variant="contained" 
+          color="primary" 
+          disabled={isSaving || !isDirty}
+        >
           {isSaving ? <CircularProgress size={24} /> : 'Salvar Área'}
         </Button>
       </Box>

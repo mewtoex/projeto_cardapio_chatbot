@@ -1,14 +1,12 @@
-// frontend_pwa/src/modules/auth/pages/ForgotPasswordPage.tsx
 import React from 'react';
-import { Box, Container, Paper, Typography, Link } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import ForgotPasswordForm from '../components/ForgotPasswordForm'; // Importa o novo componente de formulário
+import { Box, Paper, Typography, Link } from '@mui/material';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import ForgotPasswordForm from '../components/ForgotPasswordForm'; 
 
 const ForgotPasswordPage: React.FC = () => {
   const navigate = useNavigate();
 
   const handleSuccess = () => {
-    // Pode redirecionar para uma página de "Verifique seu e-mail"
     navigate('/login'); 
   };
 
@@ -37,7 +35,9 @@ const ForgotPasswordPage: React.FC = () => {
         </Typography>
         <ForgotPasswordForm onSuccess={handleSuccess} onCancel={handleCancel} />
         <Box sx={{ mt: 2, textAlign: 'center' }}>
-          <Link to="/login">Voltar ao Login</Link>
+          <Link component={RouterLink} to="/login" underline="hover">
+            Voltar ao Login
+          </Link>
         </Box>
       </Paper>
     </Box>

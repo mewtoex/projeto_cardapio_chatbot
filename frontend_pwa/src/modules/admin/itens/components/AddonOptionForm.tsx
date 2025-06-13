@@ -1,4 +1,3 @@
-// frontend_pwa/src/modules/admin/itens/components/AddonOptionForm.tsx
 import React, { useEffect } from 'react';
 import { TextField, Button, Box, CircularProgress, Typography } from '@mui/material';
 import { useForm } from '../../../../hooks/useForm';
@@ -13,7 +12,7 @@ interface AddonOptionFormProps {
 
 interface AddonOptionFormData {
   name: string;
-  price: string; // Para TextField, manter como string
+  price: string;
 }
 
 const initialFormState: AddonOptionFormData = {
@@ -24,7 +23,7 @@ const initialFormState: AddonOptionFormData = {
 const AddonOptionForm: React.FC<AddonOptionFormProps> = ({
   initialData, onSubmit, onCancel, isSaving
 }) => {
-  const { values, handleChange, handleSubmit, setAllValues, isDirty, errors, setErrors } = useForm<AddonOptionFormData>(initialFormState, validateForm);
+  const { values, handleChange, setAllValues, isDirty, errors, setErrors } = useForm<AddonOptionFormData>(initialFormState, validateForm);
 
   useEffect(() => {
     if (initialData) {
@@ -49,15 +48,27 @@ const AddonOptionForm: React.FC<AddonOptionFormProps> = ({
     return newErrors;
   }
 
-  const submitForm = async () => {
-    await onSubmit({
-      name: values.name,
-      price: parseFloat(values.price),
-    });
+  const handleFormSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    
+    const validationErrors = validateForm(values);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    try {
+      await onSubmit({
+        name: values.name,
+        price: parseFloat(values.price),
+      });
+    } catch (error) {
+      console.error("Erro ao salvar opção:", error);
+    }
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit(submitForm)} sx={{ p: 2 }}>
+    <Box component="form" onSubmit={handleFormSubmit} sx={{ p: 2 }}>
       <TextField
         fullWidth
         label="Nome da Opção"

@@ -2,7 +2,16 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Grid, Paper, CircularProgress, Alert, Card, CardContent,
-  Tab, Tabs, List, ListItem, ListItemText, Select, MenuItem, FormControl, InputLabel
+  Tab, Tabs, List, ListItem, ListItemText, Select, MenuItem, FormControl, InputLabel,
+  TableContainer,
+  Table,
+  TableRow,
+  TableHead,
+  TableCell,
+  TableBody,
+  Chip,
+  TextField,
+  Button
 } from '@mui/material';
 import {
   ShoppingCart as ShoppingCartIcon, AttachMoney as AttachMoneyIcon,
@@ -103,7 +112,7 @@ const AdminDashboardPage: React.FC = () => {
       </Box>
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md:3}}>
           <Card elevation={3}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -114,7 +123,7 @@ const AdminDashboardPage: React.FC = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md:3}}>
           <Card elevation={3}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -126,7 +135,7 @@ const AdminDashboardPage: React.FC = () => {
           </Card>
         </Grid>
         {Object.entries(metrics?.status_counts || {}).map(([status, count]) => (
-          <Grid item xs={12} sm={6} md={3} key={status}>
+          <Grid size={{ xs: 12, sm: 6, md:3}} key={status}>
             <Card elevation={3}>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>

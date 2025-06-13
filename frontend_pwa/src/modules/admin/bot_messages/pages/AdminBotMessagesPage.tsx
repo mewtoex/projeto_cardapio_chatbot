@@ -10,7 +10,7 @@ import api from '../../../../api/api';
 import { useLoading } from '../../../../hooks/useLoading';
 import { useNotification } from '../../../../contexts/NotificationContext';
 import BotMessageForm from '../components/BotMessageForm'; // Novo componente de formulário
-import ConfirmationDialog from '../../../../components/ui/ConfirmationDialog'; // Novo componente de diálogo de confirmação
+import ConfirmationDialog from '../../../../components/UI/ConfirmationDialog'; // Novo componente de diálogo de confirmação
 import { type BotMessage, type BotMessageFormData } from '../../../../types';
 
 const AdminBotMessagesPage: React.FC = () => {
@@ -60,7 +60,7 @@ const AdminBotMessagesPage: React.FC = () => {
       try {
         await api.deleteBotMessage(botMessageToDelete);
         notification.showSuccess("Mensagem do bot removida com sucesso!");
-        setBotMessagesManually(prev => prev ? prev.filter(msg => msg.id !== botMessageToDelete) : []);
+        setBotMessagesManually(prev => prev ? prev.filter(msg => msg.id.toString() !== botMessageToDelete) : []);
       } catch (err: any) {
         notification.showError(err.message || "Falha ao remover mensagem do bot.");
       } finally {

@@ -1,10 +1,9 @@
-// frontend_pwa/src/modules/client/profile/components/AddressForm.tsx
 import React, { useEffect, useCallback } from 'react';
 import { TextField, Button, Box, CircularProgress, FormControlLabel, Switch, Typography } from '@mui/material';
 import { useForm } from '../../../../hooks/useForm';
 import { type Address } from '../../../../types';
 import axios from 'axios';
-import InputMask from 'react-input-mask'; // Importe InputMask
+import InputMask from 'react-input-mask';
 
 interface AddressFormProps {
   initialData?: Address | null;
@@ -22,12 +21,13 @@ const initialFormState: Address = {
   state: "",
   cep: "",
   is_primary: false,
+  id: ''
 };
 
 const AddressForm: React.FC<AddressFormProps> = ({
   initialData, onSubmit, onCancel, isSaving
 }) => {
-  const { values, handleChange, handleManualChange, handleSubmit, setAllValues, isDirty, errors, setErrors } = useForm<Address>(initialFormState, validateForm);
+  const { values, handleChange, handleManualChange, setAllValues, isDirty, errors, setErrors } = useForm<Address>(initialFormState, validateForm);
 
   useEffect(() => {
     if (initialData) {
@@ -94,12 +94,24 @@ const AddressForm: React.FC<AddressFormProps> = ({
     return newErrors;
   }
 
-  const submitForm = async () => {
-    await onSubmit(values);
+  const handleFormSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    
+    const validationErrors = validateForm(values);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    try {
+      await onSubmit(values);
+    } catch (error) {
+      console.error("Erro ao salvar endereço:", error);
+    }
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit(submitForm)} sx={{ p: 2 }}>
+    <Box component="form" onSubmit={handleFormSubmit} sx={{ p: 2 }}>
       <InputMask
         mask="99999-999"
         value={values.cep}
@@ -196,7 +208,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
           label="Endereço Principal"
           sx={{ mt: 2 }}
         />
-      )}
+      )}   
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
         <Button onClick={onCancel} color="inherit" sx={{ mr: 1 }} disabled={isSaving}>
           Cancelar

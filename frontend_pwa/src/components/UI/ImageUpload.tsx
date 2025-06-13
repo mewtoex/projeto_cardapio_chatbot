@@ -1,5 +1,4 @@
-// frontend_pwa/src/components/UI/ImageUpload.tsx
-import React, { useState, useRef, ChangeEvent } from 'react';
+import React, { useState, useRef, type ChangeEvent } from 'react';
 import { Box, Button, IconButton, Typography } from '@mui/material';
 import { CloudUpload as CloudUploadIcon, Delete as DeleteIcon, Image as ImageIcon } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
@@ -20,7 +19,7 @@ interface ImageUploadProps {
   onImageUpload: (file: File) => void;
   onImageRemove: () => void;
   previewUrl?: string | null;
-  isUploading?: boolean; // Para desabilitar o botão enquanto o upload está em andamento (salvamento)
+  isUploading?: boolean;
 }
 
 export const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload, onImageRemove, previewUrl, isUploading = false }) => {
@@ -36,7 +35,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload, onImage
   const handleDeleteImage = () => {
     onImageRemove();
     if (fileInputRef.current) {
-      fileInputRef.current.value = ''; // Limpa o input file para permitir upload do mesmo arquivo novamente
+      fileInputRef.current.value = ''; 
     }
   };
 

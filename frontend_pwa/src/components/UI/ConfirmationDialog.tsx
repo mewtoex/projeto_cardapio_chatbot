@@ -1,4 +1,3 @@
-// frontend_pwa/src/components/ui/ConfirmationDialog.tsx
 import React from 'react';
 import {
   Button,

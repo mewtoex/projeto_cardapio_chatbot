@@ -1,11 +1,9 @@
-// frontend_pwa/src/modules/admin/itens/components/MenuItemForm.tsx
 import React, { useEffect, useState } from 'react';
 import {
   TextField, Button, Box, FormControl, InputLabel, Select, MenuItem,
   Switch, FormControlLabel, Grid, Typography, Checkbox, FormGroup, FormLabel,
 } from '@mui/material';
-// Importação de ícones removida se não usados
-import { ImageUpload } from '../../../../components/ui/ImageUpload';
+import { ImageUpload } from '../../../../components/UI/ImageUpload';
 import { useForm } from '../../../../hooks/useForm';
 import { type MenuItem as MenuItemType, type Category, type AddonCategory, type MenuItemFormData } from '../../../../types';
 
@@ -33,17 +31,15 @@ const initialFormState: MenuItemFormData = {
 const MenuItemForm: React.FC<MenuItemFormProps> = ({
   initialData, categories, addonCategories, onSubmit, onCancel, isSaving
 }) => {
-  // Inicializa o hook useForm com o estado inicial e a função de validação
   const { values, handleChange, handleManualChange, handleSubmit, setAllValues, isDirty, errors, setErrors } = useForm<MenuItemFormData>(initialFormState, validateForm);
-  const [imageFile, setImageFile] = useState<File | null>(null); // Para o arquivo de imagem a ser enviado
+  const [imageFile, setImageFile] = useState<File | null>(null); 
 
-  // Efeito para carregar os dados iniciais do item quando em modo de edição
   useEffect(() => {
     if (initialData) {
       setAllValues({
         name: initialData.name,
-        category_id: String(initialData.category_id), // Converte para string se category_id for number
-        price: initialData.price.toFixed(2), // Formata para 2 casas decimais
+        category_id: String(initialData.category_id), 
+        price: initialData.price.toFixed(2), 
         description: initialData.description || "",
         available: initialData.available,
         image_url: initialData.image_url || "",
@@ -81,23 +77,21 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({
   // Lidar com upload/remoção de imagem
   const handleImageUpload = (file: File) => {
     setImageFile(file);
-    handleManualChange('image_url', URL.createObjectURL(file)); // Para exibir preview localmente
+    handleManualChange('image_url', URL.createObjectURL(file)); 
   };
 
   const handleImageRemove = () => {
     setImageFile(null);
-    handleManualChange('image_url', ""); // Limpa a URL da imagem no formulário
+    handleManualChange('image_url', ""); 
   };
 
-  // Lidar com a ativação/desativação de adicionais
   const handleHasAddonsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     handleManualChange('has_addons', event.target.checked);
     if (!event.target.checked) {
-      handleManualChange('addon_category_ids', []); // Limpa seleções se desativar adicionais
+      handleManualChange('addon_category_ids', []); 
     }
   };
 
-  // Lidar com a seleção de categorias de adicionais
   const handleAddonCategorySelectionChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { value, checked } = event.target;
     const currentAddonIds = values.addon_category_ids;
@@ -109,37 +103,34 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({
     }
   };
 
-  // Função chamada pelo handleSubmit do useForm para montar o FormData e chamar onSubmit
   const submitForm = async () => {
     const data = new FormData();
     data.append("name", values.name);
     data.append("category_id", values.category_id);
-    data.append("price", parseFloat(values.price).toFixed(2)); // Garante 2 casas decimais no envio
+    data.append("price", parseFloat(values.price).toFixed(2)); 
     data.append("description", values.description || "");
     data.append("available", values.available.toString());
     data.append("has_addons", values.has_addons.toString());
 
     if (values.has_addons && values.addon_category_ids) {
       values.addon_category_ids.forEach(id => {
-        data.append("addon_category_ids[]", id); // Envia como array
+        data.append("addon_category_ids[]", id); 
       });
     }
 
     if (imageFile) {
-      data.append("image", imageFile); // Adiciona o arquivo de imagem
+      data.append("image", imageFile); 
     } else if (values.image_url === "" && initialData?.image_url) {
-      // Se a imagem foi removida no formulário e havia uma imagem anterior,
-      // envie uma flag para o backend indicar a remoção da imagem
       data.append("remove_image", "true"); 
     }
 
-    await onSubmit(data); // Chama a função onSubmit passada via props
+    await onSubmit(data); 
   };
 
   return (
     <Box component="form" onSubmit={handleSubmit(submitForm)} sx={{ p: 2 }}>
       <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             fullWidth
             label="Nome do Item"
@@ -251,7 +242,7 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({
             </Box>
           )}
         </Grid>
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <Typography variant="subtitle1" gutterBottom>
             Imagem do Item
           </Typography>
@@ -259,7 +250,7 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({
             onImageUpload={handleImageUpload}
             onImageRemove={handleImageRemove}
             previewUrl={values.image_url}
-            isUploading={isSaving} // Passa o estado de salvamento para desabilitar upload durante o salvamento
+            isUploading={isSaving} 
           />
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             Adicione uma imagem atraente do seu produto para melhorar as vendas.

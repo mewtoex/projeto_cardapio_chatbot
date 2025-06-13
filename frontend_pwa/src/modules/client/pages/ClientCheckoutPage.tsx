@@ -3,16 +3,17 @@ import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, Container, Paper, Grid, Divider, CircularProgress,
   TextField, FormControl, InputLabel, Select, MenuItem, FormLabel, RadioGroup, FormControlLabel, Radio,
+  List,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../../hooks/useCart';
-import { useAddresses } from '../../../hooks/useAddresses'; // Novo hook para endereços
+import { useAddresses } from '../../../hooks/useAddresses'; 
 import { useAuth } from '../../auth/contexts/AuthContext';
 import { useLoading } from '../../../hooks/useLoading';
 import { useNotification } from '../../../contexts/NotificationContext';
 import api from '../../../api/api';
-import AddressSelection from '../components/AddressSelection'; // Novo componente
-import PaymentMethodSelection from '../components/PaymentMethodSelection'; // Novo componente
+import AddressSelection from '../components/AddressSelection'; 
+import PaymentMethodSelection from '../components/PaymentMethodSelection'; 
 import { type Address, type OrderCreateItem } from '../../../types';
 
 const ClientCheckoutPage: React.FC = () => {
@@ -20,7 +21,7 @@ const ClientCheckoutPage: React.FC = () => {
   const { cartItems, getCartSubtotal, clearCart } = useCart();
   const { user } = useAuth();
   const notification = useNotification();
-  const { addresses, loading: loadingAddresses, error: addressesError } = useAddresses(); // Carrega endereços
+  const { addresses, loading: loadingAddresses, error: addressesError } = useAddresses(); 
 
   const { loading: submittingOrder, error: orderError, execute: submitOrder } = useLoading();
   const { loading: calculatingDelivery, error: deliveryError, execute: calculateDelivery } = useLoading<{ delivery_fee: number; message?: string }>();
@@ -30,7 +31,6 @@ const ClientCheckoutPage: React.FC = () => {
   const [cashProvided, setCashProvided] = useState<number | null>(null);
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
 
-  // Redireciona se o carrinho estiver vazio
   useEffect(() => {
     if (Object.keys(cartItems).length === 0) {
       notification.showWarning("Seu carrinho está vazio. Redirecionando para o cardápio.");
@@ -38,19 +38,18 @@ const ClientCheckoutPage: React.FC = () => {
     }
   }, [cartItems, navigate, notification]);
 
-  // Busca a taxa de entrega quando o endereço selecionado muda
   useEffect(() => {
     const fetchFee = async () => {
       if (selectedAddressId) {
         try {
           const result = await calculateDelivery(
             api.calculateDeliveryFee(selectedAddressId),
-            undefined, // Não mostra notificação de sucesso aqui
+            undefined, 
             "Erro ao calcular taxa de entrega."
           );
           setDeliveryFee(result?.delivery_fee || 0);
         } catch (e) {
-          setDeliveryFee(0); // Garante que a taxa é 0 em caso de erro
+          setDeliveryFee(0); 
         }
       } else {
         setDeliveryFee(0);
@@ -90,7 +89,7 @@ const ClientCheckoutPage: React.FC = () => {
     }));
 
     const orderPayload = {
-      address_id: parseInt(selectedAddressId, 10), // Converte para number
+      address_id: parseInt(selectedAddressId, 10), 
       payment_method: selectedPaymentMethod,
       items: itemsToOrder,
       cash_provided: selectedPaymentMethod === 'dinheiro' && cashProvided !== null ? cashProvided : undefined,
@@ -102,8 +101,8 @@ const ClientCheckoutPage: React.FC = () => {
         "Pedido realizado com sucesso!",
         "Erro ao finalizar pedido."
       );
-      clearCart(); // Limpa o carrinho após o sucesso
-      navigate('/client/pedidos'); // Redireciona para a página de pedidos
+      clearCart(); 
+      navigate('/client/pedidos'); 
     } catch (err) {
       console.error("Falha ao criar pedido:", err);
     }
@@ -145,7 +144,7 @@ const ClientCheckoutPage: React.FC = () => {
       </Typography>
 
       <Grid container spacing={3}>
-        <Grid item xs={12} md={7}>
+        <Grid size={{ xs: 12, sm: 7 }}>
           <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
             <Typography variant="h6" gutterBottom>
               1. Endereço de Entrega
@@ -208,13 +207,13 @@ const ClientCheckoutPage: React.FC = () => {
           </Paper>
         </Grid>
 
-        <Grid item xs={12} md={5}>
+        <Grid size={{ xs: 12, sm: 5}} >
           <Paper elevation={3} sx={{ p: 3, position: 'sticky', top: 20 }}>
             <Typography variant="h5" gutterBottom>
               Resumo do Pedido
             </Typography>
             <Divider sx={{ mb: 2 }} />
-            <List disablePadding>
+            <List  disablePadding>
               {Object.values(cartItems).map((item, index) => (
                 <Box key={index} sx={{ mb: 1.5 }}>
                   <Typography variant="body2" component="div" sx={{ display: 'flex', justifyContent: 'space-between' }}>

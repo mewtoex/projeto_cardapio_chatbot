@@ -1,9 +1,8 @@
-// frontend_pwa/src/modules/auth/components/ForgotPasswordForm.tsx
 import React from 'react';
 import { TextField, Button, Box, CircularProgress, Typography } from '@mui/material';
 import { useForm } from '../../../hooks/useForm';
 import api from '../../../api/api';
-import { useLoading } from '../../../hooks/useLoading'; // Para gerenciar o estado de loading e erros de API
+import { useLoading } from '../../../hooks/useLoading'; 
 
 interface ForgotPasswordFormData {
   email: string;
@@ -14,16 +13,13 @@ const initialFormState: ForgotPasswordFormData = {
 };
 
 interface ForgotPasswordFormProps {
-  onSuccess?: () => void; // Callback opcional para sucesso
-  onCancel?: () => void; // Callback opcional para cancelar
+  onSuccess?: () => void; 
+  onCancel?: () => void; 
 }
 
 const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onSuccess, onCancel }) => {
-  const { values, handleChange, handleSubmit, errors, isSubmitting } = useForm<ForgotPasswordFormData>(
-    initialFormState,
-    validateForm
-  );
-  const { loading, error, execute } = useLoading(); // Usando useLoading para a chamada de API
+  const { values, handleChange, setErrors, isDirty } = useForm<ForgotPasswordFormData>(initialFormState);
+  const { loading, error, execute } = useLoading(); 
 
   function validateForm(formData: ForgotPasswordFormData): { [key: string]: string } {
     const newErrors: { [key: string]: string } = {};
@@ -35,22 +31,29 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onSuccess, onCa
     return newErrors;
   }
 
-  const handleForgotPassword = async () => {
+  const handleFormSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    
+    const validationErrors = validateForm(values);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
     try {
       await execute(
         api.forgotPassword(values.email),
-        "Se um e-mail estiver registrado, um link de redefinição de senha será enviado.", // Mensagem de sucesso para o usuário
-        "Erro ao enviar link de redefinição de senha." // Mensagem de erro genérica
+        "Se um e-mail estiver registrado, um link de redefinição de senha será enviado.", 
+        "Erro ao enviar link de redefinição de senha." 
       );
-      onSuccess?.(); // Chama o callback de sucesso, se fornecido
+      onSuccess?.(); 
     } catch (err) {
-      // O erro já é tratado e notificado pelo `useLoading`
-      console.error("Falha ao solicitar redefinição de senha (tratado por hook):", err);
+      console.error("Falha ao solicitar redefinição de senha:", err);
     }
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit(handleForgotPassword)} sx={{ width: '100%' }}>
+    <Box component="form" onSubmit={handleFormSubmit} sx={{ width: '100%' }}>
       <TextField
         fullWidth
         label="Email"
@@ -60,8 +63,8 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onSuccess, onCa
         onChange={handleChange}
         margin="normal"
         required
-        error={!!errors.email}
-        helperText={errors.email}
+        error={!!error}
+        helperText={error}
       />
       {error && (
         <Typography color="error" variant="body2" sx={{ mt: 1 }}>
@@ -73,16 +76,16 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onSuccess, onCa
         fullWidth
         variant="contained"
         sx={{ mt: 3, mb: 2 }}
-        disabled={isSubmitting || loading}
+        disabled={loading || !isDirty}
       >
-        {isSubmitting || loading ? <CircularProgress size={24} /> : 'Enviar Link de Redefinição'}
+        {loading ? <CircularProgress size={24} /> : 'Enviar Link de Redefinição'}
       </Button>
       {onCancel && (
         <Button
           fullWidth
           variant="text"
           onClick={onCancel}
-          disabled={isSubmitting || loading}
+          disabled={loading}
         >
           Cancelar
         </Button>

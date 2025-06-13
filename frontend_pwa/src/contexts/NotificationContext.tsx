@@ -1,5 +1,4 @@
-// frontend_pwa/src/contexts/NotificationContext.tsx
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { Snackbar, Alert } from '@mui/material';
 
 interface NotificationContextType {

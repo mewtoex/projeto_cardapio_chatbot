@@ -1,4 +1,3 @@
-// frontend_pwa/src/modules/client/pages/ClientMenuPage.tsx
 import React, { useEffect, useState } from 'react';
 import {
   Typography, Box, Grid, Card, CardMedia, CardContent, CardActions,
@@ -6,13 +5,13 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { ShoppingCart as CartIcon, Add as AddIcon, Image as ImageIcon } from '@mui/icons-material';
-import { useAuth } from '../../auth/contexts/AuthContext'; // Mantém para informações do usuário
+import { useAuth } from '../../auth/contexts/AuthContext';
 import api from '../../../api/api';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useNavigate } from 'react-router-dom';
-import { useLoading } from '../../../hooks/useLoading'; // Novo hook de loading
-import { useCart } from '../../../hooks/useCart'; // Novo hook de carrinho
-import AddToCartModal from '../components/AddToCartModal'; // Novo componente de modal
+import { useLoading } from '../../../hooks/useLoading'; 
+import { useCart } from '../../../hooks/useCart'; 
+import AddToCartModal from '../components/AddToCartModal'; 
 import { type MenuItem, type Category } from '../../../types';
 
 const ClientMenuPage: React.FC = () => {
@@ -20,22 +19,23 @@ const ClientMenuPage: React.FC = () => {
   const notification = useNotification();
   const navigate = useNavigate();
 
-  // Hooks para carregar dados
   const { data: menuItems, loading: loadingItems, error: itemsError, execute: fetchItems } = useLoading<MenuItem[]>();
   const { data: categories, loading: loadingCategories, error: categoriesError, execute: fetchCategories } = useLoading<Category[]>();
-  const { getTotalCartItems } = useCart(); // Obtém a quantidade de itens no carrinho
+  const { getTotalCartItems } = useCart();
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [openItemDetailsModal, setOpenItemDetailsModal] = useState(false);
   const [selectedMenuItemForModal, setSelectedMenuItemForModal] = useState<MenuItem | null>(null);
 
+  const [loadingModalItem, setLoadingModalItem] = useState(false);
+  const [errorModalItem, setErrorModalItem] = useState<string | null>(null);
+
+
   useEffect(() => {
-    // Carrega categorias e itens do menu na montagem do componente
     fetchCategories(api.getCategories(), undefined, "Erro ao carregar categorias.");
     fetchItems(api.getMenuItems({ available: true }), undefined, "Erro ao carregar itens do cardápio.");
   }, [fetchCategories, fetchItems]);
 
-  // Filtra itens com base na categoria selecionada
   const filteredItems = selectedCategoryId
     ? menuItems?.filter(item => String(item.category_id) === selectedCategoryId) || []
     : menuItems || [];
@@ -45,55 +45,54 @@ const ClientMenuPage: React.FC = () => {
   };
 
   const handleOpenItemDetailsModal = async (item: MenuItem) => {
-    // Busca os detalhes completos do item para o modal, incluindo adicionais
+    setLoadingModalItem(true);
+    setErrorModalItem(null); 
     try {
-      const fullItemDetails = await fetchItems(api.getMenuItemById(item.id.toString()), undefined, "Erro ao carregar detalhes do item.");
-      if (fullItemDetails) {
-        // A API de getMenuItemById retorna um único objeto MenuItem, não um array.
-        // Se a API retornar um array por algum motivo, ajuste para `fullItemDetails[0]`.
-        setSelectedMenuItemForModal(fullItemDetails); 
-        setOpenItemDetailsModal(true);
-      }
-    } catch (e) {
-      // O erro já é tratado pelo useLoading e exibido via useNotification
-      console.error("Falha ao abrir detalhes do item:", e);
+      const fullItemDetails = await api.getMenuItemById(item.id.toString());
+      setSelectedMenuItemForModal(fullItemDetails); 
+      setOpenItemDetailsModal(true);
+    } catch (e: any) {
+      console.error("Falha ao carregar detalhes do item:", e);
+      setErrorModalItem(e.message || "Erro ao carregar detalhes do item.");
+      notification.showError("Erro ao carregar detalhes do item.");
+    } finally {
+      setLoadingModalItem(false); 
     }
   };
 
   const handleCloseItemDetailsModal = () => {
     setOpenItemDetailsModal(false);
-    setSelectedMenuItemForModal(null);
+    setSelectedMenuItemForModal(null); 
+    setErrorModalItem(null); 
   };
 
-  const handleGoToCart = () => {
-    navigate('/client/carrinho'); // Redireciona para a página do carrinho
+  const handleAddToCart = (item: MenuItem) => {
+    notification.showSuccess(`"${item.name}" adicionado ao carrinho!`);
   };
 
-  const loading = loadingItems || loadingCategories;
-  const error = itemsError || categoriesError;
-
-  if (loading) {
+  if (loadingItems || loadingCategories) {
     return (
-      <Container>
-        <Box sx={{ mb: 4 }}>
-          <Skeleton variant="text" width="50%" height={60} />
-          <Skeleton variant="text" width="70%" />
-        </Box>
-        <Box sx={{ mb: 3 }}>
-          <Skeleton variant="rectangular" height={48} />
+      <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <Typography variant="h4" gutterBottom align="center">Cardápio</Typography>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+          <Tabs value={selectedCategoryId} onChange={handleCategoryChange} variant="scrollable" scrollButtons="auto" allowScrollButtonsMobile>
+            {Array.from(new Array(5)).map((_, index) => (
+              <Tab key={index} label={<Skeleton width={80} />} value={index.toString()} disabled />
+            ))}
+          </Tabs>
         </Box>
         <Grid container spacing={3}>
-          {[1, 2, 3, 4, 5, 6].map((item) => (
-            <Grid item xs={12} sm={6} md={4} key={item}>
+          {Array.from(new Array(6)).map((_, index) => (
+            <Grid size={{ xs: 12, sm: 6, md:4 }} key={index}>
               <Card>
-                <Skeleton variant="rectangular" height={200} />
+                <Skeleton variant="rectangular" height={140} />
                 <CardContent>
-                  <Skeleton variant="text" width="80%" />
-                  <Skeleton variant="text" width="40%" />
-                  <Skeleton variant="text" width="60%" height={80} />
+                  <Skeleton width="80%" height={24} />
+                  <Skeleton width="60%" height={16} />
+                  <Skeleton width="40%" height={16} />
                 </CardContent>
-                <CardActions>
-                  <Skeleton variant="rectangular" width={120} height={36} />
+                <CardActions sx={{ justifyContent: 'flex-end' }}>
+                  <Skeleton variant="rectangular" width={80} height={36} />
                 </CardActions>
               </Card>
             </Grid>
@@ -103,145 +102,120 @@ const ClientMenuPage: React.FC = () => {
     );
   }
 
-  if (error) {
+  // Renderização de erro inicial
+  if (itemsError || categoriesError) {
     return (
-      <Box sx={{ p: 3, textAlign: 'center' }}>
-        <Typography variant="h6" color="error" gutterBottom>
-          Erro ao carregar o cardápio
+      <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <Typography variant="h6" color="error" align="center">
+          Ocorreu um erro ao carregar o cardápio ou as categorias. Por favor, tente novamente mais tarde.
         </Typography>
-        <Typography color="text.secondary">
-          {error}
-        </Typography>
-        <Button
-          variant="contained"
-          sx={{ mt: 2 }}
-          onClick={() => window.location.reload()} // Oferece opção de recarregar a página
-        >
-          Tentar novamente
-        </Button>
-      </Box>
+      </Container>
     );
   }
 
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box>
-          <Typography variant="h4" gutterBottom>
-            Cardápio
-          </Typography>
-          {user && (
-            <Typography variant="subtitle1" color="text.secondary">
-              Bem-vindo, {user.name}! O que vai pedir hoje?
-            </Typography>
-          )}
-        </Box>
-        <Badge badgeContent={getTotalCartItems()} color="error">
-          <IconButton color="primary" size="large" onClick={handleGoToCart}>
-            <CartIcon />
-          </IconButton>
-        </Badge>
+    <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+        <Typography variant="h4" component="h1">Cardápio</Typography>
+        <IconButton color="inherit" onClick={() => navigate('/cart')}>
+          <Badge badgeContent={getTotalCartItems()} color="primary">
+            <CartIcon fontSize="large" />
+          </Badge>
+        </IconButton>
       </Box>
 
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs
-          value={selectedCategoryId}
-          onChange={handleCategoryChange}
-          variant="scrollable"
-          scrollButtons="auto"
-          allowScrollButtonsMobile
-        >
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+        <Tabs value={selectedCategoryId} onChange={handleCategoryChange} variant="scrollable" scrollButtons="auto" allowScrollButtonsMobile>
           <Tab label="Todos" value={null} />
-          {categories?.map(category => (
-            <Tab key={category.id} label={category.name} value={String(category.id)} /> // Valor deve ser string
+          {categories?.map((category) => (
+            <Tab key={category.id} label={category.name} value={category.id.toString()} />
           ))}
         </Tabs>
       </Box>
 
-      {filteredItems.length === 0 ? (
-        <Box sx={{ textAlign: 'center', py: 4 }}>
-          <Typography variant="h6" color="text.secondary">
-            Nenhum item encontrado para esta categoria.
-          </Typography>
-        </Box>
-      ) : (
-        <Grid container spacing={3}>
-          {filteredItems.map(item => (
-            <Grid item xs={12} sm={6} md={4} key={item.id}>
+      <Grid container spacing={3}>
+        {filteredItems.length === 0 ? (
+          <Grid size={{ xs: 12 }} >
+            <Typography variant="subtitle1" align="center" sx={{ mt: 4 }}>
+              Nenhum item disponível nesta categoria.
+            </Typography>
+          </Grid>
+        ) : (
+          filteredItems.map((item) => (
+            <Grid  size={{ xs: 12, sm: 6, md:4 }}  key={item.id}>
               <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                {item.image_url ? (
-                  <CardMedia
-                    component="img"
-                    height="200"
-                    image={item.image_url}
-                    alt={item.name}
-                    sx={{ objectFit: 'cover' }}
-                  />
-                ) : (
-                  <Box
-                    sx={{
-                      height: 200,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      bgcolor: 'grey.100'
-                    }}
-                  >
-                    <Typography variant="body2" color="text.secondary">
-                      Sem imagem
-                    </Typography>
-                  </Box>
-                )}
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                    <Typography variant="h6" component="div">
-                      {item.name}
-                    </Typography>
-                    <Chip
-                      label={`R$ ${item.price.toFixed(2)}`}
-                      color="primary"
-                      size="small"
-                      sx={{ fontWeight: 'bold' }}
+                <Box sx={{ position: 'relative', pt: '56.25%' /* 16:9 Aspect Ratio */ }}>
+                  {item.image_url ? (
+                    <CardMedia
+                      component="img"
+                      image={item.image_url}
+                      alt={item.name}
+                      sx={{
+                        position: 'absolute',
+                        top: 0, left: 0, width: '100%', height: '100%',
+                        objectFit: 'cover'
+                      }}
+                      onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+                        e.currentTarget.src = 'https://via.placeholder.com/150';
+                      }}
                     />
-                  </Box>
-                  <Chip
-                    label={item.category_name}
-                    size="small"
-                    variant="outlined"
-                    sx={{ mb: 1 }}
-                  />
-                  <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
+                  ) : (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: 0, left: 0, width: '100%', height: '100%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        backgroundColor: '#f0f0f0', color: '#ccc'
+                      }}
+                    >
+                      <ImageIcon sx={{ fontSize: 80 }} />
+                    </Box>
+                  )}
+                </Box>
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Typography gutterBottom variant="h6" component="div">
+                    {item.name}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
                     {item.description}
                   </Typography>
-                  {item.has_addons && (
-                    <Chip label="Com Adicionais" size="small" color="info" sx={{ mt: 1 }} />
+                  <Typography variant="h6" color="primary" sx={{ mt: 1 }}>
+                    R$ {item.price.toFixed(2).replace('.', ',')}
+                  </Typography>
+                  {item.available === false && (
+                    <Chip label="Indisponível" color="error" size="small" sx={{ mt: 1 }} />
                   )}
                 </CardContent>
-                <CardActions>
+                <CardActions sx={{ justifyContent: 'flex-end' }}>
+                  <Button size="small" onClick={() => handleOpenItemDetailsModal(item)}>
+                    Ver Detalhes
+                  </Button>
                   <Button
-                    variant="contained"
+                    size="small"
                     startIcon={<AddIcon />}
-                    fullWidth
-                    onClick={() => handleOpenItemDetailsModal(item)}
+                    onClick={() => handleAddToCart(item)}
                     disabled={!item.available}
-                    sx={{ py: 1.5 }}
                   >
-                    {item.available ? 'Adicionar ao Carrinho' : 'Indisponível'}
+                    Adicionar
                   </Button>
                 </CardActions>
               </Card>
             </Grid>
-          ))}
-        </Grid>
-      )}
+          ))
+        )}
+      </Grid>
+
       
-      {/* Modal para detalhes do item e adição ao carrinho */}
-      <AddToCartModal
-        open={openItemDetailsModal}
-        onClose={handleCloseItemDetailsModal}
-        menuItem={selectedMenuItemForModal}
-      />
-    </Box>
+      {selectedMenuItemForModal && (
+        <AddToCartModal
+          open={openItemDetailsModal}
+          onClose={handleCloseItemDetailsModal}
+          menuItem={selectedMenuItemForModal}
+          isLoading={loadingModalItem} 
+          error={errorModalItem}    
+        />
+      )}
+    </Container>
   );
 };
 

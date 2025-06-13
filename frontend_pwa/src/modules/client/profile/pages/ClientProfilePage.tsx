@@ -1,4 +1,3 @@
-// frontend_pwa/src/modules/client/profile/pages/ClientProfilePage.tsx
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, Container, Paper, Grid, CircularProgress,
@@ -8,11 +7,11 @@ import { AccountCircle as AccountCircleIcon, LocationOn as LocationOnIcon } from
 import { useAuth } from '../../../auth/contexts/AuthContext';
 import { useLoading } from '../../../../hooks/useLoading';
 import { useNotification } from '../../../../contexts/NotificationContext';
-import { useAddresses } from '../../../../hooks/useAddresses'; // Importa o hook de endereços
+import { useAddresses } from '../../../../hooks/useAddresses'; 
 import api from '../../../../api/api';
-import UserProfileForm from '../components/UserProfileForm'; // Novo componente
-import AddressForm from '../components/AddressForm'; // Novo componente
-import AddressList from '../components/AddressList'; // Novo componente
+import UserProfileForm from '../components/UserProfileForm'; 
+import AddressForm from '../components/AddressForm'; 
+import AddressList from '../components/AddressList';
 import { type UserProfile, type Address } from '../../../../types';
 
 const ClientProfilePage: React.FC = () => {
@@ -35,9 +34,9 @@ const ClientProfilePage: React.FC = () => {
     updateAddress,
     deleteAddress,
     setPrimaryAddress,
-  } = useAddresses(); // Utiliza o hook useAddresses
+  } = useAddresses(); 
 
-  const [currentTab, setCurrentTab] = useState(0); // 0: Perfil, 1: Endereços
+  const [currentTab, setCurrentTab] = useState(0); 
   const [isProfileFormModalOpen, setIsProfileFormModalOpen] = useState(false);
   const [isAddressFormModalOpen, setIsAddressFormModalOpen] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
@@ -85,7 +84,6 @@ const ClientProfilePage: React.FC = () => {
       }
       setIsAddressFormModalOpen(false);
     } catch (err) {
-      // Erro já tratado por useAddresses e useNotification
       console.error("Falha ao salvar endereço:", err);
     }
   };
@@ -94,7 +92,6 @@ const ClientProfilePage: React.FC = () => {
     try {
       await deleteAddress(id);
     } catch (err) {
-      // Erro já tratado por useAddresses e useNotification
       console.error("Falha ao deletar endereço:", err);
     }
   };
@@ -103,7 +100,6 @@ const ClientProfilePage: React.FC = () => {
     try {
       await setPrimaryAddress(id);
     } catch (err) {
-      // Erro já tratado por useAddresses e useNotification
       console.error("Falha ao definir endereço principal:", err);
     }
   };
@@ -147,7 +143,7 @@ const ClientProfilePage: React.FC = () => {
         </Tabs>
       </Box>
 
-      {currentTab === 0 && ( // Dados Pessoais
+      {currentTab === 0 && ( 
         <Paper elevation={3} sx={{ p: 4, mb: 4 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Typography variant="h5" component="h2">
@@ -168,7 +164,7 @@ const ClientProfilePage: React.FC = () => {
         </Paper>
       )}
 
-      {currentTab === 1 && ( // Meus Endereços
+      {currentTab === 1 && ( 
         <Paper elevation={3} sx={{ p: 4, mb: 4 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Typography variant="h5" component="h2">
@@ -191,7 +187,6 @@ const ClientProfilePage: React.FC = () => {
         </Paper>
       )}
 
-      {/* Modal para editar/criar Perfil */}
       <Dialog open={isProfileFormModalOpen} onClose={() => setIsProfileFormModalOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Editar Perfil</DialogTitle>
         <DialogContent dividers>
@@ -204,7 +199,6 @@ const ClientProfilePage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Modal para editar/criar Endereço */}
       <Dialog open={isAddressFormModalOpen} onClose={() => setIsAddressFormModalOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{selectedAddress ? "Editar Endereço" : "Adicionar Novo Endereço"}</DialogTitle>
         <DialogContent dividers>

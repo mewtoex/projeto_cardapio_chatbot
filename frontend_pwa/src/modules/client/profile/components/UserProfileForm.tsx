@@ -1,28 +1,31 @@
-// frontend_pwa/src/modules/client/profile/components/UserProfileForm.tsx
 import React, { useEffect } from 'react';
 import { TextField, Button, Box, CircularProgress, Typography } from '@mui/material';
 import { useForm } from '../../../../hooks/useForm';
 import { type User } from '../../../../types';
-import InputMask from 'react-input-mask'; // Importe InputMask
+import InputMask from 'react-input-mask';
 
 interface UserProfileFormProps {
   initialData?: User | null;
   onSubmit: (formData: User) => Promise<void>;
   isSaving: boolean;
+  onCancel: () => void;
 }
 
 const initialFormState: User = {
-  id: '',
+  id: 0,
   name: '',
   email: '',
-  phone: '', // Adicionado telefone no estado inicial
-  role: 'client', // Valor padrão
-  created_at: '',
-  updated_at: '',
+  phone: '', 
+  role: 'cliente', 
 };
 
-const UserProfileForm: React.FC<UserProfileFormProps> = ({ initialData, onSubmit, isSaving }) => {
-  const { values, handleChange, handleManualChange, handleSubmit, setAllValues, isDirty, errors, setErrors } = useForm<User>(initialFormState, validateForm);
+const UserProfileForm: React.FC<UserProfileFormProps> = ({ 
+  initialData, 
+  onSubmit, 
+  isSaving,
+  onCancel 
+}) => {
+  const { values, handleChange, setAllValues, isDirty, errors, setErrors } = useForm<User>(initialFormState, validateForm);
 
   useEffect(() => {
     if (initialData) {
@@ -34,7 +37,7 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ initialData, onSubmit
 
   const handlePhoneChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = event.target;
-    handleChange(event); // Atualiza o valor do telefone no estado do formulário
+    handleChange(event); 
 
     const cleanPhone = value.replace(/\D/g, '');
     if (cleanPhone.length > 0 && (cleanPhone.length < 10 || cleanPhone.length > 11)) {
@@ -53,7 +56,6 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ initialData, onSubmit
       newErrors.email = "Email inválido.";
     }
 
-    // Validação para telefone
     if (!formData.phone.trim()) {
       newErrors.phone = "Telefone é obrigatório.";
     } else {
@@ -65,19 +67,29 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ initialData, onSubmit
     return newErrors;
   }
 
-  const submitForm = async () => {
-    // Garante que apenas os campos editáveis são enviados
-    const dataToSubmit = {
-      name: values.name,
-      email: values.email,
-      phone: values.phone,
-      // Não enviar created_at, updated_at, id, role (são gerenciados pelo backend ou imutáveis aqui)
-    };
-    await onSubmit(dataToSubmit as User); // Fazendo um cast para User, pois o onSubmit espera User
+  const handleFormSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    
+    const validationErrors = validateForm(values);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    try {
+      const dataToSubmit = {
+        ...values,
+        id: initialData?.id || 0,
+        role: initialData?.role || 'cliente'
+      };
+      await onSubmit(dataToSubmit);
+    } catch (error) {
+      console.error("Erro ao submeter formulário:", error);
+    }
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit(submitForm)} sx={{ p: 2 }}>
+    <Box component="form" onSubmit={handleFormSubmit} sx={{ p: 2 }}>
       <Typography variant="h6" gutterBottom>
         Dados Pessoais
       </Typography>
@@ -103,7 +115,7 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ initialData, onSubmit
         required
         error={!!errors.email}
         helperText={errors.email}
-        disabled // Email geralmente não é editável diretamente pelo perfil
+        disabled 
       />
       <InputMask
         mask="(99) 99999-9999"
@@ -125,8 +137,20 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ initialData, onSubmit
           />
         )}
       </InputMask>
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-        <Button type="submit" variant="contained" color="primary" disabled={isSaving || !isDirty}>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
+        <Button 
+          variant="outlined" 
+          onClick={onCancel}
+          disabled={isSaving}
+        >
+          Cancelar
+        </Button>
+        <Button 
+          type="submit" 
+          variant="contained" 
+          color="primary" 
+          disabled={isSaving || !isDirty}
+        >
           {isSaving ? <CircularProgress size={24} /> : 'Salvar Alterações'}
         </Button>
       </Box>

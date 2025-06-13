@@ -1,33 +1,18 @@
-// frontend_pwa/src/modules/auth/pages/ResetPasswordPage.tsx
-import React, { useEffect } from 'react';
-import { Box, Typography, Paper, Link } from '@mui/material';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useNotification } from '../../../contexts/NotificationContext';
-import ResetPasswordForm from '../components/ResetPasswordForm'; // Importa o novo componente de formulário
+import React from 'react';
+import { Box, Container, Paper, Typography, Link } from '@mui/material';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import ForgotPasswordForm from '../components/ForgotPasswordForm'; 
 
-const ResetPasswordPage: React.FC = () => {
-  const { token } = useParams<{ token: string }>(); // Obtém o token da URL
+const ForgotPasswordPage: React.FC = () => {
   const navigate = useNavigate();
-  const notification = useNotification();
-
-  useEffect(() => {
-    if (!token) {
-      notification.showError('Token de redefinição de senha ausente.');
-      navigate('/login'); // Redireciona se não houver token
-    }
-  }, [token, navigate, notification]);
 
   const handleSuccess = () => {
-    navigate('/login'); // Redireciona para o login após a redefinição bem-sucedida
+    navigate('/login'); 
   };
 
   const handleCancel = () => {
     navigate('/login');
   };
-
-  if (!token) {
-    return null; // Não renderiza nada se o token não estiver presente (o useEffect já redireciona)
-  }
 
   return (
     <Box
@@ -43,18 +28,20 @@ const ResetPasswordPage: React.FC = () => {
     >
       <Paper elevation={3} sx={{ p: 4, maxWidth: 450, width: '100%', borderRadius: 2 }}>
         <Typography variant="h5" component="h1" gutterBottom align="center" sx={{ mb: 3 }}>
-          Redefinir Senha
+          Esqueceu sua senha?
         </Typography>
         <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
-          Insira sua nova senha.
+          Informe seu email para receber um link de redefinição.
         </Typography>
-        <ResetPasswordForm token={token} onSuccess={handleSuccess} onCancel={handleCancel} />
+        <ForgotPasswordForm onSuccess={handleSuccess} onCancel={handleCancel} />
         <Box sx={{ mt: 2, textAlign: 'center' }}>
-          <Link to="/login">Voltar ao Login</Link>
+          <Link component={RouterLink} to="/login">
+            Voltar ao Login
+          </Link>
         </Box>
       </Paper>
     </Box>
   );
 };
 
-export default ResetPasswordPage;
+export default ForgotPasswordPage;

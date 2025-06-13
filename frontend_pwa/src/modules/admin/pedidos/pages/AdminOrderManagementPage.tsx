@@ -13,7 +13,7 @@ import {
 import api from '../../../../api/api';
 import { useLoading } from '../../../../hooks/useLoading';
 import { useNotification } from '../../../../contexts/NotificationContext';
-import ConfirmationDialog from '../../../../components/ui/ConfirmationDialog';
+import ConfirmationDialog from '../../../../components/UI/ConfirmationDialog';
 import { type Order, OrderStatus, OrderStatusMapping } from '../../../../types'; // Assumindo OrderStatusMapping
 
 const AdminOrderManagementPage: React.FC = () => {

@@ -3,7 +3,11 @@ import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, IconButton, CircularProgress, Dialog, DialogTitle, DialogContent,
-  Chip, Tabs, Tab, TextField, InputAdornment
+  Chip, Tabs, Tab, TextField, InputAdornment,
+  ListItemText,
+  List,
+  ListItem,
+  Switch
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Search as SearchIcon } from '@mui/icons-material';
 import api from '../../../../api/api';
@@ -13,7 +17,7 @@ import MenuItemForm from '../components/MenuItemForm';
 import CategoryForm from '../components/CategoryForm'; // Novo componente de formulário de categoria
 import AddonCategoryForm from '../components/AddonCategoryForm'; // Novo componente de formulário de categoria de adicional
 import AddonOptionForm from '../components/AddonOptionForm'; // Novo componente de formulário de opção de adicional
-import ConfirmationDialog from '../../../../components/ui/ConfirmationDialog';
+import ConfirmationDialog from '../../../../components/UI/ConfirmationDialog';
 import { type MenuItem, type Category, type AddonCategory, type AddonOption } from '../../../../types';
 
 const AdminItemManagementPage: React.FC = () => {
@@ -211,22 +215,21 @@ const AdminItemManagementPage: React.FC = () => {
         case 'menuItem':
           await api.deleteMenuItem(itemToDelete.id);
           notification.showSuccess("Item do menu removido com sucesso!");
-          setMenuItemsManually(prev => prev ? prev.filter(item => item.id !== itemToDelete.id) : []);
+          setMenuItemsManually(prev => prev ? prev.filter(item => item.id.toString() !== itemToDelete.id) : []);
           break;
         case 'category':
           await api.deleteCategory(itemToDelete.id);
           notification.showSuccess("Categoria removida com sucesso!");
-          setCategoriesManually(prev => prev ? prev.filter(cat => cat.id !== itemToDelete.id) : []);
+          setCategoriesManually(prev => prev ? prev.filter(cat => cat.id.toString() !== itemToDelete.id) : []);
           break;
         case 'addonCategory':
           await api.deleteAddonCategory(itemToDelete.id);
           notification.showSuccess("Categoria de adicional removida com sucesso!");
-          setAddonCategoriesManually(prev => prev ? prev.filter(cat => cat.id !== itemToDelete.id) : []);
+          setAddonCategoriesManually(prev => prev ? prev.filter(cat => cat.id.toString() !== itemToDelete.id) : []);
           break;
         case 'addonOption':
           await api.deleteAddonOption(itemToDelete.id);
           notification.showSuccess("Opção de adicional removida com sucesso!");
-          // Após deletar uma opção, você precisa recarregar a categoria de adicionais para atualizar a lista de opções
           await fetchAddonCategories(api.getAddonCategories(), undefined, "Erro ao recarregar categorias de adicionais após exclusão.");
           break;
       }
@@ -541,7 +544,6 @@ const AdminItemManagementPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo de Confirmação de Exclusão */}
       <ConfirmationDialog
         open={isConfirmDeleteModalOpen}
         onClose={() => setIsConfirmDeleteModalOpen(false)}

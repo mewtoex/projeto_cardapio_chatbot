@@ -1,11 +1,10 @@
-// frontend_pwa/src/modules/admin/loja/components/StoreForm.tsx
 import React, { useEffect, useCallback } from 'react';
 import { TextField, Button, Box, CircularProgress, Typography, FormControlLabel, Switch } from '@mui/material';
 import { useForm } from '../../../../hooks/useForm';
 import { type Store } from '../../../../types';
 import { ImageUpload } from '../../../../components/UI/ImageUpload';
 import axios from 'axios';
-import InputMask from 'react-input-mask'; // Importe InputMask
+import InputMask from 'react-input-mask'; 
 
 const initialFormState: Store = {
   name: '',

@@ -1,8 +1,7 @@
-// frontend_pwa/src/modules/auth/pages/UnifiedLoginPage.tsx
 import React, { useState } from 'react';
 import { Box, Container, Paper, Typography, Tabs, Tab } from '@mui/material';
 import ClientLoginForm from '../components/ClientLoginForm';
-import AdminLoginForm from '../components/AdminLoginForm';
+import AdminLoginForm from '../../admin/auth/components/AdminLoginForm';
 
 const UnifiedLoginPage: React.FC = () => {
   const [currentTab, setCurrentTab] = useState(0); // 0 for Client, 1 for Admin

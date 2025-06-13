@@ -17,7 +17,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { user } = useAuth(); // Obtém informações do usuário logado
+  const { user } = useAuth(); 
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -26,7 +26,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
   const getTitle = () => {
     if (isAdmin) return "Admin - Seu Restaurante";
     if (user?.role === 'cliente') return "Cliente - Seu Restaurante";
-    return "Seu Restaurante"; // Título padrão
+    return "Seu Restaurante"; 
   };
 
   return (
@@ -36,7 +36,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
         sx={{
           width: { md: `calc(100% - ${drawerWidth}px)` },
           ml: { md: `${drawerWidth}px` },
-          zIndex: (theme) => theme.zIndex.drawer + 1, // Garante que o AppBar esteja acima do Drawer
+          zIndex: (theme) => theme.zIndex.drawer + 1, 
         }}
       >
         <Toolbar>
@@ -52,7 +52,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             {getTitle()}
           </Typography>
-          {/* Você pode adicionar outros elementos à AppBar aqui, como botões de logout */}
         </Toolbar>
       </AppBar>
 
@@ -61,13 +60,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
         sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
         aria-label="mailbox folders"
       >
-        {/* Drawer para mobile */}
         <Drawer
           variant="temporary"
           open={mobileOpen}
           onClose={handleDrawerToggle}
           ModalProps={{
-            keepMounted: true, // Better open performance on mobile.
+            keepMounted: true, 
           }}
           sx={{
             display: { xs: 'block', md: 'none' },
@@ -76,7 +74,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
         >
           <Sidebar onClose={handleDrawerToggle} isAdmin={isAdmin} />
         </Drawer>
-        {/* Drawer para desktop */}
         <Drawer
           variant="permanent"
           sx={{
@@ -95,13 +92,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ isAdmin = false }) => {
           flexGrow: 1,
           p: 3,
           width: { md: `calc(100% - ${drawerWidth}px)` },
-          mt: `${theme.mixins.toolbar.minHeight}px`, // Ajusta o espaçamento para o AppBar fixo
+          mt: `${theme.mixins.toolbar.minHeight}px`, 
           [theme.breakpoints.up('sm')]: {
-            mt: `${theme.mixins.toolbar.minHeight}px`, // Ajusta para sm em diante se o AppBar tiver altura diferente
+            mt: `${theme.mixins.toolbar.minHeight}px`,
           },
         }}
       >
-        {/* Conteúdo da rota atual será renderizado aqui */}
         <Outlet />
       </Box>
     </Box>

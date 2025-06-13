@@ -1,4 +1,3 @@
-// frontend_pwa/src/components/common/LoadingSpinner.tsx
 import React from 'react';
 import { Box, CircularProgress, Typography } from '@mui/material';
 
@@ -16,7 +15,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ message = "Carregando..
         justifyContent: 'center',
         height: '100%',
         width: '100%',
-        minHeight: '200px', // Garante que o spinner seja visível mesmo em caixas pequenas
+        minHeight: '200px', 
       }}
     >
       <CircularProgress size={60} />

@@ -1,4 +1,3 @@
-// frontend_pwa/src/modules/admin/itens/components/AddonCategoryForm.tsx
 import React, { useEffect } from 'react';
 import { TextField, Button, Box, CircularProgress, FormControlLabel, Switch, Typography } from '@mui/material';
 import { useForm } from '../../../../hooks/useForm';
@@ -28,7 +27,7 @@ const initialFormState: AddonCategoryFormData = {
 const AddonCategoryForm: React.FC<AddonCategoryFormProps> = ({
   initialData, onSubmit, onCancel, isSaving
 }) => {
-  const { values, handleChange, handleManualChange, handleSubmit, setAllValues, isDirty, errors, setErrors } = useForm<AddonCategoryFormData>(initialFormState, validateForm);
+  const { values, handleChange, handleManualChange, setAllValues, isDirty, errors, setErrors } = useForm<AddonCategoryFormData>(initialFormState, validateForm);
 
   useEffect(() => {
     if (initialData) {
@@ -61,22 +60,34 @@ const AddonCategoryForm: React.FC<AddonCategoryFormProps> = ({
       newErrors.max_selections = "Máximo deve ser maior ou igual ao mínimo (ou 0 para ilimitado).";
     }
     if (formData.is_required && min === 0) {
-        newErrors.min_selections = "Se a categoria é obrigatória, o mínimo de seleções não pode ser 0.";
+      newErrors.min_selections = "Se a categoria é obrigatória, o mínimo de seleções não pode ser 0.";
     }
     return newErrors;
   }
 
-  const submitForm = async () => {
-    await onSubmit({
-      name: values.name,
-      min_selections: parseInt(values.min_selections, 10),
-      max_selections: parseInt(values.max_selections, 10),
-      is_required: values.is_required,
-    });
+  const handleFormSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    
+    const validationErrors = validateForm(values);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    try {
+      await onSubmit({
+        name: values.name,
+        min_selections: parseInt(values.min_selections, 10),
+        max_selections: parseInt(values.max_selections, 10),
+        is_required: values.is_required,
+      });
+    } catch (error) {
+      console.error("Erro ao salvar categoria de adicional:", error);
+    }
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit(submitForm)} sx={{ p: 2 }}>
+    <Box component="form" onSubmit={handleFormSubmit} sx={{ p: 2 }}>
       <TextField
         fullWidth
         label="Nome da Categoria de Adicional"

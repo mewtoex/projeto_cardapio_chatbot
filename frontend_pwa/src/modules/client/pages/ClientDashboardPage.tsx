@@ -1,4 +1,3 @@
-// frontend_pwa/src/modules/client/pages/ClientDashboardPage.tsx
 import React, { useEffect } from 'react';
 import { Box, Typography, Button, Container, Paper, Grid, CircularProgress, Link } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
@@ -10,7 +9,7 @@ import { type UserProfile } from '../../../types';
 
 const ClientDashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth(); // Obtém o usuário do AuthContext
+  const { user, isAuthenticated } = useAuth(); 
   const notification = useNotification();
   const { 
     data: userProfile, 
@@ -26,8 +25,6 @@ const ClientDashboardPage: React.FC = () => {
   }, [isAuthenticated, fetchUserProfile]);
 
   if (!isAuthenticated) {
-    // Caso o usuário não esteja autenticado, redireciona para o login
-    // (Embora ProtectedRoute já deva lidar com isso, é uma segurança extra)
     navigate('/login');
     return null;
   }
@@ -70,7 +67,7 @@ const ClientDashboardPage: React.FC = () => {
         </Typography>
 
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Button
               variant="contained"
               fullWidth
@@ -80,7 +77,7 @@ const ClientDashboardPage: React.FC = () => {
               Explorar Cardápio
             </Button>
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Button
               variant="outlined"
               fullWidth
@@ -90,7 +87,7 @@ const ClientDashboardPage: React.FC = () => {
               Meus Pedidos
             </Button>
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Button
               variant="outlined"
               fullWidth
@@ -100,7 +97,7 @@ const ClientDashboardPage: React.FC = () => {
               Meu Perfil
             </Button>
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid  size={{ xs: 12, sm: 6 }}>
             <Button
               variant="outlined"
               fullWidth
@@ -112,13 +109,6 @@ const ClientDashboardPage: React.FC = () => {
           </Grid>
         </Grid>
       </Paper>
-
-      {/* Você pode adicionar um resumo dos últimos pedidos aqui também */}
-      {/* Exemplo: */}
-      {/* <Paper elevation={3} sx={{ p: 4 }}>
-        <Typography variant="h5" gutterBottom>Últimos Pedidos</Typography>
-        {/* Renderize uma lista dos últimos pedidos do usuário aqui */}
-      {/* </Paper> */}
     </Container>
   );
 };

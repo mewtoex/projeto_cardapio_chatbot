@@ -1,4 +1,3 @@
-// frontend_pwa/src/components/Layout/Sidebar.tsx
 import React from 'react';
 import {
   Box, Divider, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography
@@ -10,8 +9,8 @@ import {
   AdminPanelSettings as AdminPanelSettingsIcon, Store as StoreIcon, LocalShipping as LocalShippingIcon,
   Message as MessageIcon, ExitToApp as ExitToAppIcon
 } from '@mui/icons-material';
-import { useAuth } from '../../hooks/useAuth'; // Usando o novo hook de autenticação
-import AuthService from '../../modules/shared/services/AuthService'; // Ainda utilizado para logout direto
+import { useAuth } from '../../hooks/useAuth'; 
+import AuthService from '../../modules/shared/services/AuthService'; 
 
 interface SidebarProps {
   onClose: () => void;
@@ -21,12 +20,12 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ onClose, isAdmin }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout: authLogout } = useAuth(); // Obtém o usuário e a função de logout do hook
+  const { user, logout: authLogout } = useAuth(); 
 
   const handleLogout = () => {
-    authLogout(); // Chama a função de logout do contexto
-    onClose(); // Fecha a sidebar (se for mobile)
-    navigate('/login'); // Redireciona para a página de login
+    authLogout(); 
+    onClose(); 
+    navigate('/login'); 
   };
 
   // Links para clientes
@@ -37,7 +36,6 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose, isAdmin }) => {
     { text: 'Meu Perfil', icon: <PersonIcon />, path: '/client/perfil' },
   ];
 
-  // Links para administradores
   const adminLinks = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/admin/dashboard' },
     { text: 'Gerenciar Itens', icon: <RestaurantMenuIcon />, path: '/admin/itens' },

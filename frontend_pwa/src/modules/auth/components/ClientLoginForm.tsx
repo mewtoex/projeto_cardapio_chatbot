@@ -1,4 +1,3 @@
-// frontend_pwa/src/modules/auth/components/ClientLoginForm.tsx
 import React from 'react';
 import { TextField, Button, Box, Typography, CircularProgress, Link } from '@mui/material';
 import { useAuth } from '../../../hooks/useAuth';
