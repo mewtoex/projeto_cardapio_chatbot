@@ -12,10 +12,10 @@ class UserProfileSchema(Schema):
     cpf = fields.String(required=False, allow_none=True) # CPF não obrigatório, mas se presente, deve ser válido
 
     # Adicionar método de validação para CPF
-    @validate.validates('cpf')
-    def validate_user_cpf(self, cpf):
-        if cpf and not validate_cpf(cpf):
-            raise ValidationError("CPF inválido.")
+    #@validate.validates('cpf')
+    #def validate_user_cpf(self, cpf):
+    #    if cpf and not validate_cpf(cpf):
+    #        raise ValidationError("CPF inválido.")
 
     role = fields.String(dump_only=True) # Role é apenas para saída
     

@@ -12,10 +12,10 @@ class StoreSchema(Schema):
     cnpj = fields.String(required=False, allow_none=True) # CNPJ não obrigatório, mas se presente, deve ser válido
 
     # Adicionar método de validação para CNPJ
-    @validate.validates('cnpj')
-    def validate_store_cnpj(self, cnpj):
-        if cnpj and not validate_cnpj(cnpj):
-            raise ValidationError("CNPJ inválido.")
+    #@validate.validates('cnpj')
+    #def validate_store_cnpj(self, cnpj):
+    #    if cnpj and not validate_cnpj(cnpj):
+    #        raise ValidationError("CNPJ inválido.")
 
     address_id = fields.Integer(dump_only=True) # Apenas para saída
     address = fields.Nested(AddressSchema, required=True) # Aninha o schema de endereço
