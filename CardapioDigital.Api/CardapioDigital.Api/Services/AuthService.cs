@@ -1,22 +1,25 @@
-﻿using CardapioDigital.Api.Data; 
+﻿using CardapioDigital.Api.Data;
 using CardapioDigital.Api.DTOs.Auth;
 using CardapioDigital.Api.Models;
 using CardapioDigital.Api.Repositories.Interfaces;
 using CardapioDigital.Api.Services.Interfaces;
 using System;
 using System.Threading.Tasks;
+using CardapioDigital.Api.Exceptions; 
 
 namespace CardapioDigital.Api.Services
 {
     public class AuthService : IAuthService
     {
         private readonly IUserRepository _userRepository;
+        private readonly IClientRepository _clientRepository; 
         private readonly ISecurityService _securityService;
-        private readonly ApplicationDbContext _context; 
+        private readonly ApplicationDbContext _context;
 
-        public AuthService(IUserRepository userRepository, ISecurityService securityService, ApplicationDbContext context)
+        public AuthService(IUserRepository userRepository, IClientRepository clientRepository, ISecurityService securityService, ApplicationDbContext context) 
         {
             _userRepository = userRepository;
+            _clientRepository = clientRepository; 
             _securityService = securityService;
             _context = context;   
         }
@@ -27,24 +30,40 @@ namespace CardapioDigital.Api.Services
             var existingUserByUsername = await _userRepository.GetByUsernameAsync(request.Username);
             if (existingUserByUsername != null)
             {
-                throw new ApplicationException("Nome de usuário já existe."); // Usar exceções customizadas depois
+                throw new ApplicationException("Nome de usuário já existe."); 
             }
 
             var existingUserByEmail = await _userRepository.GetByEmailAsync(request.Email);
             if (existingUserByEmail != null)
             {
-                throw new ApplicationException("E-mail já existe."); // Usar exceções customizadas depois
+                throw new ApplicationException("E-mail já existe."); 
             }
 
-            // Criar novo usuário
+            if (await _clientRepository.GetByCPFAsync(request.ClientData.CPF) != null)
+            {
+                throw new BadRequestException("CPF já cadastrado.");
+            }
+
             var newUser = new User
             {
                 Username = request.Username,
                 Email = request.Email,
                 PasswordHash = _securityService.HashPassword(request.Password), 
                 IsAdmin = false,
+                Role = role,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
+            };
+
+            var newClient = new Client
+            {
+                FirstName = request.ClientData.FirstName,
+                LastName = request.ClientData.LastName,
+                CPF = request.ClientData.CPF,
+                Telephone = request.ClientData.Telephone,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                User = newUser 
             };
 
             await _userRepository.AddAsync(newUser);
@@ -77,7 +96,7 @@ namespace CardapioDigital.Api.Services
 
             if (user == null || !_securityService.VerifyPassword(request.Password, user.PasswordHash))
             {
-                throw new ApplicationException("Credenciais inválidas."); // Usar exceções customizadas depois
+                throw new ApplicationException("Credenciais inválidas."); 
             }
 
             var token = _securityService.GenerateJwtToken(user);

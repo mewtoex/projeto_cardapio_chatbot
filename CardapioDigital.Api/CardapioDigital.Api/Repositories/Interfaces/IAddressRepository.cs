@@ -6,6 +6,6 @@ namespace CardapioDigital.Api.Repositories.Interfaces
 {
     public interface IAddressRepository : IGenericRepository<Address>
     {
-        Task<IEnumerable<Address>> GetAddressesByUserIdAsync(int userId);
+        Task<IEnumerable<Address>> GetAddressesByClientIdAsync(int clientId); 
     }
 }

@@ -47,11 +47,11 @@ namespace CardapioDigital.Api.Services
             var order = await _orderRepository.GetByIdWithDetailsAsync(orderId);
             if (order == null)
             {
-                throw new ApplicationException("Pedido não encontrado."); // Trocar por NotFoundException
+                throw new ApplicationException("Pedido não encontrado."); 
             }
-            if (userId.HasValue && order.UserId != userId.Value)
+            if (userId.HasValue && order.ClientId != userId.Value)
             {
-                throw new UnauthorizedAccessException("Você não tem permissão para visualizar este pedido."); // Trocar por ForbiddenException
+                throw new UnauthorizedAccessException("Você não tem permissão para visualizar este pedido."); 
             }
             return _mapper.Map<OrderResponse>(order);
         }
@@ -65,7 +65,7 @@ namespace CardapioDigital.Api.Services
             }
 
             var address = await _addressRepository.GetByIdAsync(request.AddressId);
-            if (address == null || address.UserId != userId)
+            if (address == null || address.ClientId != userId)
             {
                 throw new ApplicationException("Endereço inválido ou não pertence ao usuário.");
             }
@@ -77,7 +77,7 @@ namespace CardapioDigital.Api.Services
 
             var newOrder = new Order
             {
-                UserId = userId,
+                ClientId = userId,
                 AddressId = request.AddressId,
                 PaymentMethod = request.PaymentMethod,
                 DeliveryType = request.DeliveryType,
@@ -165,7 +165,7 @@ namespace CardapioDigital.Api.Services
                 throw new ApplicationException("Pedido não encontrado.");
             }
 
-            if (userId.HasValue && order.UserId != userId.Value)
+            if (userId.HasValue && order.ClientId != userId.Value)
             {
                 throw new UnauthorizedAccessException("Você não tem permissão para cancelar este pedido.");
             }

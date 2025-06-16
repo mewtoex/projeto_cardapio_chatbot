@@ -11,40 +11,38 @@ namespace CardapioDigital.Api.Models
         public int Id { get; set; }
 
         [Required]
-        public int UserId { get; set; } 
-
-        [Required]
-        [StringLength(200)]
+        public int ClientId { get; set; } [Required]
+        [StringLength(255)]
         public string Street { get; set; }
 
-        [Required]
-        [StringLength(20)]
+        [StringLength(50)]
         public string Number { get; set; }
 
-        [StringLength(100)]
-        public string? Complement { get; set; } 
+        [StringLength(255)]
+        public string Complement { get; set; }
+
         [Required]
-        [StringLength(100)]
+        [StringLength(255)]
         public string Neighborhood { get; set; }
 
         [Required]
-        [StringLength(100)]
+        [StringLength(255)]
         public string City { get; set; }
 
         [Required]
-        [StringLength(2)] 
+        [StringLength(2)]
         public string State { get; set; }
 
         [Required]
-        [StringLength(10)] 
+        [StringLength(10)]
         public string ZipCode { get; set; }
 
-        public bool IsDefault { get; set; } = false; 
-        public DateTime CreatedAt { get; set; }
+        public bool IsDefault { get; set; } = false;
 
+        public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
-        public User User { get; set; } = null!; 
+        public Client Client { get; set; } 
 
         public Address()
         {

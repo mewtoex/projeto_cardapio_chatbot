@@ -17,6 +17,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using Microsoft.OpenApi.Models;
+using CardaphoDigital.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -109,6 +110,7 @@ builder.Services.AddScoped<IPromotionRepository, PromotionRepository>();
 builder.Services.AddScoped<ISecurityService, SecurityService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IClientRepository, ClientRepository>();
 builder.Services.AddScoped<IAddonService, AddonService>();
 builder.Services.AddScoped<IBotMessageService, BotMessageService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();

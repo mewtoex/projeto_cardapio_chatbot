@@ -5,7 +5,7 @@ namespace CardapioDigital.Api.DTOs.Address
     public class AddressResponse
     {
         public int Id { get; set; }
-        public int UserId { get; set; }
+        public int ClientId { get; set; }
         public string Street { get; set; }
         public string Number { get; set; }
         public string Complement { get; set; }

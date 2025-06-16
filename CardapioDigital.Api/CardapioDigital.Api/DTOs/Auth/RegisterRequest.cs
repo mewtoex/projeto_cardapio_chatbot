@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using CardapioDigital.Api.DTOs.Client; 
 
 namespace CardapioDigital.Api.DTOs.Auth
 {
@@ -17,5 +18,7 @@ namespace CardapioDigital.Api.DTOs.Auth
         [MinLength(6, ErrorMessage = "A senha deve ter no mínimo 6 caracteres.")]
         public string Password { get; set; }
 
+        [Required(ErrorMessage = "Os dados do cliente são obrigatórios.")]
+        public CreateClientRequest ClientData { get; set; } 
     }
 }

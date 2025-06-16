@@ -1,27 +1,30 @@
-﻿using AutoMapper; 
+﻿using AutoMapper;
 using CardapioDigital.Api.DTOs.Address;
 using CardapioDigital.Api.DTOs.User;
-using CardapioDigital.Api.Exceptions;
+using CardapioDigital.Api.DTOs.Client; 
 using CardapioDigital.Api.Models;
 using CardapioDigital.Api.Repositories.Interfaces;
 using CardapioDigital.Api.Services.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Linq; 
+using System.Linq;
 using System.Threading.Tasks;
+using CardapioDigital.Api.Exceptions; 
 
-namespace CardapioDigital.Api.Services
+namespace CardaphoDigital.Api.Services
 {
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
+        private readonly IClientRepository _clientRepository;
         private readonly IAddressRepository _addressRepository;
-        private readonly ISecurityService _securityService; 
-        private readonly IMapper _mapper; 
+        private readonly ISecurityService _securityService;
+        private readonly IMapper _mapper;
 
-        public UserService(IUserRepository userRepository, IAddressRepository addressRepository, ISecurityService securityService, IMapper mapper)
+        public UserService(IUserRepository userRepository, IClientRepository clientRepository, IAddressRepository addressRepository, ISecurityService securityService, IMapper mapper) // NOVO: clientRepository
         {
             _userRepository = userRepository;
+            _clientRepository = clientRepository; 
             _addressRepository = addressRepository;
             _securityService = securityService;
             _mapper = mapper;
@@ -29,65 +32,60 @@ namespace CardapioDigital.Api.Services
 
         public async Task<UserProfileResponse> GetUserProfileAsync(int userId)
         {
-            var user = await _userRepository.FindAsync(u => u.Id == userId);
-            var userWithAddresses = user.FirstOrDefault(); 
-
-            if (userWithAddresses == null)
+            var user = await _userRepository.GetByIdAsync(userId); 
+            if (user == null)
             {
-                throw new ApplicationException("Usuário não encontrado."); 
+                throw new NotFoundException("Usuário não encontrado.");
             }
-            var userProfileResponse = _mapper.Map<UserProfileResponse>(userWithAddresses);
 
-            userProfileResponse.Addresses = _mapper.Map<ICollection<AddressResponse>>(
-                await _addressRepository.GetAddressesByUserIdAsync(userId)
-            );
+            var userProfileResponse = _mapper.Map<UserProfileResponse>(user);
+            if (user.Client != null)
+            {
+                var clientWithAddresses = await _clientRepository.GetByIdWithDetailsAsync(user.Client.Id);
+                userProfileResponse.Client = _mapper.Map<ClientResponse>(clientWithAddresses);
+            }
 
             return userProfileResponse;
         }
 
-        public async Task<UserProfileResponse> UpdateUserProfileAsync(int userId, UpdateUserProfileRequest request)
+        public async Task<ClientResponse> UpdateClientProfileAsync(int userId, UpdateClientProfileRequest request)
         {
-            var user = await _userRepository.GetByIdAsync(userId);
-            if (user == null)
+            var client = await _clientRepository.GetByUserIdAsync(userId);
+            if (client == null)
             {
-                throw new ApplicationException("Usuário não encontrado.");
+                throw new NotFoundException("Cliente não encontrado para o usuário especificado.");
             }
 
-            if (!string.IsNullOrEmpty(request.Username) && request.Username != user.Username)
+            if (!string.IsNullOrEmpty(request.CPF) && request.CPF != client.CPF)
             {
-                if (await _userRepository.GetByUsernameAsync(request.Username) != null)
+                if (await _clientRepository.GetByCPFAsync(request.CPF) != null)
                 {
-                    throw new ApplicationException("Nome de usuário já existe.");
+                    throw new BadRequestException("CPF já cadastrado para outro cliente.");
                 }
-                user.Username = request.Username;
-            }
-            if (!string.IsNullOrEmpty(request.Email) && request.Email != user.Email)
-            {
-                if (await _userRepository.GetByEmailAsync(request.Email) != null)
-                {
-                    throw new ApplicationException("E-mail já existe.");
-                }
-                user.Email = request.Email;
+                client.CPF = request.CPF;
             }
 
-            user.UpdatedAt = DateTime.UtcNow;
-            _userRepository.Update(user);
-            await _userRepository.SaveChangesAsync();
+            _mapper.Map(request, client);
+            client.UpdatedAt = DateTime.UtcNow;
 
-            return _mapper.Map<UserProfileResponse>(user);
+            _clientRepository.Update(client);
+            await _clientRepository.SaveChangesAsync();
+
+            return _mapper.Map<ClientResponse>(client);
         }
+
 
         public async Task ChangeUserPasswordAsync(int userId, ChangePasswordRequest request)
         {
             var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
             {
-                throw new ApplicationException("Usuário não encontrado.");
+                throw new NotFoundException("Usuário não encontrado.");
             }
 
             if (!_securityService.VerifyPassword(request.CurrentPassword, user.PasswordHash))
             {
-                throw new ApplicationException("Senha atual incorreta.");
+                throw new BadRequestException("Senha atual incorreta.");
             }
 
             user.PasswordHash = _securityService.HashPassword(request.NewPassword);
@@ -96,16 +94,16 @@ namespace CardapioDigital.Api.Services
             await _userRepository.SaveChangesAsync();
         }
 
-        public async Task<AddressResponse> AddUserAddressAsync(int userId, AddressRequest request)
+        public async Task<AddressResponse> AddClientAddressAsync(int userId, AddressRequest request)
         {
-            var user = await _userRepository.GetByIdAsync(userId);
-            if (user == null)
+            var client = await _clientRepository.GetByUserIdAsync(userId);
+            if (client == null)
             {
-                throw new ApplicationException("Usuário não encontrado.");
+                throw new NotFoundException("Cliente não encontrado para o usuário especificado.");
             }
 
             var newAddress = _mapper.Map<Address>(request);
-            newAddress.UserId = userId; 
+            newAddress.ClientId = client.Id; 
             newAddress.CreatedAt = DateTime.UtcNow;
             newAddress.UpdatedAt = DateTime.UtcNow;
 
@@ -115,28 +113,32 @@ namespace CardapioDigital.Api.Services
             return _mapper.Map<AddressResponse>(newAddress);
         }
 
-        public async Task<IEnumerable<AddressResponse>> GetUserAddressesAsync(int userId)
+        public async Task<IEnumerable<AddressResponse>> GetClientAddressesAsync(int userId)
         {
-            var addresses = await _addressRepository.GetAddressesByUserIdAsync(userId);
+            var client = await _clientRepository.GetByUserIdAsync(userId);
+            if (client == null)
+            {
+                throw new NotFoundException("Cliente não encontrado para o usuário especificado.");
+            }
+            var addresses = await _addressRepository.GetAddressesByClientIdAsync(client.Id);
             return _mapper.Map<IEnumerable<AddressResponse>>(addresses);
         }
 
-        public async Task<AddressResponse> UpdateUserAddressAsync(int userId, int addressId, AddressRequest request)
+        public async Task<AddressResponse> UpdateClientAddressAsync(int userId, int addressId, AddressRequest request)
         {
-            var address = await _addressRepository.GetByIdAsync(addressId);
-            if (address == null || address.UserId != userId)
+            var client = await _clientRepository.GetByUserIdAsync(userId);
+            if (client == null)
             {
-                throw new ApplicationException("Endereço não encontrado ou não pertence a este usuário.");
+                throw new NotFoundException("Cliente não encontrado para o usuário especificado.");
             }
 
-            address.Street = request.Street;
-            address.Number = request.Number;
-            address.Complement = request.Complement;
-            address.Neighborhood = request.Neighborhood;
-            address.City = request.City;
-            address.State = request.State;
-            address.ZipCode = request.ZipCode;
-            address.IsDefault = request.IsDefault;
+            var address = await _addressRepository.GetByIdAsync(addressId);
+            if (address == null || address.ClientId != client.Id) 
+            {
+                throw new NotFoundException("Endereço não encontrado ou não pertence a este cliente.");
+            }
+
+            _mapper.Map(request, address);
             address.UpdatedAt = DateTime.UtcNow;
 
             _addressRepository.Update(address);
@@ -145,26 +147,42 @@ namespace CardapioDigital.Api.Services
             return _mapper.Map<AddressResponse>(address);
         }
 
-        public async Task DeleteUserAddressAsync(int userId, int addressId)
+        public async Task DeleteClientAddressAsync(int userId, int addressId)
         {
-            var address = await _addressRepository.GetByIdAsync(addressId);
-            if (address == null || address.UserId != userId)
+            var client = await _clientRepository.GetByUserIdAsync(userId);
+            if (client == null)
             {
-                throw new ApplicationException("Endereço não encontrado ou não pertence a este usuário.");
+                throw new NotFoundException("Cliente não encontrado para o usuário especificado.");
+            }
+
+            var address = await _addressRepository.GetByIdAsync(addressId);
+            if (address == null || address.ClientId != client.Id) 
+            {
+                throw new NotFoundException("Endereço não encontrado ou não pertence a este cliente.");
             }
 
             _addressRepository.Remove(address);
             await _addressRepository.SaveChangesAsync();
         }
+
         public async Task<IEnumerable<UserProfileResponse>> GetAllUsersAsync()
         {
-            var users = await _userRepository.GetAllAsync();
+            var users = await _userRepository.GetAllAsync(); 
+                                                            
+            foreach (var user in users)
+            {
+                if (user.Client != null)
+                {
+                    var clientWithDetails = await _clientRepository.GetByIdWithDetailsAsync(user.Client.Id);
+                    user.Client = clientWithDetails; 
+                }
+            }
             return _mapper.Map<IEnumerable<UserProfileResponse>>(users);
         }
 
         public async Task<UserProfileResponse> UpdateUserRoleAsync(int userId, string newRole)
         {
-            var user = await _userRepository.GetByIdAsync(userId);
+            var user = await _userRepository.GetByIdAsync(userId); 
             if (user == null)
             {
                 throw new NotFoundException("Usuário não encontrado.");
@@ -176,7 +194,7 @@ namespace CardapioDigital.Api.Services
                 throw new BadRequestException("Role inválida. As roles permitidas são 'client' e 'admin'.");
             }
 
-            user.IsAdmin = newRole.ToLower() == "Admin";
+            user.Role = newRole.ToLower();
             user.UpdatedAt = DateTime.UtcNow;
             _userRepository.Update(user);
             await _userRepository.SaveChangesAsync();

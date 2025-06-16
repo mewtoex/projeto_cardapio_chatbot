@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using CardapioDigital.Api.DTOs.Address; 
+using CardapioDigital.Api.DTOs.Address;
+using CardapioDigital.Api.DTOs.Client; 
 
 namespace CardapioDigital.Api.DTOs.User
 {
@@ -13,6 +14,6 @@ namespace CardapioDigital.Api.DTOs.User
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-        public ICollection<AddressResponse> Addresses { get; set; }
+        public ClientResponse Client { get; set; }
     }
 }

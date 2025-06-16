@@ -5,32 +5,39 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CardapioDigital.Api.Models
 {
-    [Table("users")]
     public class User
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
-        [Required] 
+        [Required]
         [StringLength(80)]
-        public string Username { get; set; } = string.Empty;
+        public string Username { get; set; }
 
         [Required]
         [StringLength(120)]
-        public string Email { get; set; } = string.Empty;
+        public string Email { get; set; }
 
         [Required]
         [StringLength(128)]
-        public string PasswordHash { get; set; } = string.Empty;
+        public string PasswordHash { get; set; }
 
-        public bool IsAdmin { get; set; } = false;
+        [Required]
+        [StringLength(80)]
+        public string Role { get; set; } = "client";
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public bool IsActive { get; set; } = true;
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
 
-        public DateTime UpdatedAt { get; set; } = DateTime.Now;
+        public Client Client { get; set; }
+        public bool IsAdmin { get; internal set; }
 
-        public ICollection<Address> Addresses { get; set; } = new List<Address>();
-
-        public ICollection<Order> Orders { get; set; } = new List<Order>();
+        public User()
+        {
+            CreatedAt = DateTime.UtcNow;
+            UpdatedAt = DateTime.UtcNow;
+        }
     }
 }

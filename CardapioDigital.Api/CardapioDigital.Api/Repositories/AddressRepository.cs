@@ -14,9 +14,9 @@ namespace CardapioDigital.Api.Repositories
         {
         }
 
-        public async Task<IEnumerable<Address>> GetAddressesByUserIdAsync(int userId)
+        public async Task<IEnumerable<Address>> GetAddressesByClientIdAsync(int clientId) 
         {
-            return await _dbSet.Where(a => a.UserId == userId).ToListAsync();
+            return await _dbSet.Where(a => a.ClientId == clientId).ToListAsync();
         }
     }
 }

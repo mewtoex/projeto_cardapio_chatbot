@@ -17,12 +17,13 @@ namespace CardapioDigital.Api.Repositories
         private IQueryable<Order> IncludeAllDetails(IQueryable<Order> query)
         {
             return query
-                .Include(o => o.User)
+                .Include(o => o.Client) 
+                    .ThenInclude(c => c.User) 
                 .Include(o => o.Address)
                 .Include(o => o.Items)
                     .ThenInclude(oi => oi.MenuItem)
                 .Include(o => o.Items)
-                    .ThenInclude(oi => oi.Addons); 
+                    .ThenInclude(oi => oi.Addons);
         }
 
         public async Task<Order> GetByIdWithDetailsAsync(int id)
@@ -30,9 +31,9 @@ namespace CardapioDigital.Api.Repositories
             return await IncludeAllDetails(_dbSet).FirstOrDefaultAsync(o => o.Id == id);
         }
 
-        public async Task<IEnumerable<Order>> GetUserOrdersWithDetailsAsync(int userId, string status = null)
+        public async Task<IEnumerable<Order>> GetUserOrdersWithDetailsAsync(int clientId, string status = null) 
         {
-            IQueryable<Order> query = IncludeAllDetails(_dbSet).Where(o => o.UserId == userId);
+            IQueryable<Order> query = IncludeAllDetails(_dbSet).Where(o => o.ClientId == clientId); 
 
             if (!string.IsNullOrEmpty(status))
             {

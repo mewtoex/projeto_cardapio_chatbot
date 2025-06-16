@@ -12,13 +12,13 @@ namespace CardapioDigital.Api.Models
         public int Id { get; set; }
 
         [Required]
-        public int UserId { get; set; }
+        public int ClientId { get; set; } 
 
         [Required]
-        public int AddressId { get; set; } 
+        public int AddressId { get; set; }
 
         [Required]
-        [Column(TypeName = "decimal(18, 2)")] 
+        [Column(TypeName = "decimal(18, 2)")]
         public decimal TotalAmount { get; set; }
 
         [Required]
@@ -39,9 +39,9 @@ namespace CardapioDigital.Api.Models
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
-        public User User { get; set; }
-        public Address Address { get; set; } 
-        public ICollection<OrderItem> Items { get; set; } 
+        public Client Client { get; set; } 
+        public Address Address { get; set; }
+        public ICollection<OrderItem> Items { get; set; }
 
         public Order()
         {

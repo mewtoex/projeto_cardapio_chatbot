@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using CardapioDigital.Api.DTOs.User;
+using CardapioDigital.Api.DTOs.Client;
 using CardapioDigital.Api.DTOs.Address;
 using CardapioDigital.Api.Services.Interfaces;
 using System.Threading.Tasks;
@@ -56,7 +57,7 @@ namespace CardapioDigital.Api.Controllers
         }
 
         [HttpPut("profile")]
-        public async Task<IActionResult> UpdateUserProfile([FromBody] UpdateUserProfileRequest request)
+        public async Task<IActionResult> UpdateUserProfile([FromBody] UpdateClientProfileRequest request)
         {
             if (!ModelState.IsValid)
             {
@@ -66,7 +67,7 @@ namespace CardapioDigital.Api.Controllers
             try
             {
                 var userId = GetCurrentUserId();
-                var updatedUserProfile = await _userService.UpdateUserProfileAsync(userId, request);
+                var updatedUserProfile = await _userService.UpdateClientProfileAsync(userId, request);
                 return Ok(updatedUserProfile);
             }
             catch (NotFoundException ex)
@@ -126,7 +127,7 @@ namespace CardapioDigital.Api.Controllers
             try
             {
                 var userId = GetCurrentUserId();
-                var addresses = await _userService.GetUserAddressesAsync(userId);
+                var addresses = await _userService.GetClientAddressesAsync(userId);
                 return Ok(addresses);
             }
             catch (NotFoundException ex)
@@ -154,7 +155,7 @@ namespace CardapioDigital.Api.Controllers
             try
             {
                 var userId = GetCurrentUserId();
-                var newAddress = await _userService.AddUserAddressAsync(userId, request);
+                var newAddress = await _userService.AddClientAddressAsync(userId, request);
                 return StatusCode(201, newAddress);
             }
             catch (NotFoundException ex)
@@ -186,7 +187,7 @@ namespace CardapioDigital.Api.Controllers
             try
             {
                 var userId = GetCurrentUserId();
-                var updatedAddress = await _userService.UpdateUserAddressAsync(userId, addressId, request);
+                var updatedAddress = await _userService.UpdateClientAddressAsync(userId, addressId, request);
                 return Ok(updatedAddress);
             }
             catch (NotFoundException ex)
@@ -213,7 +214,7 @@ namespace CardapioDigital.Api.Controllers
             try
             {
                 var userId = GetCurrentUserId();
-                await _userService.DeleteUserAddressAsync(userId, addressId);
+                await _userService.DeleteClientAddressAsync(userId, addressId);
                 return NoContent(); 
             }
             catch (NotFoundException ex)
