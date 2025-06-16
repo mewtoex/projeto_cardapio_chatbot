@@ -1,9 +1,9 @@
 # backend/src/domain/models/user.py
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy import Column, Integer, String, DateTime, Boolean # Importar colunas
+from sqlalchemy import Column, Integer, String, DateTime, Boolean 
 from sqlalchemy.sql import func
 from datetime import datetime, timedelta
-from src.infrastructure.database.extensions import db # Importa o db centralizado
+from src.infrastructure.database.extensions import db 
 
 class User(db.Model):
     __tablename__ = "users"
@@ -22,8 +22,8 @@ class User(db.Model):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     addresses = db.relationship('Address', backref='user', lazy='dynamic')
-    orders = db.relationship('Order', backref='user', lazy='dynamic')
-
+    orders = db.relationship('Order', back_populates='user_rel', lazy='dynamic')
+    
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 

@@ -20,8 +20,9 @@ user_register_schema = UserRegisterSchema()
 @auth_bp.route("/register", methods=["POST"])
 def register_user_route():
     data = request.get_json()
-    validated_data = user_register_schema.load(data)
+    print('ddd')
 
+    validated_data = user_register_schema.load(data)
     response_data = auth_service.register_user(
         name=validated_data['name'],
         email=validated_data['email'],

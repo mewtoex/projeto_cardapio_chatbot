@@ -1,0 +1,122 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "F:\\TI\\estudo\\home\\projeto_cardapio_chatbot\\CardapioDigital.Api\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{854DD8D8-28B9-4560-B8E8-BB3C3A8AFACB}|CardapioDigital.Api\\CardapioDigital.Api.csproj|f:\\ti\\estudo\\home\\projeto_cardapio_chatbot\\cardapiodigital.api\\cardapiodigital.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{854DD8D8-28B9-4560-B8E8-BB3C3A8AFACB}|CardapioDigital.Api\\CardapioDigital.Api.csproj|solutionrelative:cardapiodigital.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{854DD8D8-28B9-4560-B8E8-BB3C3A8AFACB}|CardapioDigital.Api\\CardapioDigital.Api.csproj|f:\\ti\\estudo\\home\\projeto_cardapio_chatbot\\cardapiodigital.api\\cardapiodigital.api\\controllers\\categoriescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{854DD8D8-28B9-4560-B8E8-BB3C3A8AFACB}|CardapioDigital.Api\\CardapioDigital.Api.csproj|solutionrelative:cardapiodigital.api\\controllers\\categoriescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{854DD8D8-28B9-4560-B8E8-BB3C3A8AFACB}|CardapioDigital.Api\\CardapioDigital.Api.csproj|f:\\ti\\estudo\\home\\projeto_cardapio_chatbot\\cardapiodigital.api\\cardapiodigital.api\\controllers\\menuitemscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{854DD8D8-28B9-4560-B8E8-BB3C3A8AFACB}|CardapioDigital.Api\\CardapioDigital.Api.csproj|solutionrelative:cardapiodigital.api\\controllers\\menuitemscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{854DD8D8-28B9-4560-B8E8-BB3C3A8AFACB}|CardapioDigital.Api\\CardapioDigital.Api.csproj|f:\\ti\\estudo\\home\\projeto_cardapio_chatbot\\cardapiodigital.api\\cardapiodigital.api\\services\\menuservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{854DD8D8-28B9-4560-B8E8-BB3C3A8AFACB}|CardapioDigital.Api\\CardapioDigital.Api.csproj|solutionrelative:cardapiodigital.api\\services\\menuservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{854DD8D8-28B9-4560-B8E8-BB3C3A8AFACB}|CardapioDigital.Api\\CardapioDigital.Api.csproj|f:\\ti\\estudo\\home\\projeto_cardapio_chatbot\\cardapiodigital.api\\cardapiodigital.api\\services\\interfaces\\imenuservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{854DD8D8-28B9-4560-B8E8-BB3C3A8AFACB}|CardapioDigital.Api\\CardapioDigital.Api.csproj|solutionrelative:cardapiodigital.api\\services\\interfaces\\imenuservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{854DD8D8-28B9-4560-B8E8-BB3C3A8AFACB}|CardapioDigital.Api\\CardapioDigital.Api.csproj|f:\\ti\\estudo\\home\\projeto_cardapio_chatbot\\cardapiodigital.api\\cardapiodigital.api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{854DD8D8-28B9-4560-B8E8-BB3C3A8AFACB}|CardapioDigital.Api\\CardapioDigital.Api.csproj|solutionrelative:cardapiodigital.api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 5,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "CategoriesController.cs",
+              "DocumentMoniker": "F:\\TI\\estudo\\home\\projeto_cardapio_chatbot\\CardapioDigital.Api\\CardapioDigital.Api\\Controllers\\CategoriesController.cs",
+              "RelativeDocumentMoniker": "CardapioDigital.Api\\Controllers\\CategoriesController.cs",
+              "ToolTip": "F:\\TI\\estudo\\home\\projeto_cardapio_chatbot\\CardapioDigital.Api\\CardapioDigital.Api\\Controllers\\CategoriesController.cs",
+              "RelativeToolTip": "CardapioDigital.Api\\Controllers\\CategoriesController.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAABgAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-16T02:53:43.889Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "MenuService.cs",
+              "DocumentMoniker": "F:\\TI\\estudo\\home\\projeto_cardapio_chatbot\\CardapioDigital.Api\\CardapioDigital.Api\\Services\\MenuService.cs",
+              "RelativeDocumentMoniker": "CardapioDigital.Api\\Services\\MenuService.cs",
+              "ToolTip": "F:\\TI\\estudo\\home\\projeto_cardapio_chatbot\\CardapioDigital.Api\\CardapioDigital.Api\\Services\\MenuService.cs",
+              "RelativeToolTip": "CardapioDigital.Api\\Services\\MenuService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABYAAAA1AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-16T02:15:59.942Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "IMenuService.cs",
+              "DocumentMoniker": "F:\\TI\\estudo\\home\\projeto_cardapio_chatbot\\CardapioDigital.Api\\CardapioDigital.Api\\Services\\Interfaces\\IMenuService.cs",
+              "RelativeDocumentMoniker": "CardapioDigital.Api\\Services\\Interfaces\\IMenuService.cs",
+              "ToolTip": "F:\\TI\\estudo\\home\\projeto_cardapio_chatbot\\CardapioDigital.Api\\CardapioDigital.Api\\Services\\Interfaces\\IMenuService.cs",
+              "RelativeToolTip": "CardapioDigital.Api\\Services\\Interfaces\\IMenuService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-16T02:15:52.609Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "MenuItemsController.cs",
+              "DocumentMoniker": "F:\\TI\\estudo\\home\\projeto_cardapio_chatbot\\CardapioDigital.Api\\CardapioDigital.Api\\Controllers\\MenuItemsController.cs",
+              "RelativeDocumentMoniker": "CardapioDigital.Api\\Controllers\\MenuItemsController.cs",
+              "ToolTip": "F:\\TI\\estudo\\home\\projeto_cardapio_chatbot\\CardapioDigital.Api\\CardapioDigital.Api\\Controllers\\MenuItemsController.cs",
+              "RelativeToolTip": "CardapioDigital.Api\\Controllers\\MenuItemsController.cs",
+              "ViewState": "AgIAAGgAAAAAAAAAAAAQwHcAAAA5AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-16T02:15:06.405Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "F:\\TI\\estudo\\home\\projeto_cardapio_chatbot\\CardapioDigital.Api\\CardapioDigital.Api\\appsettings.json",
+              "RelativeDocumentMoniker": "CardapioDigital.Api\\appsettings.json",
+              "ToolTip": "F:\\TI\\estudo\\home\\projeto_cardapio_chatbot\\CardapioDigital.Api\\CardapioDigital.Api\\appsettings.json",
+              "RelativeToolTip": "CardapioDigital.Api\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-06-16T02:14:40.9Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Program.cs",
+              "DocumentMoniker": "F:\\TI\\estudo\\home\\projeto_cardapio_chatbot\\CardapioDigital.Api\\CardapioDigital.Api\\Program.cs",
+              "RelativeDocumentMoniker": "CardapioDigital.Api\\Program.cs",
+              "ToolTip": "F:\\TI\\estudo\\home\\projeto_cardapio_chatbot\\CardapioDigital.Api\\CardapioDigital.Api\\Program.cs",
+              "RelativeToolTip": "CardapioDigital.Api\\Program.cs",
+              "ViewState": "AgIAAE4AAAAAAAAAAAAAAFoAAAADAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-16T02:14:39.132Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
