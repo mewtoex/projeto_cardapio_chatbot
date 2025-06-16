@@ -12,6 +12,10 @@ dist/
 build/
 *.log
 
+*CardapioDigital.Api/.vs
+*CardapioDigital.Api/CardapioDigital.Api/bin
+*CardapioDigital.Api/CardapioDigital.Api/obj
+
 # Virtual environment
 backend/**/venv/
 backend/**/.env
