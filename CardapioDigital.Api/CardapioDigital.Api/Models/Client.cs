@@ -26,7 +26,6 @@ namespace CardapioDigital.Api.Models
         [StringLength(14)]
         public string CPF { get; set; }
 
-        [Required]
         [StringLength(12)]
         public string Telephone { get; set; }
 

@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CardapioDigital.Api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250616030420_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250618032446_AddPasswordResetToUser")]
+    partial class AddPasswordResetToUser
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -139,12 +139,16 @@ namespace CardapioDigital.Api.Migrations
 
                     b.Property<string>("City")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<int>("ClientId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Complement")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
@@ -154,13 +158,13 @@ namespace CardapioDigital.Api.Migrations
 
                     b.Property<string>("Neighborhood")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("Number")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("varchar(20)");
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
 
                     b.Property<string>("State")
                         .IsRequired()
@@ -169,14 +173,11 @@ namespace CardapioDigital.Api.Migrations
 
                     b.Property<string>("Street")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("varchar(200)");
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
 
                     b.Property<string>("ZipCode")
                         .IsRequired()
@@ -185,7 +186,7 @@ namespace CardapioDigital.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("ClientId");
 
                     b.ToTable("Addresses");
                 });
@@ -253,6 +254,54 @@ namespace CardapioDigital.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("Categories");
+                });
+
+            modelBuilder.Entity("CardapioDigital.Api.Models.Client", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CPF")
+                        .IsRequired()
+                        .HasMaxLength(14)
+                        .HasColumnType("varchar(14)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Telephone")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("varchar(12)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CPF")
+                        .IsUnique();
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Clients");
                 });
 
             modelBuilder.Entity("CardapioDigital.Api.Models.DeliveryArea", b =>
@@ -347,6 +396,9 @@ namespace CardapioDigital.Api.Migrations
                     b.Property<int>("AddressId")
                         .HasColumnType("int");
 
+                    b.Property<int>("ClientId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
@@ -376,14 +428,11 @@ namespace CardapioDigital.Api.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.HasIndex("AddressId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("ClientId");
 
                     b.ToTable("Orders");
                 });
@@ -546,6 +595,9 @@ namespace CardapioDigital.Api.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("varchar(120)");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<bool>("IsAdmin")
                         .HasColumnType("tinyint(1)");
 
@@ -553,6 +605,18 @@ namespace CardapioDigital.Api.Migrations
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("varchar(128)");
+
+                    b.Property<string>("PasswordResetToken")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("PasswordResetTokenExpiresAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("varchar(80)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
@@ -570,7 +634,7 @@ namespace CardapioDigital.Api.Migrations
                     b.HasIndex("Username")
                         .IsUnique();
 
-                    b.ToTable("users");
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("AddonCategoryMenuItem", b =>
@@ -616,9 +680,20 @@ namespace CardapioDigital.Api.Migrations
 
             modelBuilder.Entity("CardapioDigital.Api.Models.Address", b =>
                 {
-                    b.HasOne("CardapioDigital.Api.Models.User", "User")
+                    b.HasOne("CardapioDigital.Api.Models.Client", "Client")
                         .WithMany("Addresses")
-                        .HasForeignKey("UserId")
+                        .HasForeignKey("ClientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Client");
+                });
+
+            modelBuilder.Entity("CardapioDigital.Api.Models.Client", b =>
+                {
+                    b.HasOne("CardapioDigital.Api.Models.User", "User")
+                        .WithOne("Client")
+                        .HasForeignKey("CardapioDigital.Api.Models.Client", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -644,15 +719,15 @@ namespace CardapioDigital.Api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("CardapioDigital.Api.Models.User", "User")
+                    b.HasOne("CardapioDigital.Api.Models.Client", "Client")
                         .WithMany("Orders")
-                        .HasForeignKey("UserId")
+                        .HasForeignKey("ClientId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Address");
 
-                    b.Navigation("User");
+                    b.Navigation("Client");
                 });
 
             modelBuilder.Entity("CardapioDigital.Api.Models.OrderItem", b =>
@@ -684,6 +759,13 @@ namespace CardapioDigital.Api.Migrations
                     b.Navigation("MenuItems");
                 });
 
+            modelBuilder.Entity("CardapioDigital.Api.Models.Client", b =>
+                {
+                    b.Navigation("Addresses");
+
+                    b.Navigation("Orders");
+                });
+
             modelBuilder.Entity("CardapioDigital.Api.Models.Order", b =>
                 {
                     b.Navigation("Items");
@@ -691,9 +773,8 @@ namespace CardapioDigital.Api.Migrations
 
             modelBuilder.Entity("CardapioDigital.Api.Models.User", b =>
                 {
-                    b.Navigation("Addresses");
-
-                    b.Navigation("Orders");
+                    b.Navigation("Client")
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

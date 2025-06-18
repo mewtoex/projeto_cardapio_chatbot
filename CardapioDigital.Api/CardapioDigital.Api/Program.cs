@@ -1,23 +1,24 @@
 // CardapioDigital.Api/Program.cs
 using AutoMapper;
+using CardaphoDigital.Api.Services;
 using CardapioDigital.Api.Data;
 using CardapioDigital.Api.Exceptions;
 using CardapioDigital.Api.MappingProfiles;
 using CardapioDigital.Api.Repositories;
 using CardapioDigital.Api.Repositories.Interfaces;
 using CardapioDigital.Api.Services;
+using CardapioDigital.Api.Services.Email;
 using CardapioDigital.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using System;
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using Microsoft.OpenApi.Models;
-using CardaphoDigital.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -121,6 +122,7 @@ builder.Services.AddScoped<IStoreService, StoreService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
 builder.Services.AddAutoMapper((serviceProvider, cfg) =>
+builder.Services.AddScoped<IEmailService, EmailService>();
 {
     cfg.AddMaps(typeof(MappingProfile).Assembly);
 }, typeof(Program).Assembly);
@@ -151,7 +153,6 @@ app.UseExceptionHandler(appError =>
                 _ => (int)HttpStatusCode.InternalServerError
             };
 
-            // Correção: Use JsonSerializer para converter o objeto anônimo em JSON
             await context.Response.WriteAsync(JsonSerializer.Serialize(new
             {
                 StatusCode = context.Response.StatusCode,

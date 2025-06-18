@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace CardapioDigital.Api.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class AddClientEntities : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -147,7 +147,7 @@ namespace CardapioDigital.Api.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "users",
+                name: "Users",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -158,13 +158,16 @@ namespace CardapioDigital.Api.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     PasswordHash = table.Column<string>(type: "varchar(128)", maxLength: 128, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    IsAdmin = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    Role = table.Column<string>(type: "varchar(80)", maxLength: 80, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                    UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    IsAdmin = table.Column<bool>(type: "tinyint(1)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_users", x => x.Id);
+                    table.PrimaryKey("PK_Users", x => x.Id);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -227,37 +230,30 @@ namespace CardapioDigital.Api.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "Addresses",
+                name: "Clients",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     UserId = table.Column<int>(type: "int", nullable: false),
-                    Street = table.Column<string>(type: "varchar(200)", maxLength: 200, nullable: false)
+                    FirstName = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Number = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: false)
+                    LastName = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Complement = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true)
+                    CPF = table.Column<string>(type: "varchar(14)", maxLength: 14, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Neighborhood = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
+                    Telephone = table.Column<string>(type: "varchar(12)", maxLength: 12, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    City = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    State = table.Column<string>(type: "varchar(2)", maxLength: 2, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    ZipCode = table.Column<string>(type: "varchar(10)", maxLength: 10, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    IsDefault = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Addresses", x => x.Id);
+                    table.PrimaryKey("PK_Clients", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Addresses_users_UserId",
+                        name: "FK_Clients_Users_UserId",
                         column: x => x.UserId,
-                        principalTable: "users",
+                        principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 })
@@ -289,12 +285,49 @@ namespace CardapioDigital.Api.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
+                name: "Addresses",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    ClientId = table.Column<int>(type: "int", nullable: false),
+                    Street = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Number = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Complement = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Neighborhood = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    City = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    State = table.Column<string>(type: "varchar(2)", maxLength: 2, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    ZipCode = table.Column<string>(type: "varchar(10)", maxLength: 10, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    IsDefault = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Addresses", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Addresses_Clients_ClientId",
+                        column: x => x.ClientId,
+                        principalTable: "Clients",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
                 name: "Orders",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    UserId = table.Column<int>(type: "int", nullable: false),
+                    ClientId = table.Column<int>(type: "int", nullable: false),
                     AddressId = table.Column<int>(type: "int", nullable: false),
                     TotalAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     Status = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false)
@@ -318,9 +351,9 @@ namespace CardapioDigital.Api.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Orders_users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "users",
+                        name: "FK_Orders_Clients_ClientId",
+                        column: x => x.ClientId,
+                        principalTable: "Clients",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 })
@@ -396,9 +429,9 @@ namespace CardapioDigital.Api.Migrations
                 column: "AddonCategoryId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Addresses_UserId",
+                name: "IX_Addresses_ClientId",
                 table: "Addresses",
-                column: "UserId");
+                column: "ClientId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_BotMessages_MessageKey",
@@ -410,6 +443,18 @@ namespace CardapioDigital.Api.Migrations
                 name: "IX_Categories_Name",
                 table: "Categories",
                 column: "Name",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Clients_CPF",
+                table: "Clients",
+                column: "CPF",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Clients_UserId",
+                table: "Clients",
+                column: "UserId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -449,9 +494,9 @@ namespace CardapioDigital.Api.Migrations
                 column: "AddressId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Orders_UserId",
+                name: "IX_Orders_ClientId",
                 table: "Orders",
-                column: "UserId");
+                column: "ClientId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Stores_Name",
@@ -466,14 +511,14 @@ namespace CardapioDigital.Api.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_users_Email",
-                table: "users",
+                name: "IX_Users_Email",
+                table: "Users",
                 column: "Email",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_users_Username",
-                table: "users",
+                name: "IX_Users_Username",
+                table: "Users",
                 column: "Username",
                 unique: true);
         }
@@ -521,7 +566,10 @@ namespace CardapioDigital.Api.Migrations
                 name: "Addresses");
 
             migrationBuilder.DropTable(
-                name: "users");
+                name: "Clients");
+
+            migrationBuilder.DropTable(
+                name: "Users");
         }
     }
 }

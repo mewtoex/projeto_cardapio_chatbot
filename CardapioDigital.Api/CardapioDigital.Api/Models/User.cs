@@ -33,6 +33,8 @@ namespace CardapioDigital.Api.Models
 
         public Client Client { get; set; }
         public bool IsAdmin { get; internal set; }
+        public string PasswordResetToken { get; set; }
+        public DateTime? PasswordResetTokenExpiresAt { get; set; } 
 
         public User()
         {

@@ -10,9 +10,12 @@ namespace CardapioDigital.Api.DTOs.Client
         public int UserId { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
+        public string Telephone { get; set; }
+
         public string CPF { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+
 
         public ICollection<AddressResponse> Addresses { get; set; }
     }

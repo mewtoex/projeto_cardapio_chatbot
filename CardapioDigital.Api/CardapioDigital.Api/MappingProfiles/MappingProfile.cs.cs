@@ -13,7 +13,8 @@ using CardapioDigital.Api.DTOs.Order;
 using CardapioDigital.Api.DTOs.OrderItem;
 using CardapioDigital.Api.DTOs.Promotion;
 using CardapioDigital.Api.DTOs.Store;
-using CardapioDigital.Api.DTOs.Client; 
+using CardapioDigital.Api.DTOs.Client;
+using CardapioDigital.Api.DTOs.Auth.PasswordReset;
 
 namespace CardapioDigital.Api.MappingProfiles
 {
@@ -26,7 +27,6 @@ namespace CardapioDigital.Api.MappingProfiles
                 .ForMember(dest => dest.Client, opt => opt.Ignore()); 
             CreateMap<CreateClientRequest, Client>();
 
-            // Mapeamentos para Usuário
             CreateMap<User, UserProfileResponse>()
                 .ForMember(dest => dest.Client, opt => opt.MapFrom(src => src.Client)); 
 
