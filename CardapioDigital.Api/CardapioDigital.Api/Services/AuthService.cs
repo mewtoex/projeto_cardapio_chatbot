@@ -17,6 +17,10 @@ namespace CardapioDigital.Api.Services
         private readonly ISecurityService _securityService;
         private readonly ApplicationDbContext _context;
         private readonly IEmailService _emailService; // NOVO: Injetar IEmailService
+        private IUserRepository object1;
+        private IClientRepository object2;
+        private ISecurityService object3;
+        private ApplicationDbContext dbContext;
 
         public AuthService(IUserRepository userRepository, IClientRepository clientRepository, ISecurityService securityService, IEmailService emailService, ApplicationDbContext context) // NOVO: emailService
         {
@@ -26,6 +30,14 @@ namespace CardapioDigital.Api.Services
             _context = context;
             _emailService = emailService;
 
+        }
+
+        public AuthService(IUserRepository object1, IClientRepository object2, ISecurityService object3, ApplicationDbContext dbContext)
+        {
+            this.object1 = object1;
+            this.object2 = object2;
+            this.object3 = object3;
+            this.dbContext = dbContext;
         }
 
         public async Task<AuthResponse> RegisterUserAsync(RegisterRequest request, string role = "client")

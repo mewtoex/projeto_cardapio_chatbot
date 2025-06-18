@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36203.30 d17.14
+VisualStudioVersion = 17.14.36203.30
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CardapioDigital.Api", "CardapioDigital.Api\CardapioDigital.Api.csproj", "{854DD8D8-28B9-4560-B8E8-BB3C3A8AFACB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CardapioDigiatal.Api.Tests", "CardapioDigiatal.Api.Tests\CardapioDigiatal.Api.Tests.csproj", "{FFCE1417-B2E2-4F4B-BBC0-6424A1F5B4D9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{854DD8D8-28B9-4560-B8E8-BB3C3A8AFACB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{854DD8D8-28B9-4560-B8E8-BB3C3A8AFACB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{854DD8D8-28B9-4560-B8E8-BB3C3A8AFACB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FFCE1417-B2E2-4F4B-BBC0-6424A1F5B4D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FFCE1417-B2E2-4F4B-BBC0-6424A1F5B4D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FFCE1417-B2E2-4F4B-BBC0-6424A1F5B4D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FFCE1417-B2E2-4F4B-BBC0-6424A1F5B4D9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

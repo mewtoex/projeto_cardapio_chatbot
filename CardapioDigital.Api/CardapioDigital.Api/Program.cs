@@ -121,8 +121,10 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IStoreService, StoreService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
-builder.Services.AddAutoMapper((serviceProvider, cfg) =>
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddAutoMapper((serviceProvider, cfg) =>
+
+
 {
     cfg.AddMaps(typeof(MappingProfile).Assembly);
 }, typeof(Program).Assembly);
